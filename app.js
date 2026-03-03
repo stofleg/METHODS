@@ -8,11 +8,11 @@ const $ = (s)=>document.querySelector(s);
 =========================== */
 
 const DROPBOX_APP_KEY = "5r5cxyemzt778me";
-const DROPBOX_REDIRECT_URI = "https://stofleg.github.io/seqods/";
 const DROPBOX_STATE_PATH = "/state.json";
 
 const LS_TOKENS = "SEQODS_DBX_TOKENS_V1";
 const STORE_LOCAL = "SEQODS_LOCAL_STATE_V3";
+const SS_REDIRECT_URI = "SEQODS_DBX_REDIRECT_URI_V1"; // IMPORTANT
 
 /* ===========================
    UTIL
@@ -23,18 +23,15 @@ function normalizeWord(s){
     .replace(/\s+/g,"")
     .replace(/[’'`´]/g,"'");
 }
-
 function todayStr(){
   return new Intl.DateTimeFormat("fr-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());
 }
-
 function addDays(ymd, days){
   const [y,m,d]=ymd.split("-").map(Number);
   const dt=new Date(y,m-1,d);
   dt.setDate(dt.getDate()+days);
   return new Intl.DateTimeFormat("fr-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).format(dt);
 }
-
 function setMessage(t,cls){
   const el=$("#msg");
   if(!el) return;
@@ -47,20 +44,12 @@ function setMessage(t,cls){
 =========================== */
 
 function defaultState(){
-  return {
-    updatedAt: Date.now(),
-    lists:{}
-  };
+  return { updatedAt: Date.now(), lists:{} };
 }
-
 function loadLocal(){
-  try{
-    return JSON.parse(localStorage.getItem(STORE_LOCAL)||"null")||defaultState();
-  }catch{
-    return defaultState();
-  }
+  try{ return JSON.parse(localStorage.getItem(STORE_LOCAL)||"null")||defaultState(); }
+  catch{ return defaultState(); }
 }
-
 function saveLocal(st){
   localStorage.setItem(STORE_LOCAL, JSON.stringify(st));
 }
@@ -70,7 +59,6 @@ function saveLocal(st){
 =========================== */
 
 const INTERVALS=[1,3,7,14,30,60,120];
-
 function nextInterval(cur){
   const i=INTERVALS.indexOf(cur);
   if(i<0) return 3;
@@ -78,17 +66,33 @@ function nextInterval(cur){
 }
 
 /* ===========================
-   DROPBOX (SIMPLE VERSION)
+   DROPBOX TOKENS
 =========================== */
 
 function saveTokens(t){ localStorage.setItem(LS_TOKENS,JSON.stringify(t)); }
 function loadTokens(){ try{return JSON.parse(localStorage.getItem(LS_TOKENS)||"null");}catch{return null;} }
 
-async function oauthStart(){
+/* ===========================
+   DROPBOX OAUTH (redirect_uri robuste)
+=========================== */
+
+function currentRedirectUri(){
+  // Conserve exactement le chemin actuel, iOS compris
+  // ex: https://stofleg.github.io/seqods/  OU  https://stofleg.github.io/seqods
+  const u = new URL(window.location.href);
+  u.search = "";
+  u.hash = "";
+  return u.toString();
+}
+
+function oauthStart(){
+  const redirectUri = currentRedirectUri();
+  sessionStorage.setItem(SS_REDIRECT_URI, redirectUri);
+
   const params=new URLSearchParams({
     response_type:"code",
     client_id:DROPBOX_APP_KEY,
-    redirect_uri:DROPBOX_REDIRECT_URI,
+    redirect_uri: redirectUri,
     token_access_type:"offline"
   });
   window.location.href="https://www.dropbox.com/oauth2/authorize?"+params.toString();
@@ -99,11 +103,14 @@ async function handleOAuth(){
   const code=url.searchParams.get("code");
   if(!code) return false;
 
+  const redirectUri = sessionStorage.getItem(SS_REDIRECT_URI) || currentRedirectUri();
+  sessionStorage.removeItem(SS_REDIRECT_URI);
+
   const body=new URLSearchParams({
     code,
     grant_type:"authorization_code",
     client_id:DROPBOX_APP_KEY,
-    redirect_uri:DROPBOX_REDIRECT_URI
+    redirect_uri: redirectUri
   });
 
   const r=await fetch("https://api.dropboxapi.com/oauth2/token",{
@@ -112,17 +119,29 @@ async function handleOAuth(){
     body:body.toString()
   });
 
-  if(!r.ok){ setMessage("Erreur OAuth Dropbox","err"); return false; }
+  if(!r.ok){
+    // Debug minimal (utile si ça re-bloque sur iPhone)
+    let details = "";
+    try{ details = await r.text(); }catch{}
+    console.error("Dropbox token error", r.status, details);
+    setMessage("Erreur OAuth Dropbox", "err");
+    return false;
+  }
 
   const tok=await r.json();
   saveTokens(tok);
 
   url.searchParams.delete("code");
+  url.searchParams.delete("state");
   window.history.replaceState({}, "", url.toString());
 
-  setMessage("Dropbox connecté","ok");
+  setMessage("Dropbox connecté", "ok");
   return true;
 }
+
+/* ===========================
+   DROPBOX FILES API
+=========================== */
 
 async function dbxUpload(obj){
   const tok=loadTokens();
@@ -133,10 +152,7 @@ async function dbxUpload(obj){
     headers:{
       "Authorization":"Bearer "+tok.access_token,
       "Content-Type":"application/octet-stream",
-      "Dropbox-API-Arg":JSON.stringify({
-        path:DROPBOX_STATE_PATH,
-        mode:"overwrite"
-      })
+      "Dropbox-API-Arg":JSON.stringify({ path:DROPBOX_STATE_PATH, mode:"overwrite" })
     },
     body:JSON.stringify(obj)
   });
@@ -159,16 +175,14 @@ async function dbxDownload(){
 }
 
 /* ===========================
-   GAME
+   GAME (version minimale stable)
 =========================== */
 
 const DATA=window.SEQODS_DATA;
 const C=DATA.c, E=DATA.e;
 
 const sequences=[];
-for(let i=0;i+11<C.length;i+=12){
-  sequences.push({start:i});
-}
+for(let i=0;i+11<C.length;i+=12){ sequences.push({start:i}); }
 const TOTAL=sequences.length;
 
 let state=loadLocal();
@@ -176,10 +190,6 @@ let current=-1;
 let targets=[];
 let found=new Set();
 let noHelp=true;
-
-/* ===========================
-   GAME LOGIC
-=========================== */
 
 function pick(){
   current=Math.floor(Math.random()*TOTAL);
@@ -218,9 +228,7 @@ function validate(){
   if(!val) return;
 
   targets.forEach((t,i)=>{
-    if(normalizeWord(t.c)===val){
-      found.add(i);
-    }
+    if(normalizeWord(t.c)===val){ found.add(i); }
   });
 
   input.value="";
@@ -228,11 +236,8 @@ function validate(){
 
   if(found.size===10){
     const s=state.lists[current]||{interval:1};
-    if(noHelp){
-      s.interval=nextInterval(s.interval||1);
-    }else{
-      s.interval=1;
-    }
+    if(noHelp){ s.interval=nextInterval(s.interval||1); }
+    else{ s.interval=1; }
     s.due=addDays(todayStr(),s.interval);
     state.lists[current]=s;
     state.updatedAt=Date.now();
@@ -246,19 +251,14 @@ function validate(){
 =========================== */
 
 function wire(){
-
   const n=$("#btnNouveau");
-  if(n) n.addEventListener("click",()=>{
-    pick(); render();
-  });
+  if(n) n.addEventListener("click",()=>{ pick(); render(); });
 
   const v=$("#btnValider");
   if(v) v.addEventListener("click",validate);
 
   const s=$("#saisie");
-  if(s) s.addEventListener("keydown",(e)=>{
-    if(e.key==="Enter"){ e.preventDefault(); validate(); }
-  });
+  if(s) s.addEventListener("keydown",(e)=>{ if(e.key==="Enter"){ e.preventDefault(); validate(); } });
 
   const d=$("#btnDropbox");
   if(d) d.addEventListener("click",oauthStart);
@@ -273,10 +273,7 @@ async function start(){
   await handleOAuth();
 
   const remote=await dbxDownload();
-  if(remote){
-    state=remote;
-    saveLocal(state);
-  }
+  if(remote){ state=remote; saveLocal(state); }
 
   pick();
   render();
