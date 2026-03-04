@@ -8,12 +8,15 @@ const $ = (s)=>document.querySelector(s);
 const DROPBOX_APP_KEY = "5r5cxyemzt778me";
 const DROPBOX_STATE_PATH = "/state.json";
 
+// Archivage des cartes vues (un fichier texte par fiche)
+const DROPBOX_ARCHIVE_DIR = "/cartes_vues";
+
 // stockage tokens + pkce
-const LS_TOKENS = "SEQODS_DBX_TOKENS_V4";
-const LS_PKCE   = "SEQODS_DBX_PKCE_V3";
+const LS_TOKENS = "SEQODS_DBX_TOKENS_V5";
+const LS_PKCE   = "SEQODS_DBX_PKCE_V4";
 
 // état local
-const STORE_LOCAL = "SEQODS_LOCAL_STATE_V4";
+const STORE_LOCAL = "SEQODS_LOCAL_STATE_V5";
 
 /* ===========================
    UTIL
@@ -49,6 +52,7 @@ function currentRedirectUri(){
   u.hash = "";
   return u.toString();
 }
+function pad4(n){ return String(n).padStart(4, "0"); }
 
 /* ===========================
    LOCAL STATE
@@ -57,13 +61,30 @@ function defaultState(){
   return {
     updatedAt: Date.now(),
     dbxRev: null,
-    lists: {} // seqIndex -> { due, interval, seen, validated, lastResult, lastSeen }
+    lists: {},           // seqIndex -> { due, interval, seen, validated, lastResult, lastSeen }
+
+    // Archivage Dropbox des cartes vues
+    archiveNext: 1,      // prochain numéro à attribuer
+    archiveBySeq: {}     // seqIndex -> numéro attribué
   };
+}
+function mergeDefaults(obj){
+  const base = defaultState();
+  if(!obj || typeof obj !== "object") return base;
+
+  // Merge simple, en conservant les objets existants
+  const out = Object.assign(base, obj);
+  out.lists = Object.assign({}, base.lists, obj.lists || {});
+  out.archiveBySeq = Object.assign({}, base.archiveBySeq, obj.archiveBySeq || {});
+  if(typeof out.archiveNext !== "number" || !Number.isFinite(out.archiveNext) || out.archiveNext < 1){
+    out.archiveNext = base.archiveNext;
+  }
+  return out;
 }
 function loadLocal(){
   try{
     const o = JSON.parse(localStorage.getItem(STORE_LOCAL)||"null");
-    return (o && typeof o === "object") ? Object.assign(defaultState(), o) : defaultState();
+    return mergeDefaults(o);
   }catch{
     return defaultState();
   }
@@ -313,7 +334,7 @@ async function refreshAccessTokenIfNeeded(){
 }
 
 /* ===========================
-   DROPBOX FILES API
+   DROPBOX FILES API (JSON + TEXT + DOSSIERS)
 =========================== */
 async function dbxDownloadJson(path){
   const t = await refreshAccessTokenIfNeeded();
@@ -372,6 +393,49 @@ async function dbxUploadJson(path, obj, rev){
   let meta=null;
   try{ meta = await r.json(); }catch{}
   return { ok:true, rev: meta && meta.rev ? meta.rev : null };
+}
+
+async function dbxCreateFolder(path){
+  const t = await refreshAccessTokenIfNeeded();
+  if(!t) return { ok:false, err:"not_connected" };
+
+  const r = await fetch("https://api.dropboxapi.com/2/files/create_folder_v2",{
+    method:"POST",
+    headers:{
+      "Authorization":"Bearer " + t.access_token,
+      "Content-Type":"application/json"
+    },
+    body: JSON.stringify({ path, autorename: false })
+  });
+
+  if(r.ok) return { ok:true };
+  if(r.status === 409) return { ok:true }; // déjà existant
+  return { ok:false, err:"create_folder_failed" };
+}
+
+async function dbxUploadText(path, text){
+  const t = await refreshAccessTokenIfNeeded();
+  if(!t) return { ok:false, err:"not_connected" };
+
+  const r = await fetch("https://content.dropboxapi.com/2/files/upload",{
+    method:"POST",
+    headers:{
+      "Authorization":"Bearer " + t.access_token,
+      "Content-Type":"application/octet-stream",
+      "Dropbox-API-Arg": JSON.stringify({
+        path,
+        mode: { ".tag":"add" },     // n’écrase pas
+        autorename: false,
+        mute: true,
+        strict_conflict: true
+      })
+    },
+    body: text
+  });
+
+  if(r.ok) return { ok:true };
+  if(r.status === 409) return { ok:true }; // fichier déjà créé
+  return { ok:false, err:"upload_text_failed" };
 }
 
 /* ===========================
@@ -457,6 +521,58 @@ function computeStats(){
 }
 
 /* ===========================
+   ARCHIVAGE DROBOX (cartes vues)
+=========================== */
+async function archiveCardIfFirstSeen(seqIndex){
+  const key = String(seqIndex);
+  if(!state.archiveBySeq) state.archiveBySeq = {};
+  if(state.archiveBySeq[key]) return; // déjà archivée
+
+  // Assure dossier
+  await dbxCreateFolder(DROPBOX_ARCHIVE_DIR);
+
+  // Alloue un numéro
+  if(!state.archiveNext || !Number.isFinite(state.archiveNext) || state.archiveNext < 1){
+    state.archiveNext = 1;
+  }
+  const num = state.archiveNext;
+  state.archiveNext = num + 1;
+  state.archiveBySeq[key] = num;
+  state.updatedAt = Date.now();
+  saveLocal(state);
+
+  // Persiste immédiatement l’état (pour que l’index reste cohérent entre appareils)
+  persistState().catch(()=>{});
+
+  // Construit le texte
+  const s = sequences[seqIndex];
+  if(!s) return;
+
+  const borneA = E[s.startIdx] || "";
+  const borneB = E[s.endIdx] || "";
+  const date = todayStr();
+
+  const lines = [];
+  lines.push(`Fiche ${pad4(num)}`);
+  lines.push(`Date : ${date}`);
+  lines.push("");
+  lines.push(`Borne A : ${borneA}`);
+  lines.push(`Borne B : ${borneB}`);
+  lines.push("");
+  lines.push("Solutions :");
+  for(let i=s.startIdx+1, k=1; i<=s.startIdx+10; i++, k++){
+    const sol = E[i] || "";
+    lines.push(`${k}. ${sol}`);
+  }
+  lines.push("");
+  lines.push("—");
+
+  const text = lines.join("\n");
+  const filePath = `${DROPBOX_ARCHIVE_DIR}/${pad4(num)}.txt`;
+  await dbxUploadText(filePath, text);
+}
+
+/* ===========================
    SRS PICK
 =========================== */
 function eligibleDueSeqIndexes(){
@@ -507,9 +623,16 @@ function pickSequence(){
   noHelpRun=true;
 
   const st = ensureListState(state, currentSeqIndex);
+  const firstTimeSeen = !st.seen;
+
   st.seen = true;
   st.lastSeen = todayStr();
   state.updatedAt = Date.now();
+
+  // Archive une fois, au moment de la première vue
+  if(firstTimeSeen){
+    archiveCardIfFirstSeen(currentSeqIndex).catch(()=>{});
+  }
 
   return true;
 }
@@ -700,7 +823,7 @@ async function persistState(){
   if(res.err==="conflict"){
     const remote = await dbxDownloadJson(DROPBOX_STATE_PATH);
     if(remote.ok){
-      const remoteState = remote.data || defaultState();
+      const remoteState = mergeDefaults(remote.data);
       const chooseRemote = (remoteState.updatedAt||0) >= (state.updatedAt||0);
       state = chooseRemote ? remoteState : state;
       state.dbxRev = remote.rev || state.dbxRev || null;
@@ -734,7 +857,7 @@ async function loadStatePreferDropbox(){
 
   const remote = await dbxDownloadJson(DROPBOX_STATE_PATH);
   if(remote.ok){
-    const remoteState = remote.data || defaultState();
+    const remoteState = mergeDefaults(remote.data);
     const chooseRemote = (remoteState.updatedAt||0) >= (state.updatedAt||0);
     state = chooseRemote ? remoteState : state;
     state.dbxRev = remote.rev || state.dbxRev || null;
