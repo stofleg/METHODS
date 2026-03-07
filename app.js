@@ -1046,14 +1046,16 @@ async function loadStatePreferDropbox(){
 =========================== */
 function wire(){
   const inp=$("#saisie");
-  if(inp) inp.addEventListener("keydown",(e)=>{
-    if(e.key==="Enter"){
-      e.preventDefault();
-      validateWord(inp.value);
-      inp.value="";
-      inp.focus();
-    }
-  });
+  if(inp){
+    inp.addEventListener("keydown",(e)=>{
+      if(e.key==="Enter" && !e.isComposing){
+        e.preventDefault();
+        const val = inp.value;
+        inp.value="";
+        validateWord(val);
+      }
+    });
+  }
 
   const btnS=$("#btnSolutions");
   if(btnS) btnS.addEventListener("click", ()=>{
