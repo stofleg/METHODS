@@ -36,10 +36,7 @@ function tirageFromC(c){
   return n.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
 }
 function setMessage(t,cls){
-  const el=$("#msg");
-  if(!el) return;
-  el.textContent = t || "";
-  el.className = cls ? `msg ${cls}` : "msg";
+  // messages d'état supprimés
 }
 function currentRedirectUri(){
   const u = new URL(window.location.href);
@@ -478,27 +475,7 @@ function scheduleSync(delay = 250){
   }, delay);
 }
 
-function moveNewButtonForMobile(){
-  const btn = $("#btnNouveau");
-  const chipRow = document.querySelector(".chipRow");
-  const controls = document.querySelector(".controls");
-  const btnDropbox = $("#btnDropbox");
-  const btnSolutions = $("#btnSolutions");
-
-  if(!btn || !chipRow || !controls || !btnDropbox || !btnSolutions) return;
-
-  const mobile = window.matchMedia("(max-width: 640px) and (pointer: coarse)").matches;
-
-  if(mobile){
-    if(btn.parentElement !== controls){
-      controls.insertBefore(btn, btnSolutions);
-    }
-  }else{
-    if(btn.parentElement !== chipRow){
-      chipRow.insertBefore(btn, btnDropbox);
-    }
-  }
-}
+function moveNewButtonForMobile(){ /* bouton Nouveau supprimé */ }
 
 /* ===========================
    DEFINITIONS / ANAGRAMMES
@@ -779,7 +756,7 @@ function renderSlots(){
   list.innerHTML="";
   for(let i=0;i<10;i++){
     const t = targets[i];
-    const red = !!(t && t.len >= 10 && t.len <= 15);
+    const red = !!(t && t.len >= 10);
 
     const li=document.createElement("li");
     li.className="slot";
@@ -829,7 +806,7 @@ function applyHint(i){
 }
 function applyHintsAll(){ for(let i=0;i<10;i++) applyHint(i); }
 
-function revealSlot(i){
+function revealSlot(i, failed=false){
   const li=$("#liste")?.querySelector(`li[data-slot="${i}"]`);
   if(!li) return;
 
@@ -841,6 +818,15 @@ function revealSlot(i){
     btn.dataset.def = targets[i].f || "";
     btn.dataset.word = targets[i].e || "";
     btn.dataset.canon = targets[i].c || "";
+  }
+
+  const main=li.querySelector(".slotMain");
+  if(main){
+    if(failed){
+      main.classList.add("slotFailed");
+    }else{
+      main.classList.add("slotValidated");
+    }
   }
 
   hintMode[i]="none";
@@ -884,6 +870,7 @@ function updateCounter(){
 
   if(found.size !== 10) return;
   finalizeList(!noHelpRun);
+  switchToRejouer();
 }
 
 function validateWord(raw){
@@ -922,13 +909,32 @@ function showSolutions(){
   for(let i=0;i<10;i++){
     if(!found.has(i)){
       found.add(i);
-      revealSlot(i);
+      revealSlot(i, true);
     }
   }
   saveCurrentRun();
   scheduleSync();
   updateCounter();
-  setMessage("Solutions affichées.", "warn");
+  switchToRejouer();
+}
+
+function switchToRejouer(){
+  const btnS=$("#btnSolutions");
+  if(!btnS) return;
+  btnS.textContent="Rejouer";
+  btnS.classList.remove("btnDanger");
+  btnS.onclick=()=>{
+    if(pickAccordingPolicy(false)) renderAll();
+    resetSolutionsBtn();
+  };
+}
+
+function resetSolutionsBtn(){
+  const btnS=$("#btnSolutions");
+  if(!btnS) return;
+  btnS.textContent="Solutions";
+  btnS.classList.add("btnDanger");
+  btnS.onclick=showSolutions;
 }
 
 /* ===========================
@@ -1010,24 +1016,13 @@ async function loadStatePreferDropbox(){
    WIRE
 =========================== */
 function wire(){
-  const btnN=$("#btnNouveau");
-  if(btnN) btnN.addEventListener("click", ()=>{
-    if(pickAccordingPolicy(false)) renderAll();
-  });
-
-  const btnV=$("#btnValider");
-  if(btnV) btnV.addEventListener("click", ()=>{
-    const inp=$("#saisie");
-    validateWord(inp ? inp.value : "");
-    if(inp){ inp.value=""; inp.focus(); }
-  });
-
   const inp=$("#saisie");
   if(inp) inp.addEventListener("keydown",(e)=>{
     if(e.key==="Enter"){
       e.preventDefault();
-      const btn=$("#btnValider");
-      if(btn) btn.click();
+      validateWord(inp.value);
+      inp.value="";
+      inp.focus();
     }
   });
 
@@ -1101,6 +1096,7 @@ function renderAll(){
   const c=$("#compteur");
   if(c) c.textContent = `${found.size}/10`;
   computeStats();
+  resetSolutionsBtn();
 }
 
 /* ===========================
