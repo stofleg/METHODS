@@ -883,7 +883,11 @@ function validateWord(raw){
   }
 
   if(matched.length===0){
-    setMessage("Ce mot ne fait pas partie des 10 entrées à trouver.", "warn");
+    const el=$("#msg");
+    if(el){
+      el.innerHTML = `Mot non valide : <strong>${norm}</strong>`;
+      el.className = "msg err";
+    }
     return;
   }
 
