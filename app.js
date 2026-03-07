@@ -461,9 +461,17 @@ for(let start=0; start+11<C.length; start+=12){
 }
 const TOTAL = sequences.length;
 
-/* ===========================
-   GAME STATE
-=========================== */
+function isInDictionary(norm){
+  let lo=0, hi=C.length-1;
+  while(lo<=hi){
+    const mid=(lo+hi)>>1;
+    const w=normalizeWord(C[mid]);
+    if(w===norm) return true;
+    if(w<norm) lo=mid+1;
+    else hi=mid-1;
+  }
+  return false;
+}
 let state = loadLocal();
 let currentSeqIndex = -1;
 let seq = null;
@@ -893,8 +901,13 @@ function validateWord(raw){
   if(matched.length===0){
     const el=$("#msg");
     if(el){
-      el.innerHTML = `Mot non valide : <strong>${norm}</strong>`;
-      el.className = "msg err";
+      if(isInDictionary(norm)){
+        el.innerHTML = `Mot hors-jeu : <strong>${norm}</strong>`;
+        el.className = "msg horsjeu";
+      }else{
+        el.innerHTML = `Mot non valide : <strong>${norm}</strong>`;
+        el.className = "msg err";
+      }
     }
     return;
   }
