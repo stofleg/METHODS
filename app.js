@@ -1265,9 +1265,11 @@ function wire(){
     if(modeRow) modeRow.style.display = (cE && cE.checked) ? "flex" : "none";
     if(downRow) downRow.style.display = (cE && cE.checked && cM && cM.value==="down") ? "flex" : "none";
     m.classList.add("open");
+    const sb = $("#settingsBackdrop"); if(sb) sb.style.display="block";
   }
   function closeSettings(){
     const m = $("#settingsModal"); if(m) m.classList.remove("open");
+    const sb = $("#settingsBackdrop"); if(sb) sb.style.display="none";
   }
   function applySettings(){
     const qN = parseInt($("#setQuotaNew")?.value) || 3;
