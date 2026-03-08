@@ -1106,6 +1106,23 @@ function wire(){
     oauthStart();
   });
 
+  const btnSync=$("#btnSync");
+  if(btnSync) btnSync.addEventListener("click", async ()=>{
+    const t = loadTokens();
+    if(!t || (!t.refresh_token && !hasValidAccessToken(t))){
+      setMessage("Non connecté à Dropbox.", "warn");
+      return;
+    }
+    btnSync.textContent = "⏳";
+    btnSync.disabled = true;
+    await loadStatePreferDropbox();
+    if(restoreCurrentRunIfAny()){ renderAll(); }
+    else{ if(pickAccordingPolicy(false)) renderAll(); }
+    btnSync.textContent = "⟳";
+    btnSync.disabled = false;
+    setMessage("Synchronisé.", "ok");
+  });
+
   const list=$("#liste");
   if(list) list.addEventListener("click",(e)=>{
     const tool = e.target.closest(".toolBtn");
