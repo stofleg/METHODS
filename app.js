@@ -498,18 +498,20 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
   tEl.textContent = titleWord || "";
   bEl.textContent = defText || "(definition absente)";
 
+  const base=normalizeWord(canonForAnagrams || titleWord || "");
+
+  // Anagrammes (seulement quand showAnagrams=true)
   const anaWrap=$("#anaWrap"), ana=$("#defAna");
   if(anaWrap && ana){
-    if(!showAnagrams){
+    if(!showAnagrams || !base){
       anaWrap.style.display="none";
       ana.textContent="";
     }else{
-      const base=normalizeWord(canonForAnagrams || titleWord || "");
-      const tir = base ? base.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("") : "";
+      const tir = base.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
       const lst = (tir && A[tir]) ? A[tir].slice() : [];
-      const filtered = base ? lst.filter(x=>normalizeWord(x)!==base) : lst;
+      const filtered = lst.filter(x=>normalizeWord(x)!==base);
 
-      if(!tir || filtered.length===0){
+      if(filtered.length===0){
         anaWrap.style.display="none";
         ana.textContent="";
       }else{
@@ -520,15 +522,14 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
     }
   }
 
-  // Rallonges
+  // Rallonges (seulement quand showAnagrams=true, comme les anagrammes)
   const rallWrap=$("#rallWrap"), rallEl=$("#defRall");
   if(rallWrap && rallEl){
-    if(!showAnagrams){
+    if(!showAnagrams || !base){
       rallWrap.style.display="none";
       rallEl.textContent="";
     }else{
-      const base=normalizeWord(canonForAnagrams || titleWord || "");
-      const lst = base ? (R[base] || []) : [];
+      const lst = R[base] || [];
       if(lst.length===0){
         rallWrap.style.display="none";
         rallEl.textContent="";
