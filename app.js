@@ -1383,5 +1383,56 @@ async function start(){
   setInterval(()=>{ persistState().catch(()=>{}); }, 60000);
 }
 
-document.addEventListener("DOMContentLoaded", start);
+document.addEventListener("DOMContentLoaded", ()=>{
+  // Wiring direct du bouton settings en secours
+  const _btn = document.querySelector("#btnSettings");
+  if(_btn){
+    _btn.addEventListener("click", ()=>{
+      const _m = document.querySelector("#settingsModal");
+      if(!_m) return;
+      const qN = document.querySelector("#setQuotaNew"); if(qN) qN.value = settings.quotaNew;
+      const qR = document.querySelector("#setQuotaReview"); if(qR) qR.value = settings.quotaReview;
+      const cE = document.querySelector("#setChronoEnabled"); if(cE) cE.checked = settings.chronoEnabled;
+      const cM = document.querySelector("#setChronoMode"); if(cM) cM.value = settings.chronoMode;
+      const cS = document.querySelector("#setChronoSeconds"); if(cS) cS.value = settings.chronoSeconds;
+      const modeRow = document.querySelector("#chronoModeRow");
+      const downRow = document.querySelector("#chronoDownRow");
+      if(modeRow) modeRow.style.display = (cE && cE.checked) ? "flex" : "none";
+      if(downRow) downRow.style.display = (cE && cE.checked && cM && cM.value === "down") ? "flex" : "none";
+      _m.classList.add("open");
+    });
+  }
+  const _close = document.querySelector("#settingsClose");
+  const _backdrop = document.querySelector("#settingsBackdrop");
+  function _applyAndClose(){
+    const qN = parseInt(document.querySelector("#setQuotaNew")?.value) || 3;
+    const qR = parseInt(document.querySelector("#setQuotaReview")?.value) || 3;
+    const cE = document.querySelector("#setChronoEnabled")?.checked || false;
+    const cM = document.querySelector("#setChronoMode")?.value || "up";
+    const cS = Math.max(10, parseInt(document.querySelector("#setChronoSeconds")?.value) || 180);
+    settings = { quotaNew: Math.max(1,qN), quotaReview: Math.max(0,qR), chronoEnabled: cE, chronoMode: cM, chronoSeconds: cS };
+    saveSettings(settings);
+    chronoRender();
+    updateSessionChip();
+    const _m = document.querySelector("#settingsModal");
+    if(_m) _m.classList.remove("open");
+  }
+  if(_close) _close.addEventListener("click", _applyAndClose);
+  if(_backdrop) _backdrop.addEventListener("click", _applyAndClose);
+  const _cE = document.querySelector("#setChronoEnabled");
+  if(_cE) _cE.addEventListener("change", ()=>{
+    const modeRow = document.querySelector("#chronoModeRow");
+    const downRow = document.querySelector("#chronoDownRow");
+    const cM = document.querySelector("#setChronoMode");
+    if(modeRow) modeRow.style.display = _cE.checked ? "flex" : "none";
+    if(downRow) downRow.style.display = (_cE.checked && cM && cM.value === "down") ? "flex" : "none";
+  });
+  const _cM = document.querySelector("#setChronoMode");
+  if(_cM) _cM.addEventListener("change", ()=>{
+    const downRow = document.querySelector("#chronoDownRow");
+    const cE = document.querySelector("#setChronoEnabled");
+    if(downRow) downRow.style.display = (cE && cE.checked && _cM.value === "down") ? "flex" : "none";
+  });
+  start();
+});
 })();
