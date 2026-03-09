@@ -1025,12 +1025,7 @@ async function persistState(){
   saveLocal(state);
 
   const t = await refreshAccessTokenIfNeeded();
-  const btn=$("#btnDropbox");
-  if(!t){
-    if(btn) btn.textContent = "Connexion Dropbox";
-    return;
-  }
-  if(btn) btn.textContent = "Dropbox OK";
+  if(!t) return;
 
   await syncPendingArchives();
 
@@ -1085,12 +1080,7 @@ async function loadStatePreferDropbox(){
   computeStats();
 
   const t = await refreshAccessTokenIfNeeded();
-  const btn=$("#btnDropbox");
-  if(!t){
-    if(btn) btn.textContent = "Connexion Dropbox";
-    return;
-  }
-  if(btn) btn.textContent = "Dropbox OK";
+  if(!t) return;
 
   const remote = await dbxDownloadJson(userStatePath());
   if(remote.ok){
@@ -1344,29 +1334,7 @@ function wire(){
     }
   });
 
-  const btnD=$("#btnDropbox");
-  if(btnD) btnD.addEventListener("click", async ()=>{
-    const t = loadTokens();
-    if(t && (t.refresh_token || hasValidAccessToken(t))){
-      setMessage("Synchronisation…", "");
-      await persistState();
-      setMessage("Synchronisation terminée.", "ok");
-      return;
-    }
-    oauthStart();
-  });
 
-  const btnSync=$("#btnSync");
-  if(btnSync) btnSync.addEventListener("click", async ()=>{
-    const t=loadTokens();
-    if(!t||(!t.refresh_token&&!hasValidAccessToken(t))){ setMessage("Non connecté à Dropbox.","warn"); return; }
-    btnSync.textContent="⏳"; btnSync.disabled=true;
-    await loadStatePreferDropbox();
-    if(restoreCurrentRunIfAny()){ renderAll(); }
-    else{ if(pickAccordingPolicy(false)) renderAll(); }
-    btnSync.textContent="⟳"; btnSync.disabled=false;
-    setMessage("Synchronisé.","ok");
-  });
 
   const btnLogout=$("#btnLogout");
   if(btnLogout) btnLogout.addEventListener("click", ()=>{
