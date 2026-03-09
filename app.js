@@ -3,6 +3,7 @@
 const $ = (s)=>document.querySelector(s);
 
 /* ===========================
+/* ===========================
    FIREBASE CONFIG
 =========================== */
 const FIREBASE_CONFIG = {
@@ -17,6 +18,7 @@ const FIREBASE_CONFIG = {
 const FB_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
 
 /* ===========================
+/* ===========================
    CRYPTO UTILS
 =========================== */
 async function sha256(str){
@@ -27,6 +29,7 @@ function randomToken(){
   return Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
+/* ===========================
 /* ===========================
    FIRESTORE REST API
 =========================== */
@@ -84,6 +87,7 @@ async function fbSet(collection, docId, obj){
 }
 
 /* ===========================
+/* ===========================
    SESSION LOCALE
 =========================== */
 const LS_SESSION = "ODYSSEE_SESSION_V1";
@@ -104,6 +108,7 @@ function localStateKey(){
   return "ODYSSEE_STATE_" + (currentUser ? currentUser.pseudo : "guest");
 }
 
+/* ===========================
 /* ===========================
    STATE LOCAL
 =========================== */
@@ -127,6 +132,7 @@ function saveLocal(st){
   try{ localStorage.setItem(localStateKey(), JSON.stringify(st)); }catch{}
 }
 
+/* ===========================
 /* ===========================
    AUTH FIREBASE
 =========================== */
@@ -176,6 +182,7 @@ async function verifySessionToken(pseudo, token){
 }
 
 /* ===========================
+/* ===========================
    PERSISTENCE STATE FIREBASE
 =========================== */
 async function loadStateFromFirebase(){
@@ -200,6 +207,7 @@ async function persistState(){
   saveLocal(state);
 }
 
+/* ===========================
 /* ===========================
    AUTH UI
 =========================== */
@@ -319,6 +327,8 @@ function wireAuth(){
   });
 }
 
+/* ===========================
+/* ===========================
    UTIL
 =========================== */
 function normalizeWord(s){
@@ -361,12 +371,16 @@ function pad4(n){ return String(n).padStart(4, "0"); }
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    LOCAL STATE
 =========================== */
 
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    SRS
 =========================== */
 const INTERVALS=[1,3,7,14,30,60,120];
@@ -392,6 +406,8 @@ function ensureListState(st, seqIndex){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    DATA
 =========================== */
 const DATA = window.SEQODS_DATA;
@@ -423,6 +439,8 @@ let DICT = new Set();  // sera rempli avec D (ODS9 complet) au démarrage
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    HELPERS UI / SYNC
 =========================== */
 function scheduleSync(delay = 250){
@@ -436,6 +454,8 @@ function moveNewButtonForMobile(){ /* bouton Nouveau supprimé */ }
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    DEFINITIONS / ANAGRAMMES
 =========================== */
 function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
@@ -496,6 +516,8 @@ function closeDef(){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    PROGRESSION UI
 =========================== */
 function computeStats(){
@@ -516,6 +538,8 @@ function computeStats(){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    CURRENT RUN SAVE/RESTORE
 =========================== */
 function saveCurrentRun(){
@@ -572,6 +596,8 @@ function restoreCurrentRunIfAny(){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    PICK / REVIEW POLICY
 =========================== */
 function getDueReviewIndexes(){
@@ -642,6 +668,8 @@ function pickAccordingPolicy(forcePlainNew=false){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    RENDER
 =========================== */
 function renderBounds(){
@@ -861,6 +889,8 @@ function resetSolutionsBtn(){ solutionsShown=false; updateSolutionsBtn(); }
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    WIRE
 =========================== */
 function wire(){
@@ -962,6 +992,8 @@ function renderAll(){
 
 /* ===========================
 
+/* ===========================
+/* ===========================
    START
 =========================== */
 async function start(){
@@ -989,6 +1021,4 @@ async function start(){
 }
 
 document.addEventListener("DOMContentLoaded", start);
-})();
-
 })();
