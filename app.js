@@ -1104,7 +1104,10 @@ async function loadStatePreferDropbox(){
   }
 
   if(remote.err==="not_found"){
-    await persistState();
+    // Nouveau fichier utilisateur : on part de zero (pas de fallback sur ancien state.json)
+    state = defaultState();
+    saveLocal(state);
+    computeStats();
   }
 }
 
@@ -1463,13 +1466,18 @@ async function start(){
 function showWaitScreen(){
   chronoStop();
   const c=$("#compteur"); if(c) c.textContent="0/10";
-  // Vider les slots et bornes pour afficher un état neutre
   const borneA=$("#borneA"), borneB=$("#borneB");
   if(borneA) borneA.textContent="—";
   if(borneB) borneB.textContent="—";
   const list=$("#liste"); if(list) list.innerHTML="";
   const msg=$("#msg"); if(msg){ msg.textContent="Prêt à jouer !"; msg.className="msg ok"; }
-  updateSolutionsBtn();
+  // Forcer le bouton en mode "Jouer"
+  const btnS=$("#btnSolutions");
+  if(btnS){
+    btnS.textContent="Jouer";
+    btnS.dataset.mode="rejouer";
+    btnS.classList.remove("btnDanger");
+  }
 }
 
 document.addEventListener("DOMContentLoaded", start);
