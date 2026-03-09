@@ -1070,6 +1070,30 @@ async function loadStatePreferDropbox(){
 }
 
 /* ===========================
+   CHRONO
+=========================== */
+let chronoInterval = null;
+let chronoElapsed  = 0;
+
+function chronoFormat(s){
+  const m = Math.floor(s / 60), sec = s % 60;
+  return String(m).padStart(2,"0") + ":" + String(sec).padStart(2,"0");
+}
+function chronoUpdate(){
+  const el = $("#chronoDisplay");
+  if(el) el.textContent = chronoFormat(chronoElapsed);
+}
+function chronoStart(){
+  chronoStop();
+  chronoElapsed = 0;
+  chronoUpdate();
+  chronoInterval = setInterval(()=>{ chronoElapsed++; chronoUpdate(); }, 1000);
+}
+function chronoStop(){
+  if(chronoInterval){ clearInterval(chronoInterval); chronoInterval = null; }
+}
+
+/* ===========================
    WIRE
 =========================== */
 function wire(){
@@ -1179,6 +1203,7 @@ function renderAll(){
   if(c) c.textContent = `${found.size}/10`;
   computeStats();
   resetSolutionsBtn();
+  chronoStart();
 }
 
 /* ===========================
