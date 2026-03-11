@@ -722,6 +722,7 @@ function renderSlots(){
       applyHint(i);
     }
   }
+  applyHintVisibility();
 }
 
 function applyHint(i){
