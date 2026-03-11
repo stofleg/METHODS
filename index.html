@@ -552,17 +552,21 @@
         align-items: center;
         gap: 8px;
       }
-      .inputCard .controls #chronoDisplay{
+      .inputCard .controls > *{
         flex-shrink: 0;
+      }
+      .inputCard .controls #chronoDisplay{
         font-size: 15px;
-        min-width: 44px;
+        min-width: 42px;
+        text-align: center;
       }
       .inputCard .controls input{
-        flex: 1 1 0;
-        min-width: 0;
+        flex: 1 1 0 !important;
+        min-width: 0 !important;
+        width: 0;
       }
       .inputCard .controls #btnSolutions{
-        flex-shrink: 0;
+        white-space: nowrap;
       }
       /* Espace pour que le contenu ne soit pas masqué par la barre */
       .card{
@@ -659,22 +663,46 @@
 
   <!-- MODALE SETTINGS -->
   <div class="modal" id="settingsModal" role="dialog" aria-modal="true">
-    <div class="modalCard" style="max-width:320px;">
-      <button class="closeBtn" id="closeSettings" aria-label="Fermer">✕</button>
-      <h3 style="margin:0 0 18px;font-size:17px;font-weight:900;">Paramètres</h3>
-      <div style="display:flex;flex-direction:column;gap:16px;">
-        <label style="display:flex;align-items:center;justify-content:space-between;gap:12px;font-weight:700;font-size:14px;">
-          Chronomètre
-          <input type="checkbox" id="settingsChronoEnabled" checked style="width:18px;height:18px;cursor:pointer;accent-color:var(--accent);">
-        </label>
-        <div id="settingsDurationRow" style="display:flex;flex-direction:column;gap:8px;">
-          <label style="font-weight:700;font-size:14px;">Durée <span id="settingsDurationLabel" style="color:var(--accent);">10 min</span></label>
+    <div class="backdrop" id="settingsBackdrop"></div>
+    <div class="panel" style="max-width:340px;">
+      <div class="panelTop">
+        <h2>Paramètres</h2>
+        <button id="closeSettings" class="btn" type="button">Fermer</button>
+      </div>
+
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:20px;">
+
+        <!-- Toggle chrono -->
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <span style="font-weight:700;font-size:15px;">Chronomètre</span>
+          <label style="position:relative;display:inline-block;width:46px;height:26px;flex-shrink:0;">
+            <input type="checkbox" id="settingsChronoEnabled" checked
+              style="opacity:0;width:0;height:0;position:absolute;">
+            <span id="toggleTrack" style="
+              position:absolute;inset:0;border-radius:26px;cursor:pointer;
+              background:var(--muted);transition:background .2s;
+            "></span>
+            <span id="toggleThumb" style="
+              position:absolute;top:3px;left:3px;width:20px;height:20px;
+              border-radius:50%;background:#fff;transition:transform .2s;
+              box-shadow:0 1px 4px rgba(0,0,0,.3);pointer-events:none;
+            "></span>
+          </label>
+        </div>
+
+        <!-- Durée -->
+        <div id="settingsDurationRow" style="display:flex;flex-direction:column;gap:10px;">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;">
+            <span style="font-weight:700;font-size:15px;">Durée</span>
+            <span id="settingsDurationLabel" style="font-size:22px;font-weight:900;color:var(--accent);font-variant-numeric:tabular-nums;">10 min</span>
+          </div>
           <input type="range" id="settingsDuration" min="1" max="30" value="10" step="1"
-            style="width:100%;accent-color:var(--accent);">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--muted);">
-            <span>1 min</span><span>30 min</span>
+            style="width:100%;accent-color:var(--accent);height:6px;cursor:pointer;">
+          <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);">
+            <span>1 min</span><span>15 min</span><span>30 min</span>
           </div>
         </div>
+
       </div>
     </div>
   </div>
