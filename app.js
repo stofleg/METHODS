@@ -452,6 +452,10 @@ function applyHint(i){
   if(hintMode[i]==="tirage"){
     hint.textContent = targets[i].t;
     hint.style.display="flex";
+  }else if(hintMode[i]==="len"){
+    const w = targets[i].c || targets[i].e || "";
+    hint.textContent = w.replace(/[^A-Za-zÀ-ÿ]/g,"").length;
+    hint.style.display="flex";
   }else{
     hint.style.display="none";
   }
