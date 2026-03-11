@@ -532,7 +532,9 @@
 
     /* ── App Header ── */
     .appHeader{ display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 14px 10px;border-radius:var(--radius) var(--radius) 0 0; }
-    .appTitle{ margin:0;font-size:clamp(22px,6vw,32px);font-weight:950;letter-spacing:0.12em;text-transform:uppercase;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-align:center; }
+    .appTitle{ margin:0;font-size:clamp(22px,6vw,32px);font-weight:950;letter-spacing:0.12em;text-transform:uppercase;text-align:center; }
+    .appTitle .part1{ color:#fff; }
+    .appTitle .part2{ background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
     .appUserBar{ display:flex;align-items:center;gap:8px; }
     .userChip{ font-size:14px;font-weight:800;color:var(--txt);padding:5px 12px;border-radius:999px;background:var(--chip);border:1px solid var(--chipStroke);white-space:nowrap; }
     .iconBtn{ padding:7px 10px;font-size:15px;line-height:1; }
@@ -573,7 +575,7 @@
     <div class="card">
       <span id="compteur" style="display:none;">0/10</span>
       <div class="appHeader">
-        <h1 class="appTitle">METHODS</h1>
+        <h1 class="appTitle"><span class="part1">METH</span><span class="part2">ODS</span></h1>
         <div class="appUserBar">
           <button id="btnLogout" class="btn iconBtn" type="button" title="Déconnexion">⏏</button>
           <span id="userChip" class="userChip"></span>
