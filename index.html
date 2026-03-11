@@ -554,6 +554,10 @@
     .authLink{ background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;padding:0;text-decoration:underline; }
     .authLinks{ margin-top:14px;display:flex;gap:14px;flex-wrap:wrap; }
     #authErr{ min-height:18px;font-size:13px;font-weight:700;margin-top:10px; }
+    .pseudoHint{ font-size:12px;font-weight:700;margin-top:4px;display:block;min-height:16px; }
+    .pseudoHint.available{ color:#1a8f3d; }
+    .pseudoHint.taken{ color:var(--danger,#e53); }
+    .pseudoHint.checking{ color:var(--muted); }
     /* ── Chrono ── */
     .chronoExpired{ color:var(--danger,#e53) !important;animation:chronoPulse 1s ease-in-out infinite; }
     @keyframes chronoPulse{ 0%,100%{opacity:1;}50%{opacity:.4;} }
@@ -720,7 +724,7 @@
       </div>
       <div id="auth_register" style="display:none;">
         <h2>Créer un compte</h2>
-        <div class="authField"><label>Pseudo</label><input id="regPseudo" type="text" autocapitalize="none" spellcheck="false" placeholder="choisis un pseudo"/></div>
+        <div class="authField"><label>Pseudo</label><input id="regPseudo" type="text" autocapitalize="none" spellcheck="false" placeholder="choisis un pseudo"/><span id="regPseudoHint" class="pseudoHint"></span></div>
         <div class="authField"><label>Mot de passe</label><input id="regPass" type="password" placeholder="min 4 caractères"/></div>
         <div class="authField"><label>Question secrète</label><input id="regQuestion" type="text" placeholder="ex : ville natale ?"/></div>
         <div class="authField"><label>Réponse</label><input id="regAnswer" type="text" autocapitalize="none" placeholder="ta réponse"/></div>
