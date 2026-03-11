@@ -13,7 +13,7 @@
       --shadow2: 0 10px 24px rgba(16,24,80,.10);
       --txt:#06101f; --muted:#3a506e;
       --accent:#1a65d6; --accent2:#1aa8a8;
-      --ok:#166a30; --warn:#8a5500; --danger:#b51e1e;
+      --ok:#0d6e6e; --warn:#6b35c2; --danger:#b51e1e;
       --chip:#dceaff; --chipStroke: rgba(26,101,214,.28);
       --slot: rgba(255,255,255,.88);
       --slotStroke: rgba(16,24,80,.15);
@@ -27,8 +27,8 @@
       --redSlotGlow:rgba(181,30,30,.22);
       --redSlotBg:rgba(181,30,30,.05);
       --dottedSlotBorder: rgba(16,24,80,.40);
-      --okSlotBg: rgba(22,106,48,.16);
-      --okSlotBorder: rgba(22,106,48,.50);
+      --okSlotBg: rgba(13,110,110,.14);
+      --okSlotBorder: rgba(13,110,110,.48);
       --failSlotBg: rgba(181,30,30,.14);
       --failSlotBorder: rgba(181,30,30,.50);
     }
@@ -43,7 +43,7 @@
         --shadow2: 0 10px 24px rgba(0,0,0,.45);
         --txt:#eaf0ff; --muted:#aebad5;
         --accent:#69a7ff; --accent2:#4fe2e2;
-        --ok:#65e08a; --warn:#ffd479; --danger:#ff6b6b;
+        --ok:#2dd4d4; --warn:#b78af7; --danger:#ff6b6b;
         --chip: rgba(105,167,255,.12);
         --chipStroke: rgba(105,167,255,.22);
         --slot: rgba(18,24,44,.74);
@@ -56,8 +56,8 @@
         --redSlotGlow:rgba(255,107,107,.28);
         --redSlotBg:rgba(255,107,107,.06);
         --dottedSlotBorder: rgba(255,255,255,.50);
-        --okSlotBg: rgba(101,224,138,.14);
-        --okSlotBorder: rgba(101,224,138,.50);
+        --okSlotBg: rgba(45,212,212,.12);
+        --okSlotBorder: rgba(45,212,212,.45);
         --failSlotBg: rgba(255,107,107,.14);
         --failSlotBorder: rgba(255,107,107,.55);
       }
@@ -376,14 +376,15 @@
 
     @media (prefers-color-scheme: light){
       .toolBtn[data-tool="tirage"]{
-        background: linear-gradient(135deg,#e6fffb,#ccfbf1);
-        border-color:#9debe0;
-        color:#0f766e;
+        background: linear-gradient(135deg,#e0f2fe,#bae6fd);
+        border-color:#7dd3fc;
+        color:#0369a1;
       }
       .toolBtn[data-tool="def"]{
-        background: linear-gradient(135deg,#fff4e6,#ffe2c7);
-        border-color:#ffd2a8;
-        color:#9a3412;
+        background: linear-gradient(135deg,#ede9fe,#ddd6fe);
+        border-color:#c4b5fd;
+        color:#5b21b6;
+        font-size:16px;
       }
     }
 
