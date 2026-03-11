@@ -932,13 +932,23 @@ function chronoStop(){
 /* ===========================
    SETTINGS UI
 =========================== */
+function updateToggleUI(){
+  const chk=$("#settingsChronoEnabled");
+  const track=$("#toggleTrack"), thumb=$("#toggleThumb"), row=$("#settingsDurationRow");
+  if(!chk) return;
+  const on=chk.checked;
+  if(track) track.style.background=on?"var(--accent)":"var(--muted)";
+  if(thumb) thumb.style.transform=on?"translateX(20px)":"translateX(0)";
+  if(row) row.style.display=on?"flex":"none";
+}
+
 function openSettings(){
   const modal=$("#settingsModal"); if(!modal) return;
-  const chk=$("#settingsChronoEnabled"), slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel"), row=$("#settingsDurationRow");
+  const chk=$("#settingsChronoEnabled"), slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel");
   if(chk) chk.checked=settings.chronoEnabled;
-  if(slider){ slider.value=settings.chronoDuration; }
+  if(slider) slider.value=settings.chronoDuration;
   if(lbl) lbl.textContent=settings.chronoDuration+" min";
-  if(row) row.style.display=settings.chronoEnabled?"flex":"none";
+  updateToggleUI();
   modal.classList.add("open");
 }
 function closeSettings(){
@@ -947,23 +957,32 @@ function closeSettings(){
 function wireSettings(){
   const btn=$("#btnSettings"); if(btn) btn.addEventListener("click",openSettings);
   const cls=$("#closeSettings"); if(cls) cls.addEventListener("click",closeSettings);
+
   const chk=$("#settingsChronoEnabled");
-  const slider=$("#settingsDuration");
-  const lbl=$("#settingsDurationLabel");
-  const row=$("#settingsDurationRow");
+  const track=$("#toggleTrack"), thumb=$("#toggleThumb");
+  // Clic sur le toggle
+  [track, thumb].forEach(el=>{
+    if(el) el.addEventListener("click",()=>{
+      if(chk){ chk.checked=!chk.checked; chk.dispatchEvent(new Event("change")); }
+    });
+  });
   if(chk) chk.addEventListener("change",()=>{
     settings.chronoEnabled=chk.checked;
-    if(row) row.style.display=chk.checked?"flex":"none";
-    saveSettings(); chronoUpdate();
+    updateToggleUI();
+    saveSettings();
+    chronoUpdate();
   });
+
+  const slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel");
   if(slider) slider.addEventListener("input",()=>{
     settings.chronoDuration=parseInt(slider.value);
     if(lbl) lbl.textContent=settings.chronoDuration+" min";
     saveSettings();
   });
-  // Fermer en cliquant hors de la carte
-  const modal=$("#settingsModal");
-  if(modal) modal.addEventListener("click",(e)=>{ if(e.target===modal) closeSettings(); });
+
+  // Fermer via backdrop
+  const backdrop=$("#settingsBackdrop");
+  if(backdrop) backdrop.addEventListener("click", closeSettings);
 }
 
 /* ===========================
