@@ -422,6 +422,7 @@ function renderSlots(){
       <div class="slotTools">
         <button class="toolBtn" data-tool="tirage" title="Tirage">ABC</button>
         <button class="toolBtn" data-tool="def" title="Définition">📖</button>
+        <button class="toolBtn" data-tool="len" title="Nombre de lettres">123</button>
       </div>`;
     list.appendChild(li);
 
@@ -893,6 +894,13 @@ function wire(){
       if(which==="def"){
         markAidUsed();
         openDef(targets[i].f || "", "", targets[i].c, false);
+        return;
+      }
+      if(which==="len"){
+        markAidUsed();
+        if(found.has(i)) return;
+        hintMode[i]=(hintMode[i]==="len")?"none":"len";
+        applyHint(i); saveCurrentRun(); scheduleSync();
         return;
       }
 
