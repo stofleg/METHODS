@@ -1,26 +1,16 @@
 (function(){
 "use strict";
-const $ = (s)=>document.querySelector(s);
+const $ = s => document.querySelector(s);
 
 /* ===========================
-/* ===========================
-   FIREBASE CONFIG
+   FIREBASE CONFIG + REST API
 =========================== */
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyA7rJeKcdHc6By15EBhOmYhFB_pA5J3aq4",
-  authDomain: "methods-8e4b1.firebaseapp.com",
-  projectId: "methods-8e4b1",
-  storageBucket: "methods-8e4b1.firebasestorage.app",
-  messagingSenderId: "622786673295",
-  appId: "1:622786673295:web:c276ef2ec2608b74e58efa"
+  projectId: "methods-8e4b1"
 };
-
 const FB_BASE = `https://firestore.googleapis.com/v1/projects/${FIREBASE_CONFIG.projectId}/databases/(default)/documents`;
 
-/* ===========================
-/* ===========================
-   CRYPTO UTILS
-=========================== */
 async function sha256(str){
   const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
   return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("");
@@ -29,307 +19,48 @@ function randomToken(){
   return Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b=>b.toString(16).padStart(2,"0")).join("");
 }
 
-/* ===========================
-/* ===========================
-   FIRESTORE REST API
-=========================== */
-// Convertit un objet JS en document Firestore
-function toFirestore(obj){
-  function convert(val){
-    if(val === null || val === undefined) return {nullValue: null};
-    if(typeof val === "boolean") return {booleanValue: val};
-    if(typeof val === "number") return Number.isInteger(val) ? {integerValue: String(val)} : {doubleValue: val};
-    if(typeof val === "string") return {stringValue: val};
-    if(Array.isArray(val)) return {arrayValue: {values: val.map(convert)}};
-    if(typeof val === "object") return {mapValue: {fields: Object.fromEntries(Object.entries(val).map(([k,v])=>[k,convert(v)]))}};
-    return {stringValue: String(val)};
+function toFs(obj){
+  function cv(val){
+    if(val===null||val===undefined) return {nullValue:null};
+    if(typeof val==="boolean") return {booleanValue:val};
+    if(typeof val==="number") return Number.isInteger(val)?{integerValue:String(val)}:{doubleValue:val};
+    if(typeof val==="string") return {stringValue:val};
+    if(Array.isArray(val)) return {arrayValue:{values:val.map(cv)}};
+    if(typeof val==="object") return {mapValue:{fields:Object.fromEntries(Object.entries(val).map(([k,v])=>[k,cv(v)]))}};
+    return {stringValue:String(val)};
   }
-  return {fields: Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,convert(v)]))};
+  return {fields:Object.fromEntries(Object.entries(obj).map(([k,v])=>[k,cv(v)]))};
 }
-
-// Convertit un document Firestore en objet JS
-function fromFirestore(doc){
-  if(!doc || !doc.fields) return null;
-  function convert(val){
-    if(val.nullValue !== undefined) return null;
-    if(val.booleanValue !== undefined) return val.booleanValue;
-    if(val.integerValue !== undefined) return parseInt(val.integerValue);
-    if(val.doubleValue !== undefined) return val.doubleValue;
-    if(val.stringValue !== undefined) return val.stringValue;
-    if(val.arrayValue) return (val.arrayValue.values||[]).map(convert);
-    if(val.mapValue) return Object.fromEntries(Object.entries(val.mapValue.fields||{}).map(([k,v])=>[k,convert(v)]));
+function fromFs(doc){
+  if(!doc||!doc.fields) return null;
+  function cv(val){
+    if(val.nullValue!==undefined) return null;
+    if(val.booleanValue!==undefined) return val.booleanValue;
+    if(val.integerValue!==undefined) return parseInt(val.integerValue);
+    if(val.doubleValue!==undefined) return val.doubleValue;
+    if(val.stringValue!==undefined) return val.stringValue;
+    if(val.arrayValue) return (val.arrayValue.values||[]).map(cv);
+    if(val.mapValue) return Object.fromEntries(Object.entries(val.mapValue.fields||{}).map(([k,v])=>[k,cv(v)]));
     return null;
   }
-  return Object.fromEntries(Object.entries(doc.fields).map(([k,v])=>[k,convert(v)]));
+  return Object.fromEntries(Object.entries(doc.fields).map(([k,v])=>[k,cv(v)]));
 }
-
-async function fbGet(collection, docId){
+async function fbGet(col,id){
   try{
-    const res = await fetch(`${FB_BASE}/${collection}/${docId}`);
-    if(res.status === 404) return {ok:false, err:"not_found"};
-    if(!res.ok) return {ok:false, err:"error"};
-    const data = await res.json();
-    return {ok:true, data: fromFirestore(data), name: data.name};
-  }catch(e){ return {ok:false, err:"network"}; }
+    const r=await fetch(`${FB_BASE}/${col}/${id}`);
+    if(r.status===404) return {ok:false,err:"not_found"};
+    if(!r.ok) return {ok:false,err:"error"};
+    const d=await r.json();
+    return {ok:true,data:fromFs(d)};
+  }catch{return {ok:false,err:"network"};}
 }
-
-async function fbSet(collection, docId, obj){
+async function fbSet(col,id,obj){
   try{
-    const url = `${FB_BASE}/${collection}/${docId}`;
-    const res = await fetch(url, {
-      method: "PATCH",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(toFirestore(obj))
-    });
-    if(!res.ok) return {ok:false, err:"error"};
-    return {ok:true};
-  }catch(e){ return {ok:false, err:"network"}; }
+    const r=await fetch(`${FB_BASE}/${col}/${id}`,{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(toFs(obj))});
+    return r.ok?{ok:true}:{ok:false,err:"error"};
+  }catch{return {ok:false,err:"network"};}
 }
 
-/* ===========================
-/* ===========================
-   SESSION LOCALE
-=========================== */
-const LS_SESSION = "ODYSSEE_SESSION_V1";
-let currentUser = null; // {pseudo, token}
-
-function loadSession(){
-  try{ return JSON.parse(localStorage.getItem(LS_SESSION)||"null"); }
-  catch{ return null; }
-}
-function saveSession(s){
-  try{ localStorage.setItem(LS_SESSION, JSON.stringify(s)); }catch{}
-}
-function clearSession(){
-  try{ localStorage.removeItem(LS_SESSION); }catch{}
-  currentUser = null;
-}
-function localStateKey(){
-  return "ODYSSEE_STATE_" + (currentUser ? currentUser.pseudo : "guest");
-}
-
-/* ===========================
-/* ===========================
-   STATE LOCAL
-=========================== */
-const STORE_LOCAL = "ODYSSEE_STATE_V1";
-function defaultState(){
-  return { updatedAt:0, lists:{}, currentRun:null };
-}
-function mergeDefaults(obj){
-  const base = defaultState();
-  if(!obj || typeof obj !== "object") return base;
-  const out = Object.assign(base, obj);
-  out.lists = Object.assign({}, base.lists, obj.lists||{});
-  if(!out.currentRun || typeof out.currentRun !== "object") out.currentRun = null;
-  return out;
-}
-function loadLocal(){
-  try{ return mergeDefaults(JSON.parse(localStorage.getItem(localStateKey())||"null")); }
-  catch{ return defaultState(); }
-}
-function saveLocal(st){
-  try{ localStorage.setItem(localStateKey(), JSON.stringify(st)); }catch{}
-}
-
-/* ===========================
-/* ===========================
-   AUTH FIREBASE
-=========================== */
-async function authLogin(pseudo, password){
-  const res = await fbGet("users", pseudo);
-  if(res.err==="not_found") return {ok:false, err:"Utilisateur inconnu."};
-  if(!res.ok) return {ok:false, err:"Impossible de contacter la base de données."};
-  const hash = await sha256(password);
-  if(res.data.passwordHash !== hash) return {ok:false, err:"Mot de passe incorrect."};
-  const token = randomToken();
-  await fbSet("users", pseudo.toLowerCase(), {...res.data, sessionToken: token});
-  return {ok:true, token, pseudo: res.data.pseudo || pseudo};
-}
-
-async function authRegister(pseudo, password, question, answer){
-  if(!pseudo || pseudo.length < 2) return {ok:false, err:"Pseudo trop court (min 2 caractères)."};
-  if(!password || password.length < 4) return {ok:false, err:"Mot de passe trop court (min 4 caractères)."};
-  const key = pseudo;
-  const exists = await fbGet("users", key);
-  if(exists.ok) return {ok:false, err:"Ce pseudo est déjà pris."};
-  const hash = await sha256(password);
-  const ansHash = await sha256(answer.toLowerCase().trim());
-  const token = randomToken();
-  const resSet = await fbSet("users", key, {
-    pseudo, passwordHash:hash, question, answerHash:ansHash, sessionToken:token
-  });
-  if(!resSet.ok) return {ok:false, err:"Erreur lors de la création du compte."};
-  return {ok:true, token};
-}
-
-async function authRecover(pseudo, answer, newPassword){
-  if(!newPassword || newPassword.length < 4) return {ok:false, err:"Nouveau mot de passe trop court."};
-  const res = await fbGet("users", pseudo);
-  if(res.err==="not_found") return {ok:false, err:"Utilisateur inconnu."};
-  if(!res.ok) return {ok:false, err:"Impossible de contacter la base de données."};
-  const ansHash = await sha256(answer.toLowerCase().trim());
-  if(res.data.answerHash !== ansHash) return {ok:false, err:"Réponse incorrecte."};
-  const newHash = await sha256(newPassword);
-  await fbSet("users", pseudo, {...res.data, passwordHash:newHash, sessionToken:randomToken()});
-  return {ok:true};
-}
-
-async function verifySessionToken(pseudo, token){
-  const res = await fbGet("users", pseudo);
-  if(!res.ok) return false;
-  return res.data.sessionToken === token;
-}
-
-/* ===========================
-/* ===========================
-   PERSISTENCE STATE FIREBASE
-=========================== */
-async function loadStateFromFirebase(){
-  if(!currentUser) return;
-  const res = await fbGet("states", currentUser.pseudo);
-  if(res.ok && res.data){
-    const remote = mergeDefaults(res.data);
-    const local = loadLocal();
-    const useRemote = (remote.updatedAt||0) >= (local.updatedAt||0);
-    state = useRemote ? remote : local;
-  } else {
-    state = defaultState();
-  }
-  saveLocal(state);
-}
-
-async function persistState(){
-  if(!currentUser) return;
-  saveLocal(state);
-  state.updatedAt = Date.now();
-  await fbSet("states", currentUser.pseudo, state);
-  saveLocal(state);
-}
-
-/* ===========================
-/* ===========================
-   AUTH UI
-=========================== */
-function showAuthScreen(){
-  const game=$("#gameScreen"), auth=$("#authScreen");
-  if(game) game.style.display="none";
-  if(auth) auth.style.display="flex";
-  setAuthView("login");
-}
-function showGameScreen(){
-  const game=$("#gameScreen"), auth=$("#authScreen");
-  if(auth) auth.style.display="none";
-  if(game) game.style.display="";
-}
-function setAuthView(view){
-  ["login","register","recover"].forEach(v=>{
-    const el=$("#auth_"+v); if(el) el.style.display=(v===view)?"block":"none";
-  });
-  const err=$("#authErr"); if(err){ err.textContent=""; err.className="msg"; }
-}
-function showAuthErr(msg, isOk=false){
-  const el=$("#authErr");
-  if(el){ el.textContent=msg; el.className=isOk?"msg ok":"msg err"; }
-}
-function authSetLoading(loading){
-  ["btnLogin","btnRegister","btnDoRecover"].forEach(id=>{
-    const el=$("#"+id); if(el) el.disabled=loading;
-  });
-}
-function updateUserChip(){
-  const el=$("#userChip");
-  if(el && currentUser) el.textContent=currentUser.pseudo;
-  // Mettre à jour le titre de l'écran auth aussi
-  const authTitle=document.querySelector("#auth_login h2");
-  if(authTitle) authTitle.textContent="METHODS";
-}
-
-function showWaitScreen(){
-  chronoStop();
-  seq=null; targets=[]; found=new Set(); hintMode=Array(10).fill("none"); solutionsShown=true;
-  const c=$("#compteur"); if(c) c.textContent="0/10";
-  const borneA=$("#borneA"), borneB=$("#borneB");
-  if(borneA){ borneA.textContent="—"; borneA.onclick=null; }
-  if(borneB){ borneB.textContent="—"; borneB.onclick=null; }
-  const list=$("#liste"); if(list) list.innerHTML="";
-  const msg=$("#msg"); if(msg){ msg.textContent=""; msg.className="msg"; }
-  updateSolutionsBtn();
-}
-
-function wireAuth(){
-  const btnLogin=$("#btnLogin");
-  if(btnLogin) btnLogin.addEventListener("click", async ()=>{
-    const pseudo=($("#authPseudo")?.value||"").trim();
-    const pass=$("#authPass")?.value||"";
-    if(!pseudo||!pass){ showAuthErr("Remplis tous les champs."); return; }
-    authSetLoading(true);
-    const res = await authLogin(pseudo, pass);
-    authSetLoading(false);
-    if(!res.ok){ showAuthErr(res.err); return; }
-    currentUser={pseudo: res.pseudo||pseudo, token:res.token};
-    saveSession(currentUser);
-    showGameScreen();
-    state=defaultState();
-    await loadStateFromFirebase();
-    updateUserChip();
-    showWaitScreen();
-    setInterval(()=>{ persistState().catch(()=>{}); }, 60000);
-  });
-
-  const btnRegister=$("#btnRegister");
-  if(btnRegister) btnRegister.addEventListener("click", async ()=>{
-    const pseudo=($("#regPseudo")?.value||"").trim();
-    const pass=$("#regPass")?.value||"";
-    const q=($("#regQuestion")?.value||"").trim();
-    const a=($("#regAnswer")?.value||"").trim();
-    if(!pseudo||!pass||!q||!a){ showAuthErr("Remplis tous les champs."); return; }
-    authSetLoading(true);
-    const res = await authRegister(pseudo, pass, q, a);
-    authSetLoading(false);
-    if(!res.ok){ showAuthErr(res.err); return; }
-    currentUser={pseudo, token:res.token};
-    saveSession(currentUser);
-    showGameScreen();
-    state=defaultState();
-    await loadStateFromFirebase();
-    updateUserChip();
-    showWaitScreen();
-    setInterval(()=>{ persistState().catch(()=>{}); }, 60000);
-  });
-
-  const btnDoRecover=$("#btnDoRecover");
-  if(btnDoRecover) btnDoRecover.addEventListener("click", async ()=>{
-    const pseudo=($("#recPseudo")?.value||"").trim();
-    const answer=($("#recAnswer")?.value||"").trim();
-    const newPass=$("#recNewPass")?.value||"";
-    if(!pseudo||!answer||!newPass){ showAuthErr("Remplis tous les champs."); return; }
-    authSetLoading(true);
-    const res = await authRecover(pseudo, answer, newPass);
-    authSetLoading(false);
-    if(!res.ok){ showAuthErr(res.err); return; }
-    showAuthErr("Mot de passe modifié ! Tu peux te connecter.", true);
-    setAuthView("login");
-  });
-
-  const toReg=$("#toRegister"); if(toReg) toReg.addEventListener("click",()=>setAuthView("register"));
-  const toLog=$("#toLogin"); if(toLog) toLog.addEventListener("click",()=>setAuthView("login"));
-  const toRec=$("#toRecover"); if(toRec) toRec.addEventListener("click",()=>setAuthView("recover"));
-  const toLog2=$("#toLogin2"); if(toLog2) toLog2.addEventListener("click",()=>setAuthView("login"));
-
-  ["authPass","regAnswer","recNewPass"].forEach(id=>{
-    const el=$("#"+id);
-    if(el) el.addEventListener("keydown",(e)=>{
-      if(e.key==="Enter"){
-        if(id==="authPass") $("#btnLogin")?.click();
-        else if(id==="regAnswer") $("#btnRegister")?.click();
-        else if(id==="recNewPass") $("#btnDoRecover")?.click();
-      }
-    });
-  });
-}
-
-/* ===========================
 /* ===========================
    UTIL
 =========================== */
@@ -371,44 +102,35 @@ function currentRedirectUri(){
 }
 function pad4(n){ return String(n).padStart(4, "0"); }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    LOCAL STATE
 =========================== */
+function defaultState(){
+  return { updatedAt:0, lists:{}, currentRun:null };
+}
+function mergeDefaults(obj){
+  const base=defaultState();
+  if(!obj||typeof obj!=="object") return base;
+  const out=Object.assign(base,obj);
+  out.lists=Object.assign({},base.lists,obj.lists||{});
+  if(!out.currentRun||typeof out.currentRun!=="object") out.currentRun=null;
+  return out;
+}
+function loadLocal(){ try{ return mergeDefaults(JSON.parse(localStorage.getItem(localStateKey())||"null")); }catch{ return defaultState(); } }
+function saveLocal(st){ try{ localStorage.setItem(localStateKey(),JSON.stringify(st)); }catch{} }
 
 
-/* ===========================
-
-/* ===========================
 /* ===========================
    SRS
 =========================== */
-const INTERVALS=[1,3,7,14,30,60,120];
-function nextInterval(cur){
-  const i=INTERVALS.indexOf(cur);
-  if(i<0) return 3;
-  return INTERVALS[Math.min(INTERVALS.length-1,i+1)];
-}
-function ensureListState(st, seqIndex){
+function ensureListState(st,seqIndex){
   const k=String(seqIndex);
-  if(!st.lists[k]){
-    st.lists[k] = {
-      due: todayStr(),
-      interval: 1,
-      seen: false,
-      validated: false,
-      lastResult: "",
-      lastSeen: ""
-    };
-  }
+  if(!st.lists[k]) st.lists[k]={seen:false,validated:false,lastResult:"",lastSeen:""};
   return st.lists[k];
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    DATA
 =========================== */
@@ -439,9 +161,7 @@ let noHelpRun = true;
 let syncTimer = null;
 let DICT = new Set();  // sera rempli avec D (ODS9 complet) au démarrage
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    HELPERS UI / SYNC
 =========================== */
@@ -454,9 +174,7 @@ function scheduleSync(delay = 250){
 
 function moveNewButtonForMobile(){ /* bouton Nouveau supprimé */ }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    DEFINITIONS / ANAGRAMMES
 =========================== */
@@ -516,9 +234,7 @@ function closeDef(){
   if(mEl) mEl.classList.remove("open");
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    PROGRESSION UI
 =========================== */
@@ -538,9 +254,7 @@ function computeStats(){
   valBar.style.width  = `${Math.round((validated/TOTAL)*100)}%`;
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    CURRENT RUN SAVE/RESTORE
 =========================== */
@@ -596,9 +310,7 @@ function restoreCurrentRunIfAny(){
   return true;
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    PICK / REVIEW POLICY
 =========================== */
@@ -668,9 +380,7 @@ function pickAccordingPolicy(forcePlainNew=false){
   return pickSpecificSequence(seqIndex);
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    RENDER
 =========================== */
@@ -710,9 +420,8 @@ function renderSlots(){
         </button>
       </div>
       <div class="slotTools">
-        <button class="toolBtn" data-tool="tirage" title="Lettres alphabétiques">ABC</button>
+        <button class="toolBtn" data-tool="tirage" title="Tirage">ABC</button>
         <button class="toolBtn" data-tool="def" title="Définition">📖</button>
-        <button class="toolBtn" data-tool="len" title="Nombre de lettres">123</button>
       </div>`;
     list.appendChild(li);
 
@@ -722,7 +431,6 @@ function renderSlots(){
       applyHint(i);
     }
   }
-  applyHintVisibility();
 }
 
 function applyHint(i){
@@ -743,18 +451,11 @@ function applyHint(i){
   if(hintMode[i]==="tirage"){
     hint.textContent = targets[i].t;
     hint.style.display="flex";
-  }else if(hintMode[i]==="len"){
-    const w = targets[i].c || targets[i].e || "";
-    hint.textContent = w.replace(/[^A-Za-zÀ-ÿ]/g,"").length;
-    hint.style.display="flex";
   }else{
     hint.style.display="none";
   }
 }
-function applyHintsAll(){ for(let i=0;i<10;i++) applyHint(i); applyHintVisibility(); }
-
-
-
+function applyHintsAll(){ for(let i=0;i<10;i++) applyHint(i); }
 
 function revealSlot(i, failed=false){
   const li=$("#liste")?.querySelector(`li[data-slot="${i}"]`);
@@ -812,7 +513,6 @@ function finalizeList(wasSolvedWithHelp){
   clearCurrentRun();
   computeStats();
   persistState().catch(()=>{});
-  chronoStop();
 }
 
 function updateCounter(){
@@ -865,10 +565,9 @@ function validateWord(raw){
   updateCounter();
 }
 
-let solutionsShown = true; // démarre en mode "Jouer"
+let solutionsShown = false;
 
 function showSolutions(){
-  chronoStop();
   markAidUsed();
   for(let i=0;i<10;i++){
     if(!found.has(i)){
@@ -895,154 +594,264 @@ function updateSolutionsBtn(){
     btnS.dataset.mode="solutions";
     btnS.classList.add("btnDanger");
   }
-  // Réglages accessibles seulement hors partie active
   const btnSet=$("#btnSettings");
-  if(btnSet) btnSet.style.display = solutionsShown ? "" : "none";
+  if(btnSet) btnSet.style.display=solutionsShown?"":"none";
 }
 
 function switchToRejouer(){ solutionsShown=true; updateSolutionsBtn(); }
 function resetSolutionsBtn(){ solutionsShown=false; updateSolutionsBtn(); }
 
+
 /* ===========================
+   SESSION
+=========================== */
+const LS_SESSION = "METHODS_SESSION_V1";
+let currentUser = null;
+
+function loadSession(){ try{ return JSON.parse(localStorage.getItem(LS_SESSION)||"null"); }catch{ return null; } }
+function saveSession(s){ try{ localStorage.setItem(LS_SESSION,JSON.stringify(s)); }catch{} }
+function clearSession(){ try{ localStorage.removeItem(LS_SESSION); }catch{} currentUser=null; }
+function localStateKey(){ return "METHODS_STATE_"+(currentUser?currentUser.pseudo:"guest"); }
 
 /* ===========================
    SETTINGS
 =========================== */
 const LS_SETTINGS = "METHODS_SETTINGS_V1";
-let settings = { chronoEnabled: true, chronoDuration: 10, hintAbc: true, hintDef: true, hintLen: true };
+let settings = { chronoEnabled:true, chronoDuration:10, hintAbc:true, hintDef:true, hintLen:true };
+function loadSettings(){ try{ const s=JSON.parse(localStorage.getItem(LS_SETTINGS)||"null"); if(s) settings=Object.assign(settings,s); }catch{} }
+function saveSettings(){ try{ localStorage.setItem(LS_SETTINGS,JSON.stringify(settings)); }catch{} }
 
-function loadSettings(){
-  try{ const s=JSON.parse(localStorage.getItem(LS_SETTINGS)||"null"); if(s) settings=Object.assign(settings,s); }catch{}
+/* ===========================
+   PERSISTENCE FIREBASE
+=========================== */
+async function authLogin(pseudo,password){
+  const res=await fbGet("users",pseudo.toLowerCase());
+  if(res.err==="not_found") return {ok:false,err:"Utilisateur inconnu."};
+  if(!res.ok) return {ok:false,err:"Impossible de contacter la base de données."};
+  const hash=await sha256(password);
+  if(res.data.passwordHash!==hash) return {ok:false,err:"Mot de passe incorrect."};
+  const token=randomToken();
+  await fbSet("users",pseudo.toLowerCase(),{...res.data,sessionToken:token});
+  return {ok:true,token,pseudo:res.data.pseudo||pseudo};
 }
-function saveSettings(){
-  try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch{}
+async function authRegister(pseudo,password,question,answer){
+  if(!pseudo||pseudo.length<2) return {ok:false,err:"Pseudo trop court (min 2 caractères)."};
+  if(!password||password.length<4) return {ok:false,err:"Mot de passe trop court (min 4 caractères)."};
+  const key=pseudo.toLowerCase();
+  const exists=await fbGet("users",key);
+  if(exists.ok) return {ok:false,err:"Ce pseudo est déjà pris."};
+  const hash=await sha256(password);
+  const ansHash=await sha256(answer.toLowerCase().trim());
+  const token=randomToken();
+  const res=await fbSet("users",key,{pseudo,passwordHash:hash,question,answerHash:ansHash,sessionToken:token});
+  if(!res.ok) return {ok:false,err:"Erreur lors de la création du compte."};
+  return {ok:true,token};
+}
+async function authRecover(pseudo,answer,newPassword){
+  if(!newPassword||newPassword.length<4) return {ok:false,err:"Nouveau mot de passe trop court."};
+  const res=await fbGet("users",pseudo.toLowerCase());
+  if(res.err==="not_found") return {ok:false,err:"Utilisateur inconnu."};
+  if(!res.ok) return {ok:false,err:"Impossible de contacter la base de données."};
+  const ansHash=await sha256(answer.toLowerCase().trim());
+  if(res.data.answerHash!==ansHash) return {ok:false,err:"Réponse incorrecte."};
+  await fbSet("users",pseudo.toLowerCase(),{...res.data,passwordHash:await sha256(newPassword),sessionToken:randomToken()});
+  return {ok:true};
+}
+async function verifySessionToken(pseudo,token){
+  const res=await fbGet("users",pseudo.toLowerCase());
+  if(!res.ok) return false;
+  return res.data.sessionToken===token;
+}
+function loadLocal(){ try{ return mergeDefaults(JSON.parse(localStorage.getItem(localStateKey())||"null")); }catch{ return defaultState(); } }
+function saveLocal(st){ try{ localStorage.setItem(localStateKey(),JSON.stringify(st)); }catch{} }
+async function loadStateFromFirebase(){
+  if(!currentUser) return;
+  const res=await fbGet("states",currentUser.pseudo.toLowerCase());
+  if(res.ok&&res.data){
+    const remote=mergeDefaults(res.data);
+    const local=loadLocal();
+    state=(remote.updatedAt||0)>=(local.updatedAt||0)?remote:local;
+  }else{
+    state=defaultState();
+  }
+  saveLocal(state);
+}
+async function persistState(){
+  if(!currentUser) return;
+  state.updatedAt=Date.now();
+  saveLocal(state);
+  await fbSet("states",currentUser.pseudo.toLowerCase(),state);
+}
+
+
+/* ===========================
+   AUTH UI
+=========================== */
+function showAuthScreen(){
+  const g=$("#gameScreen"),a=$("#authScreen");
+  if(g) g.style.display="none";
+  if(a) a.style.display="flex";
+  setAuthView("login");
+}
+function showGameScreen(){
+  const g=$("#gameScreen"),a=$("#authScreen");
+  if(a) a.style.display="none";
+  if(g) g.style.display="";
+}
+function setAuthView(v){
+  ["login","register","recover"].forEach(n=>{
+    const el=$("#auth_"+n); if(el) el.style.display=(n===v)?"block":"none";
+  });
+  const e=$("#authErr"); if(e){e.textContent="";e.className="msg";}
+}
+function showAuthErr(msg,isOk=false){
+  const e=$("#authErr"); if(e){e.textContent=msg;e.className=isOk?"msg ok":"msg err";}
+}
+function authSetLoading(on){
+  ["btnLogin","btnRegister","btnDoRecover"].forEach(id=>{const e=$("#"+id);if(e)e.disabled=on;});
+}
+function updateUserChip(){
+  const e=$("#userChip"); if(e&&currentUser) e.textContent=currentUser.pseudo;
+}
+function showWaitScreen(){
+  chronoStop();
+  seq=null; targets=[]; found=new Set(); hintMode=Array(10).fill("none"); solutionsShown=true;
+  const borneA=$("#borneA"),borneB=$("#borneB");
+  if(borneA){borneA.textContent="—";borneA.onclick=null;}
+  if(borneB){borneB.textContent="—";borneB.onclick=null;}
+  const list=$("#liste"); if(list) list.innerHTML="";
+  const msg=$("#msg"); if(msg){msg.textContent="";msg.className="msg";}
+  updateSolutionsBtn();
+}
+function wireAuth(){
+  const toLogin=()=>setAuthView("login");
+  const go=async(pseudo,token)=>{
+    currentUser={pseudo,token}; saveSession(currentUser);
+    showGameScreen(); state=defaultState();
+    await loadStateFromFirebase(); updateUserChip();
+    if(restoreCurrentRunIfAny()) renderAll(); else showWaitScreen();
+    setInterval(()=>persistState().catch(()=>{}),60000);
+  };
+  $("#btnLogin")?.addEventListener("click",async()=>{
+    const p=($("#authPseudo")?.value||"").trim(), pw=$("#authPass")?.value||"";
+    if(!p||!pw){showAuthErr("Remplis tous les champs.");return;}
+    authSetLoading(true);
+    const r=await authLogin(p,pw); authSetLoading(false);
+    if(!r.ok){showAuthErr(r.err);return;}
+    go(r.pseudo||p,r.token);
+  });
+  $("#btnRegister")?.addEventListener("click",async()=>{
+    const p=($("#regPseudo")?.value||"").trim(),pw=$("#regPass")?.value||"",
+          q=($("#regQuestion")?.value||"").trim(),a=($("#regAnswer")?.value||"").trim();
+    if(!p||!pw||!q||!a){showAuthErr("Remplis tous les champs.");return;}
+    authSetLoading(true);
+    const r=await authRegister(p,pw,q,a); authSetLoading(false);
+    if(!r.ok){showAuthErr(r.err);return;}
+    go(p,r.token);
+  });
+  $("#btnDoRecover")?.addEventListener("click",async()=>{
+    const p=($("#recPseudo")?.value||"").trim(),a=($("#recAnswer")?.value||"").trim(),np=$("#recNewPass")?.value||"";
+    if(!p||!a||!np){showAuthErr("Remplis tous les champs.");return;}
+    authSetLoading(true);
+    const r=await authRecover(p,a,np); authSetLoading(false);
+    if(!r.ok){showAuthErr(r.err);return;}
+    showAuthErr("Mot de passe modifié !",true); setAuthView("login");
+  });
+  $("#toRegister")?.addEventListener("click",()=>setAuthView("register"));
+  $("#toLogin")?.addEventListener("click",toLogin);
+  $("#toRecover")?.addEventListener("click",()=>setAuthView("recover"));
+  $("#toLogin2")?.addEventListener("click",toLogin);
+  ["authPass","regAnswer","recNewPass"].forEach(id=>{
+    $("#"+id)?.addEventListener("keydown",e=>{
+      if(e.key!=="Enter") return;
+      if(id==="authPass") $("#btnLogin")?.click();
+      else if(id==="regAnswer") $("#btnRegister")?.click();
+      else if(id==="recNewPass") $("#btnDoRecover")?.click();
+    });
+  });
 }
 
 /* ===========================
    CHRONO
 =========================== */
 let chronoInterval=null, chronoRemaining=0;
-function chronoFormat(s){
-  const m=Math.floor(s/60), sec=s%60;
-  return String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
-}
+function chronoFormat(s){return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");}
 function chronoUpdate(){
-  const el=$("#chronoDisplay");
-  if(!el) return;
-  if(!settings.chronoEnabled){ el.textContent=""; return; }
+  const el=$("#chronoDisplay"); if(!el) return;
+  if(!settings.chronoEnabled){el.textContent="";return;}
   el.textContent=chronoFormat(chronoRemaining);
-  el.classList.toggle("chronoExpired", chronoRemaining<=0);
+  el.classList.toggle("chronoExpired",chronoRemaining===0);
 }
 function chronoStart(){
   chronoStop();
-  if(!settings.chronoEnabled){ chronoUpdate(); return; }
-  chronoRemaining = settings.chronoDuration * 60;
+  if(!settings.chronoEnabled){chronoUpdate();return;}
+  chronoRemaining=settings.chronoDuration*60;
   chronoUpdate();
-  chronoInterval=setInterval(()=>{
-    if(chronoRemaining>0){ chronoRemaining--; chronoUpdate(); }
-  },1000);
+  chronoInterval=setInterval(()=>{if(chronoRemaining>0){chronoRemaining--;chronoUpdate();}},1000);
 }
-function chronoStop(){
-  if(chronoInterval){ clearInterval(chronoInterval); chronoInterval=null; }
-}
+function chronoStop(){if(chronoInterval){clearInterval(chronoInterval);chronoInterval=null;}}
 
 /* ===========================
    SETTINGS UI
 =========================== */
-function updateAllToggleUIs(){
-  // Chrono (bouton direct)
-  const btn=$("#toggleChrono"), thumb=$("#toggleThumb"), row=$("#settingsDurationRow");
-  if(btn){
-    btn.style.background=settings.chronoEnabled?"var(--accent)":"var(--muted)";
-    btn.setAttribute("aria-pressed",settings.chronoEnabled);
-  }
-  if(thumb) thumb.style.transform=settings.chronoEnabled?"translateX(24px)":"translateX(0)";
-  if(row) row.style.display=settings.chronoEnabled?"block":"none";
-  // Toggles indices
-  const hintMap=[["settingsHintAbc","hintAbc"],["settingsHintDef","hintDef"],["settingsHintLen","hintLen"]];
-  hintMap.forEach(([id,key])=>{
+function applyHintSettings(){
+  document.querySelectorAll('[data-tool="tirage"]').forEach(b=>b.style.display=settings.hintAbc?"":"none");
+  document.querySelectorAll('[data-tool="def"]').forEach(b=>b.style.display=settings.hintDef?"":"none");
+  document.querySelectorAll('[data-tool="len"]').forEach(b=>b.style.display=settings.hintLen?"":"none");
+}
+function updateSettingsUI(){
+  // Chrono toggle
+  const tc=$("#toggleChrono"),th=$("#toggleThumb"),dr=$("#settingsDurationRow");
+  if(tc){tc.style.background=settings.chronoEnabled?"var(--accent)":"var(--muted)";tc.setAttribute("aria-pressed",settings.chronoEnabled);}
+  if(th) th.style.transform=settings.chronoEnabled?"translateX(24px)":"translateX(0)";
+  if(dr) dr.style.display=settings.chronoEnabled?"block":"none";
+  // Hint toggles
+  [["settingsHintAbc","hintAbc"],["settingsHintDef","hintDef"],["settingsHintLen","hintLen"]].forEach(([id,key])=>{
     const chk=$("#"+id); if(!chk) return;
     chk.checked=settings[key];
-    const track=chk.parentElement?.querySelector(".toggleTrackS");
-    const thumb2=chk.parentElement?.querySelector(".toggleThumbS");
-    if(track) track.style.background=settings[key]?"var(--accent)":"var(--muted)";
-    if(thumb2) thumb2.style.transform=settings[key]?"translateX(20px)":"translateX(0)";
+    const par=chk.parentElement;
+    const tr=par?.querySelector(".toggleTrackS"),tm=par?.querySelector(".toggleThumbS");
+    if(tr) tr.style.background=settings[key]?"var(--accent)":"var(--muted)";
+    if(tm) tm.style.transform=settings[key]?"translateX(20px)":"translateX(0)";
   });
+  // Slider
+  const sl=$("#settingsDuration"),lb=$("#settingsDurationLabel");
+  if(sl) sl.value=settings.chronoDuration;
+  if(lb) lb.textContent=settings.chronoDuration+" min";
 }
-
 function openSettings(){
-  const modal=$("#settingsModal"); if(!modal) return;
-  wireHintTogglesOnce();
-  const slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel");
-  if(slider) slider.value=settings.chronoDuration;
-  if(lbl) lbl.textContent=settings.chronoDuration+" min";
-  updateAllToggleUIs();
-  modal.classList.add("open");
+  const m=$("#settingsModal"); if(!m) return;
+  updateSettingsUI(); m.classList.add("open");
 }
-function closeSettings(){
-  const modal=$("#settingsModal"); if(modal) modal.classList.remove("open");
-}
-function wireToggle(trackClass, key, onChange){
-  // Wire tous les toggles CSS (label+checkbox) d'une classe
-  document.querySelectorAll("."+trackClass).forEach(track=>{
-    track.addEventListener("click",()=>{
-      const label=track.closest("label");
-      const chk=label ? label.querySelector("input[type=checkbox]") : null;
-      if(chk){ chk.checked=!chk.checked; }
-      settings[key]=!settings[key];
-      updateAllToggleUIs();
-      saveSettings();
-      if(onChange) onChange();
-    });
-  });
-}
+function closeSettings(){$("#settingsModal")?.classList.remove("open");}
 function wireSettings(){
-  const btn=$("#btnSettings"); if(btn) btn.addEventListener("click", openSettings);
-  const cls=$("#closeSettings"); if(cls) cls.addEventListener("click", closeSettings);
-
-  // Toggle chrono (bouton direct)
-  const toggleChrono=$("#toggleChrono");
-  if(toggleChrono) toggleChrono.addEventListener("click",()=>{
+  $("#btnSettings")?.addEventListener("click",openSettings);
+  $("#closeSettings")?.addEventListener("click",closeSettings);
+  $("#settingsBackdrop")?.addEventListener("click",closeSettings);
+  // Chrono toggle
+  $("#toggleChrono")?.addEventListener("click",()=>{
     settings.chronoEnabled=!settings.chronoEnabled;
-    updateAllToggleUIs();
-    saveSettings();
-    chronoUpdate();
+    updateSettingsUI(); saveSettings(); chronoUpdate();
   });
-
   // Slider durée
-  const slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel");
-  if(slider) slider.addEventListener("input",()=>{
-    settings.chronoDuration=parseInt(slider.value);
-    if(lbl) lbl.textContent=settings.chronoDuration+" min";
+  $("#settingsDuration")?.addEventListener("input",e=>{
+    settings.chronoDuration=parseInt(e.target.value);
+    const lb=$("#settingsDurationLabel"); if(lb) lb.textContent=settings.chronoDuration+" min";
     saveSettings();
   });
-
-  const backdrop=$("#settingsBackdrop");
-  if(backdrop) backdrop.addEventListener("click", closeSettings);
-}
-
-let hintToggleWired = false;
-function wireHintTogglesOnce(){
-  if(hintToggleWired) return;
-  const hintMap=[["settingsHintAbc","hintAbc"],["settingsHintDef","hintDef"],["settingsHintLen","hintLen"]];
-  let allFound = true;
-  hintMap.forEach(([id,key])=>{
-    const chk=$("#"+id);
-    if(!chk){ allFound=false; return; }
-    const track=chk.parentElement?.querySelector(".toggleTrackS");
-    const thumb=chk.parentElement?.querySelector(".toggleThumbS");
-    const handler=()=>{
-      settings[key]=!settings[key];
-      chk.checked=settings[key];
-      if(track) track.style.background=settings[key]?"var(--accent)":"var(--muted)";
-      if(thumb) thumb.style.transform=settings[key]?"translateX(20px)":"translateX(0)";
-      saveSettings();
-      applyHintSettings();
-    };
-    if(track) track.addEventListener("click", handler);
-    if(thumb) thumb.addEventListener("click", handler);
+  // Hint toggles — wirés via délégation sur la modale (toujours disponible)
+  $("#settingsModal")?.addEventListener("click",e=>{
+    const track=e.target.closest(".toggleTrackS,.toggleThumbS");
+    if(!track) return;
+    const par=track.parentElement;
+    const chk=par?.querySelector("input[type=checkbox]");
+    if(!chk) return;
+    const id=chk.id;
+    const keyMap={settingsHintAbc:"hintAbc",settingsHintDef:"hintDef",settingsHintLen:"hintLen"};
+    const key=keyMap[id]; if(!key) return;
+    settings[key]=!settings[key];
+    updateSettingsUI(); saveSettings(); applyHintSettings();
   });
-  if(allFound) hintToggleWired=true;
 }
 
 /* ===========================
@@ -1072,18 +881,6 @@ function wire(){
     }
   });
 
-  const btnD=$("#btnDropbox");
-  if(btnD) btnD.addEventListener("click", async ()=>{
-    const t = loadTokens();
-    if(t && (t.refresh_token || hasValidAccessToken(t))){
-      setMessage("Synchronisation…", "");
-      await persistState();
-      setMessage("Synchronisation terminée.", "ok");
-      return;
-    }
-    oauthStart();
-  });
-
   const list=$("#liste");
   if(list) list.addEventListener("click",(e)=>{
     const tool = e.target.closest(".toolBtn");
@@ -1108,15 +905,6 @@ function wire(){
         scheduleSync();
         return;
       }
-      if(which==="len"){
-        markAidUsed();
-        if(found.has(i)) return;
-        hintMode[i] = (hintMode[i]==="len") ? "none" : "len";
-        applyHint(i);
-        saveCurrentRun();
-        scheduleSync();
-        return;
-      }
     }
 
     const w = e.target.closest(".slotWordBtn");
@@ -1134,9 +922,7 @@ function wire(){
   const defBackdrop=$("#defBackdrop");
   if(defBackdrop) defBackdrop.addEventListener("click", closeDef);
   document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeDef(); });
-
-  const btnLogout=$("#btnLogout");
-  if(btnLogout) btnLogout.addEventListener("click",()=>{ clearSession(); showAuthScreen(); });
+  $("#btnLogout")?.addEventListener("click",()=>{clearSession();showAuthScreen();});
 
   moveNewButtonForMobile();
   window.addEventListener("resize", moveNewButtonForMobile);
@@ -1156,31 +942,26 @@ function renderAll(){
   applyHintSettings();
 }
 
-/* ===========================
 
-/* ===========================
 /* ===========================
    START
 =========================== */
 async function start(){
   loadSettings();
-  DICT = D.length>0 ? new Set(D.map(w=>normalizeWord(w))) : new Set(C.map(w=>normalizeWord(w)));
+  DICT=D.length>0?new Set(D.map(w=>normalizeWord(w))):new Set(C.map(w=>normalizeWord(w)));
   wire();
   moveNewButtonForMobile();
-
-  // Vérifier session sauvegardée
-  const saved = loadSession();
-  if(saved && saved.pseudo && saved.token){
-    const valid = await verifySessionToken(saved.pseudo, saved.token);
+  const saved=loadSession();
+  if(saved&&saved.pseudo&&saved.token){
+    const valid=await verifySessionToken(saved.pseudo,saved.token);
     if(valid){
-      currentUser = saved;
+      currentUser=saved;
       showGameScreen();
-      state = defaultState();
+      state=defaultState();
       await loadStateFromFirebase();
       updateUserChip();
-      if(restoreCurrentRunIfAny()){ renderAll(); }
-      else{ showWaitScreen(); }
-      setInterval(()=>{ persistState().catch(()=>{}); }, 60000);
+      if(restoreCurrentRunIfAny()) renderAll(); else showWaitScreen();
+      setInterval(()=>persistState().catch(()=>{}),60000);
       return;
     }
   }
