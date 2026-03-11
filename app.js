@@ -951,21 +951,14 @@ async function start(){
   DICT=D.length>0?new Set(D.map(w=>normalizeWord(w))):new Set(C.map(w=>normalizeWord(w)));
   wire();
   moveNewButtonForMobile();
-  const saved=loadSession();
-  if(saved&&saved.pseudo&&saved.token){
-    const valid=await verifySessionToken(saved.pseudo,saved.token);
-    if(valid){
-      currentUser=saved;
-      showGameScreen();
-      state=defaultState();
-      await loadStateFromFirebase();
-      updateUserChip();
-      if(restoreCurrentRunIfAny()) renderAll(); else showWaitScreen();
-      setInterval(()=>persistState().catch(()=>{}),60000);
-      return;
-    }
-  }
-  showAuthScreen();
+  // AUTH DÉSACTIVÉE TEMPORAIREMENT
+  currentUser={pseudo:"player"};
+  showGameScreen();
+  state=defaultState();
+  await loadStateFromFirebase();
+  updateUserChip();
+  if(restoreCurrentRunIfAny()) renderAll(); else showWaitScreen();
+  setInterval(()=>persistState().catch(()=>{}),60000);
 }
 
 document.addEventListener("DOMContentLoaded", start);
