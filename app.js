@@ -510,6 +510,7 @@ function finalizeList(wasSolvedWithHelp){
     setMessage("Validée sans aide.", "ok");
   }
 
+  chronoStop();
   state.updatedAt = Date.now();
   clearCurrentRun();
   computeStats();
@@ -569,6 +570,7 @@ function validateWord(raw){
 let solutionsShown = false;
 
 function showSolutions(){
+  chronoStop();
   markAidUsed();
   for(let i=0;i<10;i++){
     if(!found.has(i)){
