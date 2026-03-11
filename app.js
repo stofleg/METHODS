@@ -232,6 +232,7 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
 function closeDef(){
   const mEl=$("#defModal");
   if(mEl) mEl.classList.remove("open");
+  if(window.matchMedia("(pointer:fine)").matches) $("#saisie")?.focus();
 }
 
 
