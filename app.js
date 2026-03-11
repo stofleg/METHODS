@@ -889,20 +889,89 @@ function resetSolutionsBtn(){ solutionsShown=false; updateSolutionsBtn(); }
 /* ===========================
 
 /* ===========================
+   SETTINGS
+=========================== */
+const LS_SETTINGS = "METHODS_SETTINGS_V1";
+let settings = { chronoEnabled: true, chronoDuration: 10 }; // durée en minutes
+
+function loadSettings(){
+  try{ const s=JSON.parse(localStorage.getItem(LS_SETTINGS)||"null"); if(s) settings=Object.assign(settings,s); }catch{}
+}
+function saveSettings(){
+  try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch{}
+}
+
 /* ===========================
    CHRONO
 =========================== */
-let chronoInterval=null, chronoElapsed=0;
-function chronoFormat(s){ const m=Math.floor(s/60),sec=s%60; return String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0"); }
-function chronoUpdate(){ const el=$("#chronoDisplay"); if(el) el.textContent=chronoFormat(chronoElapsed); }
-function chronoStart(){ chronoStop(); chronoElapsed=0; chronoUpdate(); chronoInterval=setInterval(()=>{ chronoElapsed++; chronoUpdate(); },1000); }
-function chronoStop(){ if(chronoInterval){ clearInterval(chronoInterval); chronoInterval=null; } }
+let chronoInterval=null, chronoRemaining=0;
+function chronoFormat(s){
+  const m=Math.floor(s/60), sec=s%60;
+  return String(m).padStart(2,"0")+":"+String(sec).padStart(2,"0");
+}
+function chronoUpdate(){
+  const el=$("#chronoDisplay");
+  if(!el) return;
+  if(!settings.chronoEnabled){ el.textContent=""; return; }
+  el.textContent=chronoFormat(chronoRemaining);
+  el.classList.toggle("chronoExpired", chronoRemaining<=0);
+}
+function chronoStart(){
+  chronoStop();
+  if(!settings.chronoEnabled){ chronoUpdate(); return; }
+  chronoRemaining = settings.chronoDuration * 60;
+  chronoUpdate();
+  chronoInterval=setInterval(()=>{
+    if(chronoRemaining>0){ chronoRemaining--; chronoUpdate(); }
+  },1000);
+}
+function chronoStop(){
+  if(chronoInterval){ clearInterval(chronoInterval); chronoInterval=null; }
+}
+
+/* ===========================
+   SETTINGS UI
+=========================== */
+function openSettings(){
+  const modal=$("#settingsModal"); if(!modal) return;
+  const chk=$("#settingsChronoEnabled"), slider=$("#settingsDuration"), lbl=$("#settingsDurationLabel"), row=$("#settingsDurationRow");
+  if(chk) chk.checked=settings.chronoEnabled;
+  if(slider){ slider.value=settings.chronoDuration; }
+  if(lbl) lbl.textContent=settings.chronoDuration+" min";
+  if(row) row.style.display=settings.chronoEnabled?"flex":"none";
+  modal.classList.add("open");
+}
+function closeSettings(){
+  const modal=$("#settingsModal"); if(modal) modal.classList.remove("open");
+}
+function wireSettings(){
+  const btn=$("#btnSettings"); if(btn) btn.addEventListener("click",openSettings);
+  const cls=$("#closeSettings"); if(cls) cls.addEventListener("click",closeSettings);
+  const chk=$("#settingsChronoEnabled");
+  const slider=$("#settingsDuration");
+  const lbl=$("#settingsDurationLabel");
+  const row=$("#settingsDurationRow");
+  if(chk) chk.addEventListener("change",()=>{
+    settings.chronoEnabled=chk.checked;
+    if(row) row.style.display=chk.checked?"flex":"none";
+    saveSettings(); chronoUpdate();
+  });
+  if(slider) slider.addEventListener("input",()=>{
+    settings.chronoDuration=parseInt(slider.value);
+    if(lbl) lbl.textContent=settings.chronoDuration+" min";
+    saveSettings();
+  });
+  // Fermer en cliquant hors de la carte
+  const modal=$("#settingsModal");
+  if(modal) modal.addEventListener("click",(e)=>{ if(e.target===modal) closeSettings(); });
+}
 
 /* ===========================
    WIRE
 =========================== */
 function wire(){
   wireAuth();
+  wireSettings();
   const inp=$("#saisie");
   if(inp){
     inp.addEventListener("keydown",(e)=>{
@@ -1005,6 +1074,7 @@ function renderAll(){
    START
 =========================== */
 async function start(){
+  loadSettings();
   DICT = D.length>0 ? new Set(D.map(w=>normalizeWord(w))) : new Set(C.map(w=>normalizeWord(w)));
   wire();
   moveNewButtonForMobile();
