@@ -232,7 +232,7 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
 function closeDef(){
   const mEl=$("#defModal");
   if(mEl) mEl.classList.remove("open");
-  if(window.matchMedia("(pointer:fine)").matches) $("#saisie")?.focus();
+  if(window.matchMedia("(pointer:fine)").matches) setTimeout(()=>$("#saisie")?.focus(),0);
 }
 
 
@@ -914,6 +914,11 @@ function wire(){
 
   const list=$("#liste");
   const refocusInput=()=>{ if(window.matchMedia("(pointer:fine)").matches) $("#saisie")?.focus(); };
+  // Sur desktop : empêcher le vol de focus au mousedown sur tous les boutons de la liste
+  if(list) list.addEventListener("mousedown",(e)=>{
+    if(!window.matchMedia("(pointer:fine)").matches) return;
+    if(e.target.closest(".toolBtn,.slotWordBtn")) e.preventDefault();
+  });
   if(list) list.addEventListener("click",(e)=>{
     const tool = e.target.closest(".toolBtn");
     if(tool){
@@ -958,7 +963,10 @@ function wire(){
   });
 
   const defClose=$("#defClose");
-  if(defClose) defClose.addEventListener("click", closeDef);
+  if(defClose){
+    defClose.addEventListener("mousedown",(e)=>{ if(window.matchMedia("(pointer:fine)").matches) e.preventDefault(); });
+    defClose.addEventListener("click", closeDef);
+  }
   const defBackdrop=$("#defBackdrop");
   if(defBackdrop) defBackdrop.addEventListener("click", closeDef);
   document.addEventListener("keydown",(e)=>{ if(e.key==="Escape") closeDef(); });
