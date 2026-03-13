@@ -604,7 +604,7 @@
       .inputCard .controls>*{ flex-shrink:0; }
       .inputCard .controls input{ flex:1 1 0 !important;min-width:0 !important;width:0; }
       .card{ padding-bottom:0; }
-      .content{ padding-bottom:calc(74px + env(safe-area-inset-bottom, 0px)); }
+
     }
 
     /* ── Mode clavier ouvert (iOS) ── */
@@ -726,7 +726,7 @@
       .kbEnter:active{ background:var(--accent2); }
 
       /* Padding contenu = hauteur clavier ≈ 185px */
-      .content{ padding-bottom:calc(185px + max(env(safe-area-inset-bottom,0px), 55px)); }
+      .content{ padding-bottom:0;overflow:hidden; }
     }
   </style>
 </head>
