@@ -634,6 +634,110 @@
     body.keyboard-open .progressWrap{
       display: none;
     }
+
+    /* ══ CLAVIER INTÉGRÉ ══ */
+    .appKeyboard{ display:none; } /* caché sur desktop */
+
+    @media(max-width:640px){
+      /* Sur mobile : masquer l'inputCard natif, montrer le clavier */
+      .inputCard{ display:none !important; }
+      .appKeyboard{
+        display:flex;
+        flex-direction:column;
+        gap:0;
+        position:fixed;
+        bottom:0; left:0; right:0;
+        z-index:60;
+        background:var(--kbBg,#1a2235);
+        border-top:1px solid var(--stroke);
+        padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 8px);
+        gap:5px;
+      }
+      @media(prefers-color-scheme:light){
+        .appKeyboard{ background:#d0daf0; }
+      }
+
+      .kbTopBar{
+        display:flex;
+        align-items:center;
+        gap:8px;
+        padding:0 2px 4px;
+      }
+      .kbDisplay{
+        flex:1 1 0;
+        min-height:36px;
+        background:var(--card);
+        border:1px solid var(--stroke);
+        border-radius:10px;
+        display:flex;
+        align-items:center;
+        padding:0 12px;
+        font-size:18px;
+        font-weight:800;
+        letter-spacing:0.08em;
+        color:var(--txt);
+        text-transform:uppercase;
+      }
+      .kbDisplay:empty::after{
+        content:"…";
+        color:var(--muted);
+        font-weight:400;
+        font-size:15px;
+        letter-spacing:0;
+      }
+      .kbPlayBtn{
+        flex-shrink:0;
+        padding:8px 14px;
+        font-size:14px;
+      }
+      .kbMsg{
+        font-size:12px;
+        font-weight:700;
+        min-height:16px;
+        padding:0 4px;
+        text-align:center;
+      }
+      .kbMsg.ok{ color:var(--ok); }
+      .kbMsg.warn{ color:var(--warn); }
+      .kbMsg.err{ color:var(--danger); }
+
+      .kbRows{ display:flex;flex-direction:column;gap:5px; }
+      .kbRow{
+        display:flex;
+        justify-content:center;
+        gap:4px;
+      }
+      .kbKey{
+        flex:1 1 0;
+        max-width:36px;
+        height:42px;
+        border-radius:8px;
+        border:0;
+        background:var(--kbKey,#2d3a55);
+        color:var(--txt);
+        font-size:15px;
+        font-weight:700;
+        cursor:pointer;
+        box-shadow:0 2px 0 rgba(0,0,0,.4);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        user-select:none;
+        -webkit-user-select:none;
+        transition:background .08s;
+      }
+      @media(prefers-color-scheme:light){
+        .kbKey{ background:#fff;color:#0b1220;box-shadow:0 2px 0 rgba(0,0,0,.25); }
+      }
+      .kbKey:active{ background:var(--accent);color:#fff;transform:translateY(1px);box-shadow:none; }
+      .kbWide{ max-width:52px;font-size:13px; }
+      .kbEnter{ background:var(--accent);color:#fff;max-width:52px; }
+      .kbEnter:active{ background:var(--accent2); }
+
+      /* Contenu : padding pour le clavier */
+      .content{ padding-bottom:calc(220px + env(safe-area-inset-bottom,0px)); }
+      /* Masquer le chrono dans inputCard (on le met ailleurs) */
+    }
   </style>
 </head>
 <body>
@@ -685,6 +789,25 @@
           <button id="btnSolutions" class="btn" type="button" data-mode="rejouer">Jouer</button>
         </div>
         <div class="msg" id="msg"></div>
+      </div>
+      <!-- CLAVIER INTÉGRÉ (mobile uniquement) -->
+      <div id="appKeyboard" class="appKeyboard">
+        <div class="kbTopBar">
+          <span id="kbDisplay" class="kbDisplay"></span>
+          <button id="btnSolutionsKb" class="btn kbPlayBtn" type="button" data-mode="rejouer">Jouer</button>
+        </div>
+        <div class="kbMsg" id="kbMsg"></div>
+        <div class="kbRows">
+          <div class="kbRow">
+            <button class="kbKey" data-key="A">A</button><button class="kbKey" data-key="Z">Z</button><button class="kbKey" data-key="E">E</button><button class="kbKey" data-key="R">R</button><button class="kbKey" data-key="T">T</button><button class="kbKey" data-key="Y">Y</button><button class="kbKey" data-key="U">U</button><button class="kbKey" data-key="I">I</button><button class="kbKey" data-key="O">O</button><button class="kbKey" data-key="P">P</button>
+          </div>
+          <div class="kbRow">
+            <button class="kbKey" data-key="Q">Q</button><button class="kbKey" data-key="S">S</button><button class="kbKey" data-key="D">D</button><button class="kbKey" data-key="F">F</button><button class="kbKey" data-key="G">G</button><button class="kbKey" data-key="H">H</button><button class="kbKey" data-key="J">J</button><button class="kbKey" data-key="K">K</button><button class="kbKey" data-key="L">L</button><button class="kbKey" data-key="M">M</button>
+          </div>
+          <div class="kbRow kbRowLast">
+            <button class="kbKey kbWide" data-key="SUPPR">⌫</button><button class="kbKey" data-key="W">W</button><button class="kbKey" data-key="X">X</button><button class="kbKey" data-key="C">C</button><button class="kbKey" data-key="V">V</button><button class="kbKey" data-key="B">B</button><button class="kbKey" data-key="N">N</button><button class="kbKey kbWide kbEnter" data-key="ENTER">OK</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
