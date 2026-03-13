@@ -75,6 +75,7 @@
       height:100%;height:100dvh;
       overflow:hidden;
       box-sizing:border-box;
+      background-color: var(--bg1);
       background: linear-gradient(180deg, var(--bg0), var(--bg1));
     }
     body{
@@ -677,25 +678,25 @@
         z-index:60;
         background:#1a2235;
         border-top:1px solid var(--stroke);
-        padding:6px 5px;
-        padding-bottom:max(env(safe-area-inset-bottom,0px), 34px);
-        gap:4px;
+        padding:3px 5px 0;
+        padding-bottom:max(env(safe-area-inset-bottom,0px), 55px);
+        gap:3px;
       }
-      @media(prefers-color-scheme:light){
-        .appKeyboard{ background:#d0daf0; }
-        .appKeyboard::after{ background:#d0daf0; }
-      }
-      /* Pseudo-élément qui remplit la zone safe-area sous le clavier */
-      .appKeyboard::after{
+      /* Fond sous le clavier = couleur du clavier, sur toute la hauteur */
+      body::after{
         content:"";
         position:fixed;
         bottom:0; left:0; right:0;
-        height:env(safe-area-inset-bottom,0px);
+        height:100px;
         background:#1a2235;
-        z-index:59;
+        z-index:55;
+      }
+      @media(prefers-color-scheme:light){
+        .appKeyboard{ background:#d0daf0; }
+        body::after{ background:#d0daf0; }
       }
 
-      .kbTopBar{ display:flex;align-items:center;gap:6px;padding:0 2px 2px; }
+      .kbTopBar{ display:flex;align-items:center;gap:6px;padding:0 2px 1px; }
       .kbDisplay{
         flex:1 1 0;min-height:30px;background:var(--card);border:1px solid var(--stroke);
         border-radius:8px;display:flex;align-items:center;padding:0 10px;
@@ -725,7 +726,7 @@
       .kbEnter:active{ background:var(--accent2); }
 
       /* Padding contenu = hauteur clavier ≈ 185px */
-      .content{ padding-bottom:calc(185px + max(env(safe-area-inset-bottom,0px), 34px)); }
+      .content{ padding-bottom:calc(185px + max(env(safe-area-inset-bottom,0px), 55px)); }
     }
   </style>
 </head>
