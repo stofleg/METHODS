@@ -895,12 +895,117 @@ function wireSettings(){
   });
 }
 
+
+/* ===========================
+   CLAVIER INTÉGRÉ (mobile)
+=========================== */
+let kbBuffer = "";
+
+function kbUpdate(){
+  const disp = $("#kbDisplay");
+  if(disp) disp.textContent = kbBuffer;
+}
+
+function kbSetMsg(txt, cls=""){
+  const m = $("#kbMsg"); if(!m) return;
+  m.textContent = txt; m.className = "kbMsg" + (cls?" "+cls:"");
+  if(txt) setTimeout(()=>{ if(m.textContent===txt){m.textContent="";m.className="kbMsg";} }, 2000);
+}
+
+function kbSyncMsg(){
+  // Synchronise le message du jeu principal vers kbMsg
+  const main = $("#msg");
+  const kb = $("#kbMsg");
+  if(!main||!kb) return;
+  kb.textContent = main.textContent;
+  kb.className = "kbMsg " + (main.className.replace("msg","").trim());
+}
+
+function wireKeyboard(){
+  const kb = $("#appKeyboard");
+  if(!kb) return;
+
+  // Chrono dans la topbar du clavier
+  const kbTop = kb.querySelector(".kbTopBar");
+
+  // Bouton Jouer/Solutions du clavier
+  const kbPlay = $("#btnSolutionsKb");
+  if(kbPlay){
+    kbPlay.addEventListener("mousedown", e=>e.preventDefault());
+    kbPlay.addEventListener("click", ()=>{
+      const btnS = $("#btnSolutions");
+      if(btnS) btnS.click();
+    });
+  }
+
+  // Synchroniser l'état du bouton Solutions → kbPlay
+  function syncKbPlayBtn(){
+    const btnS = $("#btnSolutions");
+    if(!btnS||!kbPlay) return;
+    kbPlay.textContent = btnS.textContent;
+    kbPlay.dataset.mode = btnS.dataset.mode;
+    kbPlay.className = "btn kbPlayBtn" + (btnS.classList.contains("btnDanger")?" btnDanger":"");
+  }
+
+  // Observer changements sur btnSolutions
+  const btnS = $("#btnSolutions");
+  if(btnS){
+    new MutationObserver(syncKbPlayBtn).observe(btnS, {childList:true, attributes:true, attributeFilter:["data-mode","class"]});
+    syncKbPlayBtn();
+  }
+
+  // Touches
+  kb.addEventListener("mousedown", e=>{
+    const key = e.target.closest(".kbKey");
+    if(!key) return;
+    e.preventDefault();
+    const k = key.dataset.key;
+    if(!k) return;
+
+    if(k==="SUPPR"){
+      kbBuffer = kbBuffer.slice(0,-1);
+      kbUpdate();
+    } else if(k==="ENTER"){
+      if(kbBuffer.trim()){
+        validateWord(kbBuffer);
+        kbBuffer="";
+        kbUpdate();
+        setTimeout(kbSyncMsg, 50);
+      }
+    } else {
+      kbBuffer += k;
+      kbUpdate();
+    }
+  });
+
+  // Touch support
+  kb.addEventListener("touchstart", e=>{
+    const key = e.target.closest(".kbKey");
+    if(!key) return;
+    e.preventDefault();
+    key.dispatchEvent(new MouseEvent("mousedown", {bubbles:true}));
+  }, {passive:false});
+
+  // Observer messages du jeu principal
+  const msgEl = $("#msg");
+  if(msgEl){
+    new MutationObserver(kbSyncMsg).observe(msgEl, {childList:true, characterData:true, subtree:true});
+  }
+
+  // Déplacer le chronoDisplay dans la kbTopBar
+  const chrono = $("#chronoDisplay");
+  if(chrono && kbTop){
+    kbTop.insertBefore(chrono, kbTop.firstChild);
+  }
+}
+
 /* ===========================
    WIRE
 =========================== */
 function wire(){
   wireAuth();
   wireSettings();
+  wireKeyboard();
   const inp=$("#saisie");
   if(inp){
     inp.addEventListener("keydown",(e)=>{
