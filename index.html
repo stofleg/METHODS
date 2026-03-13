@@ -647,104 +647,75 @@
     .appKeyboard{ display:none; } /* caché sur desktop */
 
     @media(max-width:640px){
-      /* Sur mobile : masquer l'inputCard natif, montrer le clavier */
+      /* ── Layout sans scroll : tout tient sur l'écran ── */
       .inputCard{ display:none !important; }
+
+      /* Header compact */
+      .appHeader{ padding:6px 10px 4px;gap:4px; }
+      .appTitle{ font-size:20px; }
+      .appUserBar{ gap:6px; }
+      .iconBtn{ padding:5px 8px;font-size:14px; }
+      .progressWrap{ gap:8px; }
+      .progLine .bar{ height:5px; }
+      .progLabel{ font-size:10px; }
+
+      /* Liste compacte */
+      ol#liste{ gap:3px;margin:4px 0; }
+      .slotMain{ min-height:32px; }
+      .slotWordBtn{ padding:4px 10px;font-size:13px; }
+      .slotHint{ font-size:13px; }
+      .toolBtn{ width:34px;border-radius:9px; }
+      .boundBtn{ padding:5px 10px;font-size:14px; }
+      .content{ padding:5px 8px 0;overflow-y:auto; }
+
+      /* Clavier : remonté avec safe-area correcte */
       .appKeyboard{
         display:flex;
         flex-direction:column;
-        gap:0;
         position:fixed;
         bottom:0; left:0; right:0;
         z-index:60;
-        background:var(--kbBg,#1a2235);
+        background:#1a2235;
         border-top:1px solid var(--stroke);
-        padding:8px 6px calc(env(safe-area-inset-bottom,0px) + 8px);
-        gap:5px;
+        padding:6px 5px;
+        padding-bottom:max(env(safe-area-inset-bottom,0px), 8px);
+        gap:4px;
       }
       @media(prefers-color-scheme:light){
         .appKeyboard{ background:#d0daf0; }
       }
 
-      .kbTopBar{
-        display:flex;
-        align-items:center;
-        gap:8px;
-        padding:0 2px 4px;
-      }
+      .kbTopBar{ display:flex;align-items:center;gap:6px;padding:0 2px 2px; }
       .kbDisplay{
-        flex:1 1 0;
-        min-height:36px;
-        background:var(--card);
-        border:1px solid var(--stroke);
-        border-radius:10px;
-        display:flex;
-        align-items:center;
-        padding:0 12px;
-        font-size:18px;
-        font-weight:800;
-        letter-spacing:0.08em;
-        color:var(--txt);
-        text-transform:uppercase;
+        flex:1 1 0;min-height:30px;background:var(--card);border:1px solid var(--stroke);
+        border-radius:8px;display:flex;align-items:center;padding:0 10px;
+        font-size:16px;font-weight:800;letter-spacing:0.08em;color:var(--txt);text-transform:uppercase;
       }
-      .kbDisplay:empty::after{
-        content:"…";
-        color:var(--muted);
-        font-weight:400;
-        font-size:15px;
-        letter-spacing:0;
-      }
-      .kbPlayBtn{
-        flex-shrink:0;
-        padding:8px 14px;
-        font-size:14px;
-      }
-      .kbMsg{
-        font-size:12px;
-        font-weight:700;
-        min-height:16px;
-        padding:0 4px;
-        text-align:center;
-      }
+      .kbDisplay:empty::after{ content:"…";color:var(--muted);font-weight:400;font-size:13px;letter-spacing:0; }
+      .kbPlayBtn{ flex-shrink:0;padding:6px 12px;font-size:13px; }
+      .kbMsg{ font-size:11px;font-weight:700;min-height:14px;padding:0 4px;text-align:center; }
       .kbMsg.ok{ color:var(--ok); }
       .kbMsg.warn{ color:var(--warn); }
       .kbMsg.err{ color:var(--danger); }
 
-      .kbRows{ display:flex;flex-direction:column;gap:5px; }
-      .kbRow{
-        display:flex;
-        justify-content:center;
-        gap:4px;
-      }
+      .kbRows{ display:flex;flex-direction:column;gap:4px; }
+      .kbRow{ display:flex;justify-content:center;gap:3px; }
       .kbKey{
-        flex:1 1 0;
-        max-width:36px;
-        height:42px;
-        border-radius:8px;
-        border:0;
-        background:var(--kbKey,#2d3a55);
-        color:var(--txt);
-        font-size:15px;
-        font-weight:700;
-        cursor:pointer;
-        box-shadow:0 2px 0 rgba(0,0,0,.4);
-        display:flex;
-        align-items:center;
-        justify-content:center;
-        user-select:none;
-        -webkit-user-select:none;
-        transition:background .08s;
+        flex:1 1 0;max-width:33px;height:36px;border-radius:7px;border:0;
+        background:#2d3a55;color:var(--txt);font-size:14px;font-weight:700;cursor:pointer;
+        box-shadow:0 2px 0 rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;
+        user-select:none;-webkit-user-select:none;transition:background .08s;
       }
       @media(prefers-color-scheme:light){
         .kbKey{ background:#fff;color:#0b1220;box-shadow:0 2px 0 rgba(0,0,0,.25); }
       }
       .kbKey:active{ background:var(--accent);color:#fff;transform:translateY(1px);box-shadow:none; }
-      .kbWide{ max-width:52px;font-size:13px; }
-      .kbEnter{ background:var(--accent);color:#fff;max-width:52px; }
+      .kbWide{ max-width:48px;font-size:12px; }
+      .kbEnter{ background:var(--accent);color:#fff;max-width:48px; }
       .kbEnter:active{ background:var(--accent2); }
 
-      /* Contenu : padding pour le clavier */
-      .content{ padding-bottom:calc(220px + env(safe-area-inset-bottom,0px)); }
-      /* Masquer le chrono dans inputCard (on le met ailleurs) */
+      /* Padding contenu = hauteur clavier ≈ 185px */
+      .content{ padding-bottom:calc(185px + max(env(safe-area-inset-bottom,0px), 8px)); }
     }
   </style>
 </head>
