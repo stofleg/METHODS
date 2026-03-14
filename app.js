@@ -928,31 +928,7 @@ function wireKeyboard(){
   // Chrono dans la topbar du clavier
   const kbTop = kb.querySelector(".kbTopBar");
 
-  // Bouton Jouer/Solutions du clavier
-  const kbPlay = $("#btnSolutionsKb");
-  if(kbPlay){
-    kbPlay.addEventListener("mousedown", e=>e.preventDefault());
-    kbPlay.addEventListener("click", ()=>{
-      const btnS = $("#btnSolutions");
-      if(btnS) btnS.click();
-    });
-  }
-
-  // Synchroniser l'état du bouton Solutions → kbPlay
-  function syncKbPlayBtn(){
-    const btnS = $("#btnSolutions");
-    if(!btnS||!kbPlay) return;
-    kbPlay.textContent = btnS.textContent;
-    kbPlay.dataset.mode = btnS.dataset.mode;
-    kbPlay.className = "btn kbPlayBtn" + (btnS.classList.contains("btnDanger")?" btnDanger":"");
-  }
-
-  // Observer changements sur btnSolutions
-  const btnS = $("#btnSolutions");
-  if(btnS){
-    new MutationObserver(syncKbPlayBtn).observe(btnS, {childList:true, attributes:true, attributeFilter:["data-mode","class"]});
-    syncKbPlayBtn();
-  }
+  // btnSolutions est dans le header — pas de bouton dupliqué dans le clavier
 
   // Touches
   kb.addEventListener("mousedown", e=>{
