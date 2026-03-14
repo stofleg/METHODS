@@ -938,7 +938,10 @@ function wireKeyboard(){
     const k = key.dataset.key;
     if(!k) return;
 
-    if(k==="SUPPR"){
+    if(k==="CLEAR"){
+      kbBuffer="";
+      kbUpdate();
+    } else if(k==="SUPPR"){
       kbBuffer = kbBuffer.slice(0,-1);
       kbUpdate();
     } else if(k==="ENTER"){
@@ -961,6 +964,9 @@ function wireKeyboard(){
     e.preventDefault();
     key.dispatchEvent(new MouseEvent("mousedown", {bubbles:true}));
   }, {passive:false});
+  kb.addEventListener("click", e=>{
+    if(e.target.closest(".kbKey")) e.preventDefault();
+  });
 
   // Observer messages du jeu principal
   const msgEl = $("#msg");
