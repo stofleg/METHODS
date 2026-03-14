@@ -205,6 +205,7 @@
     }
 
     .divider{
+      flex-shrink:0;
       height:1px;
       background:var(--stroke);
     }
@@ -253,21 +254,23 @@
     }
 
     .content{
-      padding:10px;
+      padding:8px;
       flex:1 1 0;
       min-height:0;
-      overflow-y:auto;
-      -webkit-overflow-scrolling:touch;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
     }
 
     .boundBtn{
       width:100%;
+      flex-shrink:0;
       border:1px solid var(--stroke);
       background: linear-gradient(135deg, rgba(47,125,246,.18), rgba(56,198,198,.14));
       border-radius:999px;
-      padding:10px 12px;
+      padding:7px 12px;
       text-align:center;
-      font-size: clamp(16px, 4.8vw, 26px);
+      font-size: clamp(14px, 3.5vw, 22px);
       font-weight:950;
       box-shadow:var(--shadow2);
       cursor:pointer;
@@ -288,16 +291,20 @@
     ol#liste{
       list-style:none;
       padding:0;
-      margin:10px 0;
+      margin:6px 0;
       display:flex;
       flex-direction:column;
-      gap:8px;
+      gap:0;
+      flex:1 1 0;
+      min-height:0;
+      justify-content:space-between;
     }
 
     .slot{
       display:flex;
       align-items:stretch;
       gap:8px;
+      flex:1 1 0;
     }
 
     .slotMain{
@@ -306,7 +313,7 @@
       border-radius:999px;
       background:var(--slot);
       box-shadow:var(--shadow2);
-      min-height:40px;
+      min-height:0;
       display:flex;
       overflow:hidden;
       position:relative;
@@ -377,7 +384,7 @@
       display:flex;
       flex:0 0 auto;
       gap:6px;
-      align-items:stretch;
+      align-items:center;
     }
 
     .toolBtn{
@@ -418,7 +425,7 @@
     }
 
     .inputCard{
-      padding:10px;
+      padding:7px 10px;
       border-top:1px solid var(--stroke);
       background: rgba(255,255,255,.04);
       border-radius: 0 0 var(--radius) var(--radius);
@@ -564,7 +571,7 @@
     }
 
     /* ── App Header ── */
-    .appHeader{ display:flex;flex-direction:column;align-items:center;gap:10px;padding:14px 14px 10px;border-radius:var(--radius) var(--radius) 0 0; }
+    .appHeader{ display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 14px 8px;border-radius:var(--radius) var(--radius) 0 0; }
     .appTitle{ margin:0;font-size:clamp(22px,6vw,32px);font-weight:950;letter-spacing:0.12em;text-transform:uppercase;text-align:center; }
     .appTitle .part1{ color:var(--title1,#fff); }
     .appTitle .part2{ background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
