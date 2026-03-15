@@ -336,6 +336,13 @@
       border-color: var(--okSlotBorder);
     }
 
+
+    .slotMain.slotHinted{
+      background:
+        linear-gradient(0deg, rgba(234,120,0,.18), rgba(234,120,0,.18)),
+        var(--slot);
+      border-color: rgba(234,120,0,.55);
+    }
     .slotMain.slotFailed{
       background:
         linear-gradient(0deg, var(--failSlotBg), var(--failSlotBg)),
@@ -602,6 +609,11 @@
     #authErr{ min-height:18px;font-size:13px;font-weight:700;margin-top:10px; }
     .pseudoHint{ font-size:12px;font-weight:700;margin-top:4px;display:block;min-height:16px; }
     .pseudoHint.available{ color:#1a8f3d; }
+    @media(prefers-color-scheme:light){
+      #btnWiktionary{ background:rgba(13,110,110,.12) !important;border-color:rgba(13,110,110,.35) !important;color:#0d6e6e !important; }
+      #btnGoogleImg{ background:rgba(26,101,214,.12) !important;border-color:rgba(26,101,214,.35) !important;color:#1a65d6 !important; }
+      .slotMain.slotHinted{ background:linear-gradient(0deg,rgba(234,120,0,.14),rgba(234,120,0,.14)),var(--slot);border-color:rgba(200,90,0,.5); }
+    }
     .pseudoHint.taken{ color:var(--danger,#e53); }
     .pseudoHint.checking{ color:var(--muted); }
     /* ── Chrono ── */
@@ -960,8 +972,8 @@
       <div class="panelTop">
         <h2 id="defTitle"></h2>
         <div style="display:flex;gap:6px;align-items:center;">
-          <a id="btnWiktionary" href="#" target="_blank" rel="noopener" class="btn" style="font-size:12px;padding:5px 10px;text-decoration:none;">Wiktionnaire</a>
-          <a id="btnGoogleImg" href="#" target="_blank" rel="noopener" class="btn" style="font-size:12px;padding:5px 10px;text-decoration:none;">Image</a>
+          <a id="btnWiktionary" href="#" target="_blank" rel="noopener" class="btn" style="font-size:12px;padding:5px 10px;text-decoration:none;background:rgba(79,226,226,.18);border-color:rgba(79,226,226,.4);color:#4fe2e2;">📖 Wiktionnaire</a>
+          <a id="btnGoogleImg" href="#" target="_blank" rel="noopener" class="btn" style="font-size:12px;padding:5px 10px;text-decoration:none;background:rgba(105,167,255,.18);border-color:rgba(105,167,255,.4);color:#69a7ff;">🔍 Image</a>
           <button id="defClose" class="btn" type="button">Fermer</button>
         </div>
       </div>
