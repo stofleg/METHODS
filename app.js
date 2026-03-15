@@ -194,11 +194,17 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
 
   // Mettre à jour les liens Wiktionnaire et Google Images
   // Prendre le premier terme avant la virgule, en minuscules
-  const rawWord = (titleWord || "").split(",")[0].trim().toLowerCase();
+  const rawWord = ((titleWord || canonForAnagrams || "").split(",")[0].trim().toLowerCase());
   const wiktEl = $("#btnWiktionary");
   const imgEl = $("#btnGoogleImg");
-  if(wiktEl) wiktEl.href = rawWord ? "https://fr.wiktionary.org/wiki/" + encodeURIComponent(rawWord) : "#";
-  if(imgEl) imgEl.href = rawWord ? "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(rawWord) : "#";
+  if(wiktEl){
+    wiktEl.href = rawWord ? "https://fr.wiktionary.org/wiki/" + encodeURIComponent(rawWord) : "#";
+    wiktEl.style.display = showAnagrams ? "" : "none";
+  }
+  if(imgEl){
+    imgEl.href = rawWord ? "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(rawWord) : "#";
+    imgEl.style.display = showAnagrams ? "" : "none";
+  }
 
   const base=normalizeWord(canonForAnagrams || titleWord || "");
 
