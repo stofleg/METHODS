@@ -198,14 +198,10 @@ function openDef(defText, titleWord, canonForAnagrams, showAnagrams){
   const rawWord = ((titleWord || canonForAnagrams || "").split(",")[0].trim().toLowerCase());
   const wiktEl = $("#btnWiktionary");
   const imgEl = $("#btnGoogleImg");
-  if(wiktEl){
-    wiktEl.href = rawWord ? "https://fr.wiktionary.org/wiki/" + encodeURIComponent(rawWord) : "#";
-    wiktEl.style.display = showAnagrams ? "" : "none";
-  }
-  if(imgEl){
-    imgEl.href = rawWord ? "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(rawWord) : "#";
-    imgEl.style.display = showAnagrams ? "" : "none";
-  }
+  const linksDiv = $("#defLinks");
+  if(linksDiv) linksDiv.style.display = showAnagrams ? "flex" : "none";
+  if(wiktEl) wiktEl.href = rawWord ? "https://fr.wiktionary.org/wiki/" + encodeURIComponent(rawWord) : "#";
+  if(imgEl) imgEl.href = rawWord ? "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(rawWord) : "#";
 
   const base=normalizeWord(canonForAnagrams || titleWord || "");
 
