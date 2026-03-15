@@ -974,10 +974,17 @@ function wireKeyboard(){
     new MutationObserver(kbSyncMsg).observe(msgEl, {childList:true, characterData:true, subtree:true});
   }
 
-  // Déplacer le chronoDisplay dans la kbTopBar
+  // Déplacer le chronoDisplay dans la kbTopBar uniquement sur mobile
   const chrono = $("#chronoDisplay");
-  if(chrono && kbTop){
+  const isMobile = window.matchMedia("(max-width:640px)").matches;
+  if(isMobile && chrono && kbTop){
     kbTop.insertBefore(chrono, kbTop.firstChild);
+  } else if(!isMobile && chrono){
+    // S'assurer que le chrono est dans les controls de l'inputCard sur desktop
+    const controls = document.querySelector(".inputCard .controls");
+    if(controls && !controls.contains(chrono)){
+      controls.insertBefore(chrono, controls.firstChild);
+    }
   }
 }
 
