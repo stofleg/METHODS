@@ -188,6 +188,10 @@ function renderGame(){
   const title=$("#tm-game-title");
   const _sfx={age:"· · · AGE",vi:"",oir:"· · · OIR",able:"· · · ABLE",ique:"· · · IQUE"};
   if(title) title.textContent=currentSession.label+"— "+(_sfx[currentTheme]||"");
+  // Nom de la thématique dans le sous-titre
+  const _names={age:"finale -AGE",vi:"verbes intransitifs",oir:"finale -OIR",able:"finale -ABLE",ique:"finale -IQUE"};
+  const themeName=document.getElementById("tm-theme-name");
+  if(themeName) themeName.textContent=_names[currentTheme]||currentTheme;
   const counter=$("#tm-total");
   if(counter) counter.textContent=currentSession.words.length+" mot"+(currentSession.words.length>1?"s":"")+" à trouver";
   const list=$("#tm-word-list");
@@ -293,13 +297,14 @@ function wireKeyboard(){
 /* WIRE */
 function wire(){
   $("#tm-back-home")?.addEventListener("click",renderHome);
+  $("#tm-back-theme")?.addEventListener("click",renderHome);
   // Thèmes
   const THEME_LABELS = {
-    age:  {name:"-AGE",  hint:"Trouve tous les mots en <strong>-AGE</strong> qui commencent par le préfixe proposé."},
-    vi:   {name:"V.I.",  hint:"Trouve tous les <strong>verbes intransitifs</strong> (p.p. inv.) qui commencent par le préfixe proposé."},
-    oir:  {name:"-OIR",  hint:"Trouve tous les mots en <strong>-OIR</strong> qui commencent par le préfixe proposé."},
-    able: {name:"-ABLE", hint:"Trouve tous les mots en <strong>-ABLE</strong> qui commencent par le préfixe proposé."},
-    ique: {name:"-IQUE", hint:"Trouve tous les mots en <strong>-IQUE</strong> qui commencent par le préfixe proposé."},
+    age:  {name:"finale -AGE",           hint:"Trouve tous les mots en <strong>-AGE</strong> qui commencent par le préfixe proposé."},
+    vi:   {name:"verbes intransitifs",    hint:"Trouve tous les <strong>verbes intransitifs</strong> (p.p. inv.) qui commencent par le préfixe proposé."},
+    oir:  {name:"finale -OIR",           hint:"Trouve tous les mots en <strong>-OIR</strong> qui commencent par le préfixe proposé."},
+    able: {name:"finale -ABLE",          hint:"Trouve tous les mots en <strong>-ABLE</strong> qui commencent par le préfixe proposé."},
+    ique: {name:"finale -IQUE",          hint:"Trouve tous les mots en <strong>-IQUE</strong> qui commencent par le préfixe proposé."},
   };
   document.querySelectorAll(".tm-theme-card[data-theme]").forEach(card=>{
     card.addEventListener("click",()=>{ currentTheme=card.dataset.theme; playNext(currentTheme); });
