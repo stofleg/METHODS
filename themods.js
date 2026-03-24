@@ -112,79 +112,57 @@ function updateCounter(){
   if(el) el.textContent=found.size+" / "+(currentSession?.words?.length||0);
 }
 function showScreen(id){
-  ["tm-screen-home","tm-screen-theme","tm-screen-game"].forEach(s=>{
+  ["tm-screen-home","tm-screen-game"].forEach(s=>{
     const el=$("#"+s);
     if(el) el.style.display=(s===id)?"":"none";
   });
 }
 
 /* HOME */
-function renderHome(){showScreen("tm-screen-home");}
 
-/* THEME SCREEN */
-function renderThemeScreen(theme){
-  currentTheme=theme;
-  const data=window.THEMODS_DATA?.[theme];
-  if(!data) return;
-  const container=$("#tm-session-list");
-  if(!container) return;
-  // Titre du thème dans le header
-  const themeTitle=$("#tm-theme-title");
-  if(themeTitle){
-    const THEME_LABELS={age:"-AGE",vi:"V.I.",oir:"-OIR",able:"-ABLE",ique:"-IQUE"};
-    themeTitle.textContent=THEME_LABELS[theme]||theme;
-  }
+function updateHomeStats(){
   const today=todayStr();
-
-  let total=0,seen=0,validated=0,due=0;
-  data.forEach(({label})=>{
-    const st=getSt(theme,label);
-    total++;
-    if(st.seen) seen++;
-    if(st.validated) validated++;
-    if(!st.validated&&st.due<=today&&st.seen) due++;
+  // Pour chaque thème, calculer seen/total/validated
+  const themes=["age","vi","oir","able","ique"];
+  themes.forEach(theme=>{
+    const data=window.THEMODS_DATA?.[theme];
+    if(!data) return;
+    const total=data.length;
+    let seen=0,validated=0;
+    data.forEach(({label})=>{
+      const s=getSt(theme,label);
+      if(s.seen) seen++;
+      if(s.validated) validated++;
+    });
+    const card=document.querySelector(`.tm-theme-card[data-theme="${theme}"]`);
+    if(!card) return;
+    const desc=card.querySelector(".tm-theme-desc");
+    if(desc){
+      const base=desc.dataset.base||desc.textContent;
+      desc.dataset.base=base;
+      const pct=total?Math.round(validated/total*100):0;
+      desc.textContent=base.split("·")[0].trim()+" · "+seen+"/"+total+" vues · "+validated+"/"+total+" validées";
+    }
   });
-
-  container.innerHTML="";
-
-  const stats=document.createElement("div");
-  stats.className="tm-stats";
-  stats.innerHTML=
-    '<div class="tm-stat"><span class="tm-stat-n">'+total+'</span><span class="tm-stat-l">sessions</span></div>'+
-    '<div class="tm-stat"><span class="tm-stat-n">'+seen+'</span><span class="tm-stat-l">vues</span></div>'+
-    '<div class="tm-stat"><span class="tm-stat-n">'+validated+'</span><span class="tm-stat-l">validées</span></div>'+
-    '<div class="tm-stat tm-due-stat"><span class="tm-stat-n">'+due+'</span><span class="tm-stat-l">à revoir</span></div>';
-  container.appendChild(stats);
-
-  const nextBtn=document.createElement("button");
-  nextBtn.className="btn tm-next-btn";
-  nextBtn.textContent=due>0?"Réviser ("+due+" à revoir)":"Jouer une nouvelle session";
-  nextBtn.addEventListener("click",()=>playNext(theme));
-  container.appendChild(nextBtn);
-
-  const grid=document.createElement("div");
-  grid.className="tm-session-grid";
-  data.forEach(({label,words})=>{
-    const st=getSt(theme,label);
-    const isDue=!st.validated&&st.due<=today&&st.seen;
-    const btn=document.createElement("button");
-    btn.className="tm-session-btn"+(st.validated?" tm-done":isDue?" tm-due":!st.seen?" tm-new":"");
-    btn.innerHTML='<span class="tm-lbl">'+label+'-</span><span class="tm-cnt">'+words.length+'</span>';
-    btn.addEventListener("click",()=>playSession(theme,{label,words}));
-    grid.appendChild(btn);
-  });
-  container.appendChild(grid);
-
-  showScreen("tm-screen-theme");
 }
 
+function renderHome(){showScreen("tm-screen-home");setTimeout(updateHomeStats,50);}
+
+/* THEME SCREEN */
 function playNext(theme){
   const data=window.THEMODS_DATA?.[theme];
   if(!data) return;
   const today=todayStr();
   let candidates=data.filter(({label})=>{const st=getSt(theme,label);return !st.validated&&st.due<=today&&st.seen;});
   if(!candidates.length) candidates=data.filter(({label})=>!getSt(theme,label).seen);
-  if(!candidates.length){setMsg("Toutes les sessions sont validées !","ok");return;}
+  if(!candidates.length){
+    renderHome();
+    setTimeout(()=>{
+      const msg=document.querySelector(".tm-home-msg");
+      if(msg){msg.textContent="Toutes les sessions sont validées !";msg.className="tm-home-msg ok";}
+    },100);
+    return;
+  }
   playSession(theme,candidates[Math.floor(Math.random()*candidates.length)]);
 }
 
@@ -315,7 +293,6 @@ function wireKeyboard(){
 /* WIRE */
 function wire(){
   $("#tm-back-home")?.addEventListener("click",renderHome);
-  $("#tm-back-theme")?.addEventListener("click",()=>renderThemeScreen(currentTheme));
   // Thèmes
   const THEME_LABELS = {
     age:  {name:"-AGE",  hint:"Trouve tous les mots en <strong>-AGE</strong> qui commencent par le préfixe proposé."},
@@ -325,10 +302,10 @@ function wire(){
     ique: {name:"-IQUE", hint:"Trouve tous les mots en <strong>-IQUE</strong> qui commencent par le préfixe proposé."},
   };
   document.querySelectorAll(".tm-theme-card[data-theme]").forEach(card=>{
-    card.addEventListener("click",()=>renderThemeScreen(card.dataset.theme));
+    card.addEventListener("click",()=>{ currentTheme=card.dataset.theme; playNext(currentTheme); });
   });
   $("#tm-game-btn")?.addEventListener("click",()=>{
-    if(solutionsShown) renderThemeScreen(currentTheme);
+    if(solutionsShown) playNext(currentTheme);
     else showSolutions();
   });
   const inp=$("#tm-saisie");
