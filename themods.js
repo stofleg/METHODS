@@ -354,6 +354,62 @@ function wireKeyboard(){
   kb.addEventListener("click",e=>{if(e.target.closest(".kbKey")) e.preventDefault();});
 }
 
+
+/* ===========================
+   MODALE DÉFINITION
+=========================== */
+function normalizeForLookup(w){
+  return w.toUpperCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
+}
+
+function openDefForWord(word){
+  const data=window.SEQODS_DATA;
+  if(!data) return;
+  const C=data.c,E=data.e,F=data.f,A=data.a,R=data.r;
+  const canon=normalizeForLookup(word);
+  const idx=C.indexOf(canon);
+  const tEl=document.getElementById("defTitle");
+  const bEl=document.getElementById("defBody");
+  const mEl=document.getElementById("defModal");
+  if(!tEl||!bEl||!mEl) return;
+  const displayWord=idx>=0?(E[idx].split(",")[0].trim()):word;
+  tEl.textContent=displayWord;
+  bEl.textContent=idx>=0?(F[idx]||"(définition absente)"):"(définition absente)";
+  const rawWord=displayWord.split(",")[0].trim().toLowerCase();
+  const wiktEl=document.getElementById("btnWiktionary");
+  const imgEl=document.getElementById("btnGoogleImg");
+  const linksDiv=document.getElementById("defLinks");
+  if(linksDiv) linksDiv.style.display="flex";
+  if(wiktEl) wiktEl.href="https://fr.wiktionary.org/wiki/"+encodeURIComponent(rawWord);
+  if(imgEl) imgEl.href="https://www.google.com/search?tbm=isch&q="+encodeURIComponent(rawWord);
+  const anaWrap=document.getElementById("anaWrap");
+  const ana=document.getElementById("defAna");
+  if(anaWrap&&ana&&A){
+    const tir=canon.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
+    const lst=(tir&&A[tir])?A[tir].filter(x=>normalizeForLookup(x)!==canon).slice(0,60):[];
+    if(lst.length){anaWrap.style.display="block";ana.textContent=lst.join(" • ");}
+    else anaWrap.style.display="none";
+  }
+  const rallWrap=document.getElementById("rallWrap");
+  const rallEl=document.getElementById("defRall");
+  if(rallWrap&&rallEl&&R){
+    const lst=R[canon]||[];
+    if(lst.length){rallWrap.style.display="block";rallEl.textContent=lst.join(" • ");}
+    else rallWrap.style.display="none";
+  }
+  mEl.classList.add("open");
+}
+
+function closeDef(){
+  document.getElementById("defModal")?.classList.remove("open");
+}
+
+function wireDefModal(){
+  document.getElementById("defClose")?.addEventListener("click",closeDef);
+  document.getElementById("defBackdrop")?.addEventListener("click",closeDef);
+  document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDef(); });
+}
+
 /* WIRE */
 function wire(){
   wireDefModal();
