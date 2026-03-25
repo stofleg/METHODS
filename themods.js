@@ -130,7 +130,7 @@ function showScreen(id){
 function updateHomeStats(){
   const today=todayStr();
   // Pour chaque thème, calculer seen/total/validated
-  const themes=["age","vi","oir","able","ique","gm"];
+  const themes=["age","vi","oir","able","ique"];
   themes.forEach(theme=>{
     const data=window.THEMODS_DATA?.[theme];
     if(!data) return;
@@ -153,10 +153,21 @@ function updateHomeStats(){
   });
 }
 
-function renderHome(){showScreen("tm-screen-home");setTimeout(updateHomeStats,50);}
+function renderHome(){
+  showScreen("tm-screen-home");
+  setTimeout(()=>{
+    updateHomeStats();
+    // Compteur GM
+    const prog=getGMProgress();
+    const total=getAllGMEntries().length;
+    const el=document.getElementById("gm-home-desc");
+    if(el) el.textContent="1 808 groupes · "+prog.done+" / "+total+" résolus";
+  },50);
+}
 
 /* THEME SCREEN */
 function playNext(theme){
+  if(theme==="gm"){ startGM(); return; }
   const data=window.THEMODS_DATA?.[theme];
   if(!data) return;
   const today=todayStr();
@@ -204,7 +215,7 @@ function renderGame(){
   const themeName=document.getElementById("tm-theme-name");
   if(themeName) themeName.textContent=_names[currentTheme]||currentTheme;
 
-  if(currentTheme==="gm"){ renderGameGM(); return; }
+  if(currentTheme==="gm"){ renderGMGame(); return; }
 
   const counter=$("#tm-total");
   if(counter) counter.textContent=currentSession.words.length+" mot"+(currentSession.words.length>1?"s":"")+" à trouver";
@@ -299,12 +310,10 @@ function showSolutions(){
   chronoStop();
   noHelpRun=false;
   if(currentTheme==="gm"){
-    const entries=currentSession.entries||[];
-    entries.forEach((e,i)=>{ if(!found.has(i)) found.add(i); });
+    noHelpRun=false;
     solutionsShown=true;
     updateGameBtn();
-    renderGameGM();
-    finalizeSession(false);
+    renderGMGame();
     return;
   }
   currentSession.words.forEach((w,i)=>{
@@ -455,9 +464,6 @@ function chronoStart(){
   },1000);
 }
 
-/* ===========================
-   RENDER GM
-=========================== */
 function letterCount(w){
   return w.replace(/[^A-Za-zÀ-ÿ]/g,"").length;
 }
@@ -549,6 +555,183 @@ function renderGameGM(){
   if(counter) counter.textContent = found.size+" / "+entries.length;
 }
 
+
+
+
+/* ===========================
+   GRAPHIES MULTIPLES — mode continu aléatoire
+=========================== */
+function getAllGMEntries(){
+  const data = window.THEMODS_DATA?.gm || [];
+  const all = [];
+  data.forEach(session=>{ (session.entries||[]).forEach(e=>all.push(e)); });
+  return all;
+}
+
+function shuffleArray(arr){
+  const a = [...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+
+function getGMProgress(){
+  if(!state.themes) state.themes={};
+  if(!state.themes.gm) state.themes.gm={};
+  if(!state.themes.gm._p) state.themes.gm._p={idx:0,done:0,order:null};
+  return state.themes.gm._p;
+}
+
+function startGM(){
+  currentTheme="gm";
+  const all=getAllGMEntries();
+  const prog=getGMProgress();
+  // Créer un ordre aléatoire si pas encore fait ou terminé
+  if(!prog.order || prog.order.length!==all.length){
+    prog.order = shuffleArray(all.map((_,i)=>i));
+    prog.idx=0; prog.done=0;
+  }
+  currentEntryIdx=prog.idx;
+  entryFound=new Set();
+  solutionsShown=false;
+  noHelpRun=true;
+  kbBuffer="";
+  showScreen("tm-screen-game");
+  renderGMGame();
+  kbUpdate();
+  setMsg("");
+  updateGameBtn();
+}
+
+function currentGMEntry(){
+  const all=getAllGMEntries();
+  const prog=getGMProgress();
+  const realIdx=prog.order?.[currentEntryIdx];
+  return realIdx!==undefined ? all[realIdx] : null;
+}
+
+function renderGMGame(){
+  const all=getAllGMEntries();
+  const prog=getGMProgress();
+  const entry=currentGMEntry();
+  if(!entry){ setMsg("Toutes les entrées terminées !","ok"); return; }
+
+  const title=document.getElementById("tm-game-title");
+  if(title) title.textContent="";
+  const themeName=document.getElementById("tm-theme-name");
+  if(themeName) themeName.textContent="Graphies multiples";
+  const counter=document.getElementById("tm-counter");
+  if(counter) counter.textContent=(prog.done)+" / "+all.length;
+
+  const list=document.getElementById("tm-word-list");
+  if(!list) return;
+  list.innerHTML="";
+
+  // Trier les formes par longueur croissante
+  const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+  const allFormsFound=sortedForms.every(f=>entryFound.has(norm(f)));
+
+  // ── Carte définition ──────────────────────────────────────────
+  const card=document.createElement("div");
+  card.className="gm-card";
+
+  const defEl=document.createElement("div");
+  defEl.className="gm-def";
+  defEl.textContent=entry.def||"…";
+  card.appendChild(defEl);
+
+  // ── Tuiles pour chaque forme ──────────────────────────────────
+  const tilesWrap=document.createElement("div");
+  tilesWrap.className="gm-tiles-wrap";
+
+  sortedForms.forEach(form=>{
+    const normForm=norm(form);
+    const isFound=entryFound.has(normForm)||allFormsFound;
+    const revealed=isFound||solutionsShown;
+    const letters=form.replace(/[^A-Za-zÀ-ÿ]/g,"");
+
+    const row=document.createElement("div");
+    row.className="gm-row";
+
+    for(let i=0;i<letters.length;i++){
+      const tile=document.createElement("span");
+      if(revealed){
+        tile.className="gm-tile"+(isFound?" gm-ok":" gm-miss");
+        tile.textContent=letters[i].toUpperCase();
+      } else if(i===0){
+        tile.className="gm-tile gm-init";
+        tile.textContent=letters[0].toUpperCase();
+      } else {
+        tile.className="gm-tile gm-empty";
+      }
+      row.appendChild(tile);
+    }
+    tilesWrap.appendChild(row);
+  });
+  card.appendChild(tilesWrap);
+
+  // ── Navigation si entrée résolue ou solutions affichées ────────
+  if(allFormsFound||solutionsShown){
+    const nav=document.createElement("div");
+    nav.className="gm-nav";
+    const pos=document.createElement("span");
+    pos.className="gm-pos";
+    pos.textContent=(currentEntryIdx+1)+" / "+all.length;
+    nav.appendChild(pos);
+    const nextBtn=document.createElement("button");
+    nextBtn.className="btn";
+    nextBtn.textContent="Entrée suivante →";
+    nextBtn.addEventListener("click",()=>{
+      currentEntryIdx++;
+      prog.idx=currentEntryIdx;
+      entryFound=new Set();
+      solutionsShown=false;
+      updateGameBtn();
+      setMsg("");
+      renderGMGame();
+      persist().catch(()=>{});
+    });
+    nav.appendChild(nextBtn);
+    card.appendChild(nav);
+  }
+
+  list.appendChild(card);
+}
+
+function validateWordGM(n){
+  const entry=currentGMEntry();
+  if(!entry) return;
+
+  const matchedForm=entry.forms.find(f=>norm(f)===n);
+  if(!matchedForm){
+    if(getDSet().has(n)){
+      setMsg("Hors-jeu — mot valide mais pas dans cette liste.","warn");
+    } else {
+      setMsg("Mot non valide.","err");
+    }
+    return;
+  }
+
+  entryFound.add(n);
+  noHelpRun=false; // trouver une forme = aide partielle
+  setMsg("","");
+
+  const allFound=entry.forms.every(f=>entryFound.has(norm(f)));
+  if(allFound){
+    const prog=getGMProgress();
+    prog.done=(prog.done||0)+1;
+    prog.idx=currentEntryIdx+1;
+    setMsg("✓ Toutes les graphies trouvées !","ok");
+    // Marquer comme résolue dans l'état
+    if(!state.themes.gm._found) state.themes.gm._found=[];
+    state.themes.gm._found.push(currentEntryIdx);
+    persist().catch(()=>{});
+  }
+
+  renderGMGame();
+}
 
 /* WIRE */
 function wire(){
