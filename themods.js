@@ -291,7 +291,17 @@ function validateWordGM(n){
 
 
 function showSolutions(){
+  chronoStop();
   noHelpRun=false;
+  if(currentTheme==="gm"){
+    const entries=currentSession.entries||[];
+    entries.forEach((e,i)=>{ if(!found.has(i)) found.add(i); });
+    solutionsShown=true;
+    updateGameBtn();
+    renderGameGM();
+    finalizeSession(false);
+    return;
+  }
   currentSession.words.forEach((w,i)=>{
     if(!found.has(i)){
       found.add(i);
