@@ -1156,6 +1156,7 @@ async function start(){
   const saved=loadSession();
   if(saved&&saved.pseudo){
     currentUser=saved;
+    const ms=$("#modeSelect"); if(ms) ms.style.display="none";
     showGameScreen();
     state=defaultState();
     await loadStateFromFirebase();
