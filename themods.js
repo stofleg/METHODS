@@ -195,13 +195,17 @@ function playSession(theme,session){
 }
 
 function renderGame(){
-  const title=$("#tm-game-title");
+  console.log("[THEMODS v1.1] renderGame theme=",currentTheme,"session=",currentSession?.label);
+  // Titres communs
   const _sfx={age:"· · · AGE",vi:"",oir:"· · · OIR",able:"· · · ABLE",ique:"· · · IQUE",gm:""};
-  if(title) title.textContent=currentSession.label+"— "+(_sfx[currentTheme]||"");
-  // Nom de la thématique dans le sous-titre
   const _names={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples"};
+  const title=$("#tm-game-title");
+  if(title) title.textContent=(currentTheme==="gm"?"":currentSession.label+"— "+(_sfx[currentTheme]||""));
   const themeName=document.getElementById("tm-theme-name");
   if(themeName) themeName.textContent=_names[currentTheme]||currentTheme;
+
+  if(currentTheme==="gm"){ renderGameGM(); return; }
+
   const counter=$("#tm-total");
   if(counter) counter.textContent=currentSession.words.length+" mot"+(currentSession.words.length>1?"s":"")+" à trouver";
   const list=$("#tm-word-list");
@@ -215,8 +219,8 @@ function renderGame(){
       li.classList.add("tm-found");
       li.textContent=word;
       li.style.cursor="pointer";
-      li.addEventListener("mousedown", e=>e.preventDefault());
-      li.addEventListener("click", ()=>openDefForWord(word));
+      li.addEventListener("mousedown",e=>e.preventDefault());
+      li.addEventListener("click",()=>openDefForWord(word));
     }
     list.appendChild(li);
   });
@@ -418,6 +422,87 @@ function wireDefModal(){
   document.getElementById("defClose")?.addEventListener("click",closeDef);
   document.getElementById("defBackdrop")?.addEventListener("click",closeDef);
   document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeDef(); });
+}
+
+
+/* ===========================
+   CHRONO
+=========================== */
+let chronoInterval=null, chronoRem=0;
+let settings={chronoOn:true,dur:10};
+
+function loadSettings(){
+  try{ const s=JSON.parse(localStorage.getItem("METHODS_SETTINGS_V1")||"null"); if(s) settings=Object.assign(settings,s); }catch{}
+}
+function chronoFmt(s){ return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+function chronoStop(){ if(chronoInterval){clearInterval(chronoInterval);chronoInterval=null;} }
+function chronoUpdate(){
+  const el=$("#tm-chrono"); if(!el) return;
+  if(!settings.chronoOn){el.textContent="";return;}
+  el.textContent=chronoFmt(chronoRem);
+  el.classList.toggle("expired",chronoRem===0);
+}
+function chronoStart(){
+  chronoStop();
+  const el=$("#tm-chrono");
+  if(!settings.chronoOn){if(el)el.textContent="";return;}
+  chronoRem=settings.dur*60;
+  chronoUpdate();
+  chronoInterval=setInterval(()=>{
+    if(chronoRem>0){chronoRem--;chronoUpdate();}
+    if(chronoRem===0&&!solutionsShown) showSolutions();
+  },1000);
+}
+
+/* ===========================
+   RENDER GM
+=========================== */
+function renderGameGM(){
+  const entries=currentSession.entries||[];
+  const list=$("#tm-word-list");
+  if(!list) return;
+  list.innerHTML="";
+  entries.forEach((entry,i)=>{
+    const li=document.createElement("li");
+    li.dataset.idx=i;
+    li.className="tm-slot";
+    li.style.cssText="flex-direction:column;align-items:flex-start;padding:8px 14px;min-height:52px;gap:3px;border-radius:12px;";
+    if(found.has(i)){
+      const formsEl=document.createElement("div");
+      formsEl.style.cssText="font-weight:900;font-size:13px;letter-spacing:.06em;";
+      formsEl.textContent=entry.forms.join(" = ");
+      const defEl=document.createElement("div");
+      defEl.style.cssText="font-size:11px;color:var(--muted);font-weight:500;line-height:1.3;";
+      defEl.textContent=entry.def;
+      li.appendChild(formsEl);
+      li.appendChild(defEl);
+      li.classList.add("tm-found");
+      li.style.cursor="pointer";
+      li.addEventListener("click",()=>openDefForWord(entry.forms[0]));
+    } else if(solutionsShown){
+      const formsEl=document.createElement("div");
+      formsEl.style.cssText="font-weight:900;font-size:13px;letter-spacing:.06em;color:var(--muted);";
+      formsEl.textContent=entry.forms.join(" = ");
+      const defEl=document.createElement("div");
+      defEl.style.cssText="font-size:11px;color:var(--muted);font-weight:500;line-height:1.3;";
+      defEl.textContent=entry.def;
+      li.appendChild(formsEl);
+      li.appendChild(defEl);
+      li.classList.add("tm-revealed");
+    } else {
+      const defEl=document.createElement("div");
+      defEl.style.cssText="font-size:12px;color:var(--txt);font-weight:600;line-height:1.3;";
+      defEl.textContent=entry.def||(entry.forms[0][0]+"...");
+      const hintsEl=document.createElement("div");
+      hintsEl.style.cssText="font-size:11px;color:var(--accent);font-weight:700;margin-top:2px;letter-spacing:.04em;";
+      hintsEl.textContent=entry.forms.map(f=>f[0]+"·".repeat(f.replace(/[^A-Za-zÀ-ÿ]/g,"").length-1)).join("  |  ");
+      li.appendChild(defEl);
+      li.appendChild(hintsEl);
+    }
+    list.appendChild(li);
+  });
+  const counter=$("#tm-counter");
+  if(counter) counter.textContent=found.size+" / "+entries.length;
 }
 
 /* WIRE */
