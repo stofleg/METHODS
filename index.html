@@ -2,6 +2,7 @@
 <html lang="fr">
 <head>
   <meta charset="utf-8" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content" />
   <title>METHODS</title>
   <link rel="manifest" href="manifest.json" />
@@ -28,7 +29,7 @@
       --toolStroke: rgba(16,24,80,.18);
       --focus: rgba(26,101,214,.35);
       --radius: 18px;
-      --title1:#0a2a6e;
+      --title1:#0b1220;
 
       --redSlotBorder:#b51e1e;
       --redSlotGlow:rgba(181,30,30,.22);
@@ -586,7 +587,7 @@
     .appHeader{ display:flex;flex-direction:column;align-items:center;gap:6px;padding:10px 14px 8px;border-radius:var(--radius) var(--radius) 0 0; }
     .appTitle{ margin:0;font-size:clamp(22px,6vw,32px);font-weight:950;letter-spacing:0.12em;text-transform:uppercase;text-align:center; }
     .appTitle .part1{ color:var(--title1,#fff); }
-    .appTitle .part2{ background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .appTitle .part2{ color:var(--accent); }
     .appUserBar{ display:flex;align-items:center;gap:8px; }
     .userChip{ font-size:14px;font-weight:800;color:var(--txt);padding:5px 12px;border-radius:999px;background:var(--chip);border:1px solid var(--chipStroke);white-space:nowrap; }
     .iconBtn{ padding:7px 10px;font-size:15px;line-height:1; }
@@ -841,7 +842,7 @@
     .tmHeader{ display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px 8px; }
     .tmTitle{ margin:0;font-size:clamp(20px,5vw,30px);font-weight:950;letter-spacing:0.12em;text-transform:uppercase; }
     .tmTitle .part1{ color:var(--title1,#fff); }
-    .tmTitle .part2{ background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .tmTitle .part2{ color:var(--accent); }
     .tmModes{ padding:12px;display:flex;flex-direction:column;gap:10px; }
     .tmModeBtn{ display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding:14px 16px;width:100%;border-radius:14px;text-align:left; }
     .tmModeName{ font-size:22px;font-weight:950;letter-spacing:0.08em;color:var(--accent); }
@@ -874,7 +875,7 @@
     .modeSelectBtn:hover{ background:rgba(255,255,255,.1); }
     .modeSelectName{ font-size:28px;font-weight:950;letter-spacing:0.12em; }
     .modeSelectName .part1{ color:var(--title1,#fff); }
-    .modeSelectName .part2{ background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text; }
+    .modeSelectName .part2{ color:var(--accent); }
     .modeSelectDesc{ font-size:13px;color:var(--muted); }
     @media(max-width:640px){
       .tmGameCard{ margin:0; }
@@ -895,7 +896,7 @@
         <div class="appUserBar">
           <button id="btnLogout" class="btn iconBtn" type="button" title="Déconnexion">⏏</button>
           <span id="userChip" class="userChip"></span>
-          <a href="themods.html" class="btn iconBtn" title="THEMODS" style="text-decoration:none;font-size:11px;font-weight:900;letter-spacing:.04em;">THE<span style="background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">MODS</span></a>
+          <a href="themods.html" class="btn iconBtn" title="THEMODS" style="text-decoration:none;font-size:11px;font-weight:900;letter-spacing:.04em;"><span style="color:var(--title1,#fff);">THEM</span><span style="color:var(--accent);">ODS</span></a>
           <button id="btnSettings" class="btn iconBtn" type="button" title="Paramètres">⚙️</button>
           <button id="btnSolutions" class="btn btnSolutionsTop" type="button" data-mode="rejouer">Jouer</button>
         </div>
