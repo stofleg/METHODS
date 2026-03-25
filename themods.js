@@ -629,22 +629,21 @@ function renderGMGame(){
   if(!list) return;
   list.innerHTML="";
 
-  // Trier les formes par longueur croissante
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>entryFound.has(norm(f)));
 
-  // ── Carte définition ──────────────────────────────────────────
-  const card=document.createElement("div");
-  card.className="gm-card";
+  // Construire en HTML direct pour être sûr du rendu
+  let html = "";
 
-  const defEl=document.createElement("div");
-  defEl.className="gm-def";
-  defEl.textContent=entry.def||"…";
-  card.appendChild(defEl);
+  // ── Définition ─────────────────────────────────────────────────
+  html += `<div style="
+    text-align:center;padding:20px 16px 16px;
+    font-size:16px;font-weight:800;line-height:1.5;color:var(--txt);
+    border-bottom:1px solid var(--stroke);
+  ">${entry.def||"…"}</div>`;
 
-  // ── Tuiles pour chaque forme ──────────────────────────────────
-  const tilesWrap=document.createElement("div");
-  tilesWrap.className="gm-tiles-wrap";
+  // ── Formes (tuiles) ────────────────────────────────────────────
+  html += `<div style="padding:20px 16px;display:flex;flex-direction:column;gap:16px;">`;
 
   sortedForms.forEach(form=>{
     const normForm=norm(form);
@@ -652,52 +651,71 @@ function renderGMGame(){
     const revealed=isFound||solutionsShown;
     const letters=form.replace(/[^A-Za-zÀ-ÿ]/g,"");
 
-    const row=document.createElement("div");
-    row.className="gm-row";
-
+    html += `<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:center;">`;
     for(let i=0;i<letters.length;i++){
-      const tile=document.createElement("span");
+      const letter=letters[i].toUpperCase();
       if(revealed){
-        tile.className="gm-tile"+(isFound?" gm-ok":" gm-miss");
-        tile.textContent=letters[i].toUpperCase();
+        const bg=isFound?"#2dd4d4":"#ff6b6b";
+        const op=isFound?"1":"0.7";
+        html += `<span style="
+          width:36px;height:40px;border-radius:7px;
+          background:${bg};opacity:${op};
+          display:inline-flex;align-items:center;justify-content:center;
+          font-size:18px;font-weight:900;color:#fff;
+          box-shadow:0 3px 0 rgba(0,0,0,.3);flex-shrink:0;
+        ">${letter}</span>`;
       } else if(i===0){
-        tile.className="gm-tile gm-init";
-        tile.textContent=letters[0].toUpperCase();
+        html += `<span style="
+          width:36px;height:40px;border-radius:7px;
+          background:var(--accent);
+          display:inline-flex;align-items:center;justify-content:center;
+          font-size:18px;font-weight:900;color:#fff;
+          box-shadow:0 3px 0 rgba(0,0,0,.3);flex-shrink:0;
+        ">${letter}</span>`;
       } else {
-        tile.className="gm-tile gm-empty";
+        html += `<span style="
+          width:36px;height:40px;border-radius:7px;
+          background:rgba(255,255,255,.06);
+          border:2px dashed rgba(255,255,255,.3);
+          display:inline-flex;align-items:center;justify-content:center;
+          flex-shrink:0;
+        "></span>`;
       }
-      row.appendChild(tile);
     }
-    tilesWrap.appendChild(row);
+    html += `</div>`;
   });
-  card.appendChild(tilesWrap);
 
-  // ── Navigation si entrée résolue ou solutions affichées ────────
+  html += `</div>`;
+
+  // ── Navigation ─────────────────────────────────────────────────
   if(allFormsFound||solutionsShown){
-    const nav=document.createElement("div");
-    nav.className="gm-nav";
-    const pos=document.createElement("span");
-    pos.className="gm-pos";
-    pos.textContent=(currentEntryIdx+1)+" / "+all.length;
-    nav.appendChild(pos);
-    const nextBtn=document.createElement("button");
-    nextBtn.className="btn";
-    nextBtn.textContent="Entrée suivante →";
-    nextBtn.addEventListener("click",()=>{
-      currentEntryIdx++;
-      prog.idx=currentEntryIdx;
-      entryFound=new Set();
-      solutionsShown=false;
-      updateGameBtn();
-      setMsg("");
-      renderGMGame();
-      persist().catch(()=>{});
-    });
-    nav.appendChild(nextBtn);
-    card.appendChild(nav);
+    html += `<div style="
+      padding:12px 16px;border-top:1px solid var(--stroke);
+      display:flex;align-items:center;justify-content:space-between;
+    ">
+      <span style="font-size:12px;color:var(--muted);font-weight:700;">${currentEntryIdx+1} / ${all.length}</span>
+      <button id="gm-next-btn" style="
+        border:1px solid var(--stroke);border-radius:11px;
+        background:rgba(105,167,255,.15);border-color:rgba(105,167,255,.4);
+        color:var(--accent);cursor:pointer;font-weight:800;font-size:13px;
+        padding:7px 16px;font-family:inherit;
+      ">Entrée suivante →</button>
+    </div>`;
   }
 
-  list.appendChild(card);
+  list.innerHTML = html;
+
+  // Wirer le bouton suivant
+  document.getElementById("gm-next-btn")?.addEventListener("click",()=>{
+    currentEntryIdx++;
+    prog.idx=currentEntryIdx;
+    entryFound=new Set();
+    solutionsShown=false;
+    updateGameBtn();
+    setMsg("");
+    renderGMGame();
+    persist().catch(()=>{});
+  });
 }
 
 function validateWordGM(n){
