@@ -119,7 +119,7 @@ function updateCounter(){
   }
 }
 function showScreen(id){
-  ["tm-screen-home","tm-screen-game"].forEach(s=>{
+  ["tm-screen-home","tm-screen-finales","tm-screen-game"].forEach(s=>{
     const el=$("#"+s);
     if(el) el.style.display=(s===id)?"":"none";
   });
@@ -153,15 +153,48 @@ function updateHomeStats(){
   });
 }
 
+function renderFinalesScreen(){
+  showScreen("tm-screen-finales");
+  // Stats par finale
+  const themes=["able","age","ique","oir"];
+  themes.forEach(theme=>{
+    const data=window.THEMODS_DATA?.[theme];
+    if(!data) return;
+    const total=data.length;
+    let seen=0,validated=0;
+    data.forEach(({label})=>{
+      const s=getSt(theme,label);
+      if(s.seen) seen++;
+      if(s.validated) validated++;
+    });
+    const el=document.getElementById(theme+"-desc");
+    if(el){
+      const base={able:"295 mots · 137 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions"};
+      el.textContent=base[theme]+(seen>0?" · "+validated+"/"+total+" val.":"");
+    }
+  });
+}
+
 function renderHome(){
   showScreen("tm-screen-home");
   setTimeout(()=>{
     updateHomeStats();
     // Compteur GM
     const prog=getGMProgress();
-    const total=getAllGMEntries().length;
-    const el=document.getElementById("gm-home-desc");
-    if(el) el.textContent="1 808 groupes · "+prog.done+" / "+total+" résolus";
+    const gmTotal=getAllGMEntries().length;
+    const gmEl=document.getElementById("gm-home-desc");
+    if(gmEl) gmEl.textContent="1 808 groupes · "+prog.done+" / "+gmTotal+" résolus";
+    // Stats globales finales sur la carte d'accueil
+    const finaleThemes=["able","age","ique","oir"];
+    let totalSess=0,totalVal=0;
+    finaleThemes.forEach(theme=>{
+      const data=window.THEMODS_DATA?.[theme];
+      if(!data) return;
+      totalSess+=data.length;
+      data.forEach(({label})=>{ if(getSt(theme,label).validated) totalVal++; });
+    });
+    const fEl=document.getElementById("finales-home-desc");
+    if(fEl) fEl.textContent="4 finales · 2 488 mots"+(totalVal>0?" · "+totalVal+"/"+totalSess+" validées":"");
   },50);
 }
 
@@ -797,6 +830,11 @@ function wire(){
     ique: {name:"Finale -IQUE",       hint:"Trouve tous les mots en <strong>-IQUE</strong> qui commencent par le préfixe proposé."},
     gm:   {name:"Graphies multiples", hint:"Trouve toutes les <strong>graphies alternatives</strong> du mot défini."},
   };
+  // Bouton groupe Finales
+  document.getElementById("btn-group-finales")?.addEventListener("click",renderFinalesScreen);
+  // Bouton retour depuis finales
+  document.getElementById("tm-back-finales")?.addEventListener("click",renderHome);
+  // Cartes thèmes (toutes pages)
   document.querySelectorAll(".tm-theme-card[data-theme]").forEach(card=>{
     card.addEventListener("click",()=>{ currentTheme=card.dataset.theme; playNext(currentTheme); });
   });
