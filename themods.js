@@ -1,12 +1,13 @@
 "use strict";
 /* ══════════════════════════════════════════
-   THEMODS_NEW.JS — Logique THEMODS
+   THEMODS.JS
 ══════════════════════════════════════════ */
 
-/* ── État THEMODS ── */
+/* ── État ── */
 const LS_THEMODS = () => "THEMODS_STATE_" + (currentUser?.pseudo||"guest");
 let tmState = null;
 let tmKb = null;
+let tmInited = false;
 
 function tmDefault(){ return {updatedAt:0, themes:{}}; }
 function tmLoadLocal(){ try{ return JSON.parse(localStorage.getItem(LS_THEMODS())||"null")||tmDefault(); }catch{ return tmDefault(); } }
@@ -16,9 +17,7 @@ async function loadThemodsState(){
   tmState = tmLoadLocal();
   if(!currentUser) return;
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
-  if(r.ok && r.data){
-    if((r.data.updatedAt||0)>(tmState.updatedAt||0)) tmState=r.data;
-  }
+  if(r.ok && r.data && (r.data.updatedAt||0) > (tmState.updatedAt||0)) tmState = r.data;
   tmSaveLocal();
 }
 async function persistThemods(){
@@ -34,106 +33,104 @@ function getSt(theme, label){
   return tmState.themes[theme][label];
 }
 
-/* ── Dictionnaire ODS (pour hors-jeu) ── */
+/* ── Dict ODS ── */
 let TM_DICT = null;
 function getTmDict(){
-  if(!TM_DICT){
-    const d=window.SEQODS_DATA?.d;
-    TM_DICT = d ? new Set(d) : new Set();
-  }
+  if(!TM_DICT){ const d=window.SEQODS_DATA?.d; TM_DICT=d?new Set(d):new Set(); }
   return TM_DICT;
 }
 
-/* ── État du jeu courant ── */
+/* ── État jeu ── */
 let tmTheme=null, tmSession=null;
-let tmFound=new Set(), tmSolutions=false, tmNoHelp=true, tmBuf="";
+let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmEntryIdx=0, gmFound=new Set();
 
-/* ── Navigation sous-vues THEMODS ── */
+/* ── Navigation sous-vues ── */
 function showTmView(id){
   document.querySelectorAll("#v-themods .tmv").forEach(v=>{
     v.classList.toggle("active", v.id===id);
   });
+  // Clavier mobile : visible seulement en jeu
+  const kb = document.getElementById("tm-kb");
+  if(kb) kb.style.display = (id==="tv-game") ? "" : "none";
 }
 
-/* ── Accueil THEMODS ── */
+/* ── Accueil ── */
 function renderTmHome(){
   showTmView("tv-home");
   updateTmStats();
 }
+
 function renderTmFinales(){
   showTmView("tv-finales");
   updateFinalesStats();
 }
 
 function updateTmStats(){
+  if(!tmState) return;
   // GM
   const prog=getGMProgress();
   const gmTotal=getAllGMEntries().length;
-  const gmEl=$("#gm-desc");
+  const gmEl=document.getElementById("gm-desc");
   if(gmEl) gmEl.textContent="1 808 groupes · "+prog.done+"/"+gmTotal+" résolus";
 
   // Finales
   const finales=["able","age","ique","oir"];
-  let totalSess=0,totalVal=0;
+  let totalSess=0, totalVal=0;
   finales.forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
     totalSess+=d.length;
     d.forEach(({label})=>{ if(getSt(th,label).validated) totalVal++; });
   });
-  const fEl=$("#finales-desc");
+  const fEl=document.getElementById("finales-desc");
   if(fEl) fEl.textContent="4 finales · 2 488 mots"+(totalVal>0?" · "+totalVal+"/"+totalSess+" validées":"");
 
   // VI
   const viData=window.THEMODS_DATA?.vi||[];
   let viVal=0;
   viData.forEach(({label})=>{ if(getSt("vi",label).validated) viVal++; });
-  const viEl=$("#vi-desc");
+  const viEl=document.getElementById("vi-desc");
   if(viEl) viEl.textContent="575 verbes · 193 sessions"+(viVal>0?" · "+viVal+"/"+viData.length+" val.":"");
 }
 
 function updateFinalesStats(){
+  const bases={able:"293 mots · 136 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions"};
   ["able","age","ique","oir"].forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
-    let val=0;
-    d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
+    let val=0; d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
     const el=document.getElementById(th+"-desc");
-    if(el){
-      const base={able:"293 mots · 136 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions"};
-      el.textContent=base[th]+(val>0?" · "+val+"/"+d.length+" val.":"");
-    }
+    if(el) el.textContent=bases[th]+(val>0?" · "+val+"/"+d.length+" val.":"");
   });
 }
 
-/* ── Sélection et lancement session ── */
+/* ── Lancement session ── */
 function playTheme(theme){
   tmTheme=theme;
   if(theme==="gm"){ startGM(); return; }
-  const data=window.THEMODS_DATA?.[theme];
-  if(!data) return;
+  const data=window.THEMODS_DATA?.[theme]; if(!data) return;
   const today=todayStr();
   let pool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
   if(!pool.length) pool=data.filter(({label})=>!getSt(theme,label).seen);
   if(!pool.length){
-    const msg=$("#tm-home-msg");
+    const msg=document.getElementById("tm-home-msg");
     if(msg){msg.textContent="Toutes les sessions sont validées !";msg.className="tm-msg ok";}
+    showTmView("tv-home");
     return;
   }
   startSession(theme, pool[Math.floor(Math.random()*pool.length)]);
 }
 
 function startSession(theme, session){
-  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBuf="";
-  const s=getSt(theme, session.label);
-  s.seen=true; s.lastSeen=todayStr();
+  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true;
+  getSt(theme, session.label).seen=true;
+  getSt(theme, session.label).lastSeen=todayStr();
   persistThemods().catch(()=>{});
   showTmView("tv-game");
   renderTmGame();
   updateTmBtn();
   setTmMsg("");
   if(tmKb) tmKb.clear();
-  // Focus auto desktop
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) $("#tm-saisie")?.focus(); },80);
+  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
 
 /* ── Rendu jeu ── */
@@ -142,27 +139,27 @@ const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:""};
 
 function renderTmGame(){
   if(tmTheme==="gm"){ renderGMGame(); return; }
-  const sess=tmSession;
+  const sess=tmSession; if(!sess) return;
 
-  const title=$("#tm-gtitle");
-  if(title) title.textContent=sess.label+(THEME_SFX[tmTheme]?"…"+THEME_SFX[tmTheme]:"");
-  const theme=$("#tm-gtheme"); if(theme) theme.textContent=THEME_NAMES[tmTheme]||tmTheme;
-  const total=$("#tm-gtotal"); if(total) total.textContent=sess.words.length+" mot"+(sess.words.length>1?"s":"")+" à trouver";
-  const ctr=$("#tm-counter"); if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
+  const el=id=>document.getElementById(id);
+  const sfx=THEME_SFX[tmTheme];
+  if(el("tm-gtitle")) el("tm-gtitle").textContent=sess.label+(sfx?"…"+sfx:"");
+  if(el("tm-gtheme")) el("tm-gtheme").textContent=THEME_NAMES[tmTheme]||tmTheme;
+  if(el("tm-gtotal")) el("tm-gtotal").textContent=sess.words.length+" mot"+(sess.words.length>1?"s":"")+" à trouver";
+  if(el("tm-counter")) el("tm-counter").textContent=tmFound.size+" / "+sess.words.length;
 
-  const list=$("#tm-wlist"); if(!list) return;
+  const list=el("tm-wlist"); if(!list) return;
   list.innerHTML="";
   sess.words.forEach((word,i)=>{
     const li=document.createElement("li");
     li.dataset.idx=i; li.className="slot";
     if(tmFound.has(i)){
-      const n=norm(word);
       li.classList.add("found","clickable");
       li.textContent=word;
-      li.addEventListener("click",()=>openDef(n,word));
+      li.addEventListener("click",()=>openDef(norm(word),word));
     } else if(tmSolutions){
-      li.classList.add("revealed"); li.textContent=word;
-      li.classList.add("clickable");
+      li.classList.add("revealed","clickable");
+      li.textContent=word;
       li.addEventListener("click",()=>openDef(norm(word),word));
     }
     list.appendChild(li);
@@ -173,40 +170,36 @@ function validateTmWord(raw){
   if(tmTheme==="gm"){ validateGMWord(norm(raw)); return; }
   if(tmSolutions) return;
   const n=norm(raw); if(!n) return;
-  const sess=tmSession;
+  const sess=tmSession; if(!sess) return;
   const matched=[];
   sess.words.forEach((w,i)=>{ if(!tmFound.has(i)&&norm(w)===n) matched.push(i); });
-
   if(!matched.length){
-    if(getTmDict().has(n)){
-      setTmMsg("Hors-jeu — mot valide mais pas dans cette liste.","warn");
-    } else {
-      setTmMsg("Mot inconnu — la partie s'arrête.","err");
-      setTimeout(()=>showTmSolutions(),800);
-    }
+    setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot inconnu — la partie s'arrête.",
+             getTmDict().has(n)?"warn":"err");
+    if(!getTmDict().has(n)) setTimeout(()=>showTmSolutions(),800);
     return;
   }
   matched.forEach(i=>{
     tmFound.add(i);
     const li=document.querySelector("#tm-wlist li[data-idx='"+i+"']");
     if(li){
-      const word=sess.words[i];
       li.className="slot found clickable";
-      li.textContent=word;
-      li.addEventListener("click",()=>openDef(norm(word),word));
+      li.textContent=sess.words[i];
+      li.addEventListener("click",()=>openDef(norm(sess.words[i]),sess.words[i]));
       li.scrollIntoView({behavior:"smooth",block:"nearest"});
     }
   });
   setTmMsg("");
-  const ctr=$("#tm-counter"); if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
+  const ctr=document.getElementById("tm-counter");
+  if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
   if(tmFound.size===sess.words.length) finalizeTm(tmNoHelp);
-  persistThemods().catch(()=>{});
+  else persistThemods().catch(()=>{});
 }
 
 function showTmSolutions(){
   tmNoHelp=false;
   if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
-  const sess=tmSession;
+  const sess=tmSession; if(!sess) return;
   sess.words.forEach((w,i)=>{
     if(!tmFound.has(i)){
       tmFound.add(i);
@@ -218,7 +211,8 @@ function showTmSolutions(){
       }
     }
   });
-  const ctr=$("#tm-counter"); if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
+  const ctr=document.getElementById("tm-counter");
+  if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
   finalizeTm(false);
 }
 
@@ -239,29 +233,35 @@ function finalizeTm(ok){
 }
 
 function updateTmBtn(){
-  const btns=[$("#tm-btn-sol"),$("#tm-btn-sol-kb")];
-  if(tmSolutions||tmTheme==="gm"){
-    btns.forEach(b=>{if(b){b.textContent="Jouer";b.classList.remove("btn-danger");b.classList.add("btn-primary");}});
-    if(tmTheme==="gm") btns.forEach(b=>{if(b) b.style.display="none";});
-  } else {
-    btns.forEach(b=>{if(b){b.textContent="Solutions";b.classList.add("btn-danger");b.classList.remove("btn-primary");b.style.display="";}});
-  }
+  const btns=[document.getElementById("tm-btn-sol"),document.getElementById("tm-btn-sol-kb")];
+  const isGM=tmTheme==="gm";
+  btns.forEach(b=>{
+    if(!b) return;
+    if(isGM){ b.style.display="none"; return; }
+    b.style.display="";
+    if(tmSolutions){
+      b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
+    } else {
+      b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary");
+    }
+  });
 }
 
 function setTmMsg(t,c){
-  const m=$("#tm-msg"); if(m){m.textContent=t;m.className="msg"+(c?" "+c:"");}
+  const m=document.getElementById("tm-msg");
+  if(m){m.textContent=t;m.className="msg"+(c?" "+c:"");}
   if(tmKb) tmKb.setMsg(t,c);
 }
 
 function tmReplay(){
   if(tmTheme) playTheme(tmTheme);
+  else renderTmHome();
 }
 
 /* ── Graphies multiples ── */
 function getAllGMEntries(){
-  const data=window.THEMODS_DATA?.gm||[];
   const all=[];
-  data.forEach(s=>{ (s.entries||[]).forEach(e=>all.push(e)); });
+  (window.THEMODS_DATA?.gm||[]).forEach(s=>{ (s.entries||[]).forEach(e=>all.push(e)); });
   return all;
 }
 function shuffleArray(arr){
@@ -282,52 +282,43 @@ function currentGMEntry(){
 }
 function cleanDef(d){
   if(!d) return "";
-  d=d.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"");
-  d=d.replace(/^\([^)]*\)\s*/,"");
-  if(d.startsWith("->")) return "";
-  return d.trim();
+  d=d.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").replace(/^\([^)]*\)\s*/,"");
+  return d.startsWith("->") ? "" : d.trim();
 }
 function letterCount(w){ return w.replace(/[^A-Za-zÀ-ÿ]/g,"").length; }
 
 function startGM(){
-  const all=getAllGMEntries();
-  const prog=getGMProgress();
+  const all=getAllGMEntries(), prog=getGMProgress();
   if(!prog.order||prog.order.length!==all.length){
     prog.order=shuffleArray(all.map((_,i)=>i));
     prog.idx=0; prog.done=0;
   }
-  gmEntryIdx=prog.idx;
-  gmFound=new Set();
-  tmSolutions=false;
-  tmNoHelp=true;
+  gmEntryIdx=prog.idx; gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
   showTmView("tv-game");
-  const title=$("#tm-gtitle"); if(title) title.textContent="";
-  const theme=$("#tm-gtheme"); if(theme) theme.textContent="Graphies multiples";
-  const total=$("#tm-gtotal"); if(total) total.textContent="";
-  updateTmBtn();
-  setTmMsg("");
-  renderGMGame();
+  document.getElementById("tm-gtitle").textContent="";
+  document.getElementById("tm-gtheme").textContent="Graphies multiples";
+  document.getElementById("tm-gtotal").textContent="";
+  document.getElementById("tm-counter").textContent="";
+  updateTmBtn(); setTmMsg(""); renderGMGame();
   if(tmKb) tmKb.clear();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) $("#tm-saisie")?.focus(); },80);
+  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
 
 function renderGMGame(){
   const all=getAllGMEntries(), prog=getGMProgress();
   const entry=currentGMEntry();
-  const list=$("#tm-wlist"); if(!list) return;
+  const list=document.getElementById("tm-wlist"); if(!list) return;
   list.innerHTML="";
   if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
 
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
-  // Définition
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   defDiv.textContent=cleanDef(entry.def)||"…";
   list.appendChild(defDiv);
 
-  // Tuiles
   const tilesDiv=document.createElement("div");
   tilesDiv.className="gm-tiles";
   sortedForms.forEach(form=>{
@@ -337,21 +328,15 @@ function renderGMGame(){
     const row=document.createElement("div"); row.className="gm-row";
     for(let i=0;i<letters.length;i++){
       const t=document.createElement("span");
-      if(revealed){
-        t.className="gt "+(isFound?"ok":"miss");
-        t.textContent=letters[i].toUpperCase();
-      } else if(i===0){
-        t.className="gt init"; t.textContent=letters[0].toUpperCase();
-      } else {
-        t.className="gt empty";
-      }
+      if(revealed){ t.className="gt "+(isFound?"ok":"miss"); t.textContent=letters[i].toUpperCase(); }
+      else if(i===0){ t.className="gt init"; t.textContent=letters[0].toUpperCase(); }
+      else { t.className="gt empty"; }
       row.appendChild(t);
     }
     tilesDiv.appendChild(row);
   });
   list.appendChild(tilesDiv);
 
-  // Navigation si résolu ou solutions
   if(allFormsFound||tmSolutions){
     const nav=document.createElement("div"); nav.className="gm-nav";
     const pos=document.createElement("span"); pos.className="gm-pos";
@@ -372,66 +357,52 @@ function renderGMGame(){
 
 function validateGMWord(n){
   const entry=currentGMEntry(); if(!entry) return;
-  const matched=entry.forms.find(f=>norm(f)===n);
-  if(!matched){
-    if(getTmDict().has(n)){ setTmMsg("Hors-jeu — mot valide mais pas dans cette liste.","warn"); }
-    else { setTmMsg("Mot non valide.","err"); }
+  if(!entry.forms.find(f=>norm(f)===n)){
+    setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot non valide.",
+             getTmDict().has(n)?"warn":"err");
     return;
   }
-  gmFound.add(n);
-  setTmMsg("");
+  gmFound.add(n); setTmMsg("");
   const allFound=entry.forms.every(f=>gmFound.has(norm(f)));
   if(allFound){
     const prog=getGMProgress();
-    prog.done=(prog.done||0)+1;
-    prog.idx=gmEntryIdx+1;
+    prog.done=(prog.done||0)+1; prog.idx=gmEntryIdx+1;
     setTmMsg("✓ Toutes les graphies trouvées !","ok");
     persistThemods().catch(()=>{});
   }
   renderGMGame();
 }
 
-/* ── Init THEMODS ── */
+/* ── Init (une seule fois) ── */
 function initThemods(){
-  // Clavier mobile
-  tmKb = wireKeyboard("tm-kb","tm-kb-disp","tm-kb-msg", w=>{
-    validateTmWord(w);
-  });
+  if(!tmInited){
+    tmInited=true;
 
-  // Saisie desktop
-  $("#tm-saisie")?.addEventListener("keydown",e=>{
-    if(e.key==="Enter"&&!e.isComposing){
-      e.preventDefault(); validateTmWord(e.target.value); e.target.value="";
-    }
-  });
+    tmKb = wireKeyboard("tm-kb","tm-kb-disp","tm-kb-msg", w=>validateTmWord(w));
 
-  // Boutons solutions
-  const onSol=()=>{
-    if(tmSolutions) playTheme(tmTheme);
-    else showTmSolutions();
-  };
-  $("#tm-btn-sol")?.addEventListener("click",onSol);
-  $("#tm-btn-sol-kb")?.addEventListener("click",onSol);
+    document.getElementById("tm-saisie")?.addEventListener("keydown",e=>{
+      if(e.key==="Enter"&&!e.isComposing){
+        e.preventDefault(); validateTmWord(e.target.value); e.target.value="";
+      }
+    });
 
-  // Retour vers thèmes
-  const backToHome=()=>{
-    renderTmHome();
-    updateTmBtn();
-    // Réafficher le bouton solutions
-    [$("#tm-btn-sol"),$("#tm-btn-sol-kb")].forEach(b=>{if(b) b.style.display="";});
-  };
-  $("#btn-back-game")?.addEventListener("click",backToHome);
-  $("#btn-back-game-kb")?.addEventListener("click",backToHome);
+    document.getElementById("tm-btn-sol")?.addEventListener("click",()=>{
+      tmSolutions ? playTheme(tmTheme) : showTmSolutions();
+    });
+    document.getElementById("tm-btn-sol-kb")?.addEventListener("click",()=>{
+      tmSolutions ? playTheme(tmTheme) : showTmSolutions();
+    });
 
-  // Finales
-  $("#btn-finales")?.addEventListener("click",renderTmFinales);
-  $("#btn-back-finales")?.addEventListener("click",renderTmHome);
+    document.getElementById("btn-back-game")?.addEventListener("click",()=>renderTmHome());
+    document.getElementById("btn-back-game-kb")?.addEventListener("click",()=>renderTmHome());
+    document.getElementById("btn-finales")?.addEventListener("click",()=>renderTmFinales());
+    document.getElementById("btn-back-finales")?.addEventListener("click",()=>renderTmHome());
 
-  // Cartes thèmes
-  document.querySelectorAll("#v-themods .tc[data-theme]").forEach(card=>{
-    card.addEventListener("click",()=>playTheme(card.dataset.theme));
-  });
+    document.querySelectorAll("#v-themods .tc[data-theme]").forEach(card=>{
+      card.addEventListener("click",()=>playTheme(card.dataset.theme));
+    });
+  }
 
-  // Afficher l'accueil
+  // Toujours afficher l'accueil quand on entre dans THEMODS
   renderTmHome();
 }
