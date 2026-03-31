@@ -246,6 +246,32 @@ input[type=range]{accent-color:var(--accent);}
 .gm-nav{padding:10px 16px;border-top:1px solid var(--stroke);
   display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .gm-pos{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;}
+
+/* ══ iOS SAFE AREAS ══ */
+@supports(padding: env(safe-area-inset-top)){
+  body{
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
+/* ══ CLAVIER iOS OUVERT ══ */
+/* Quand le clavier iOS s'ouvre, on compacte l'interface */
+body.kb-open .m-hdr{ padding:4px 10px; }
+body.kb-open .m-prog{ display:none; }
+body.kb-open .bounds-row{ padding:3px 10px; }
+body.kb-open .chrono{ font-size:14px; }
+body.kb-open .slot{ min-height:28px;font-size:12px; }
+body.kb-open .tm-hdr .prog-row{ display:none; }
+
+/* ══ MOBILE : card sans border-radius, plein écran ══ */
+@media(max-width:640px){
+  .m-card{ margin:0;border-radius:0;border-left:none;border-right:none;border-top:none; }
+  .tm-outer{ margin:0;border-radius:0;border-left:none;border-right:none;border-top:none; }
+  .tm-card{ border-radius:0; }
+  .card.sel-card{ border-radius:var(--radius); }
+  .card.auth-card{ border-radius:var(--radius); }
+}
 </style>
 </head>
 <body>
