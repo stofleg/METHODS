@@ -1,98 +1,11 @@
 "use strict";
 /* ══════════════════════════════════════════
-   APP_NEW.JS — Orchestrateur principal
-   Gère : auth, navigation entre vues, select
+   APP.JS — Orchestrateur
 ══════════════════════════════════════════ */
-
-
-/* ── Détection clavier iOS ── */
-function initKeyboardDetection(){
-  if(!window.visualViewport) return;
-  let lastH = window.visualViewport.height;
-  window.visualViewport.addEventListener("resize", ()=>{
-    const h = window.visualViewport.height;
-    const diff = lastH - h;
-    if(diff > 100) document.body.classList.add("kb-open");
-    else if(diff < -50) document.body.classList.remove("kb-open");
-    lastH = h;
-  });
-  document.addEventListener("focusin", e=>{
-    if(e.target.tagName==="INPUT") setTimeout(()=>{
-      if(window.visualViewport.height < window.screen.height * 0.75)
-        document.body.classList.add("kb-open");
-    }, 300);
-  });
-  document.addEventListener("focusout", e=>{
-    if(e.target.tagName==="INPUT") setTimeout(()=>{
-      document.body.classList.remove("kb-open");
-    }, 100);
-  });
-}
-
-async function start(){
-  // Charger paramètres
-  loadSettings();
-  initKeyboardDetection();
-
-  // Wirer la modale définition et les settings
-  wireDefModal();
-  wireSettingsUI();
-
-  // Auth : session existante ?
-  const saved = loadSession();
-  if(saved?.pseudo && saved?.token){
-    currentUser = saved;
-    await onLogin();
-    return;
-  }
-  // Sinon afficher l'auth
-  showView("v-auth");
-  wireAuthUI(async (pseudo, token)=>{
-    currentUser = {pseudo, token};
-    saveSession(currentUser);
-    await onLogin();
-  });
-}
-
-// Appelé après connexion réussie
-async function onLogin(){
-  // Charger les états METHODS et THEMODS depuis Firebase
-  await Promise.all([
-    loadMethodsState(),
-    loadThemodsState(),
-  ]);
-  // Mettre à jour le chip utilisateur
-  const chip = $("#user-chip");
-  if(chip) chip.textContent = currentUser.pseudo;
-  // Afficher la sélection
-  showView("v-select");
-  wireSelectUI();
-}
-
-function wireSelectUI(){
-  $("#btn-go-methods")?.addEventListener("click", ()=>{
-    showView("v-methods");
-    initMethods();
-  }, {once:true});
-  $("#btn-go-themods")?.addEventListener("click", ()=>{
-    showView("v-themods");
-    initThemods();
-  }, {once:true});
-}
-
-// Retour depuis METHODS ou THEMODS → select
-function goToSelect(){
-  showView("v-select");
-  // Re-wirer les boutons select (once les a consommés)
-  wireSelectUI();
-}
 
 /* ── Settings ── */
 const LS_SETTINGS = "METHODS_SETTINGS_V1";
-let settings = {
-  showAbc:true, showDef:true, showLen:true,
-  chronoEnabled:true, chronoDur:10
-};
+let settings = {showAbc:true,showDef:true,showLen:true,chronoEnabled:true,chronoDur:10};
 
 function loadSettings(){
   try{ Object.assign(settings, JSON.parse(localStorage.getItem(LS_SETTINGS)||"{}")); }catch{}
@@ -101,70 +14,206 @@ function saveSettings(){
   try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch{}
 }
 
-function wireSettingsUI(){
-  const overlay = $("#settings");
-  $("#btn-settings")?.addEventListener("click", ()=>{
-    // Sync UI avec état courant
-    $("#set-abc").checked = settings.showAbc;
-    $("#set-def").checked = settings.showDef;
-    $("#set-len").checked = settings.showLen;
-    $("#set-chrono").checked = settings.chronoEnabled;
-    $("#set-dur").value = settings.chronoDur;
-    $("#chrono-lbl").textContent = settings.chronoDur + " min";
-    $("#row-dur").style.display = settings.chronoEnabled ? "" : "none";
-    overlay.classList.add("open");
+/* ── Détection clavier iOS ── */
+function initKeyboardDetection(){
+  if(!window.visualViewport) return;
+  let lastH = window.visualViewport.height;
+  window.visualViewport.addEventListener("resize", ()=>{
+    const h = window.visualViewport.height;
+    if(lastH - h > 100) document.body.classList.add("kb-open");
+    else if(h - lastH > 50) document.body.classList.remove("kb-open");
+    lastH = h;
   });
-  const close = () => overlay.classList.remove("open");
-  $("#btn-close-settings")?.addEventListener("click", close);
-  $("#settings-bd")?.addEventListener("click", close);
-  ["abc","def","len","chrono"].forEach(k=>{
-    const el = document.getElementById("set-"+k);
-    if(!el) return;
-    el.addEventListener("change", ()=>{
-      if(k==="abc") settings.showAbc=el.checked;
-      if(k==="def") settings.showDef=el.checked;
-      if(k==="len") settings.showLen=el.checked;
-      if(k==="chrono"){
-        settings.chronoEnabled=el.checked;
-        $("#row-dur").style.display=el.checked?"":"none";
-      }
-      saveSettings();
-      applyHintSettings(); // rafraîchir METHODS si actif
+  document.addEventListener("focusin", e=>{
+    if(e.target.tagName==="INPUT") setTimeout(()=>{
+      if(window.visualViewport.height < window.screen.height*0.75)
+        document.body.classList.add("kb-open");
+    },300);
+  });
+  document.addEventListener("focusout", e=>{
+    if(e.target.tagName==="INPUT") setTimeout(()=>document.body.classList.remove("kb-open"),100);
+  });
+}
+
+/* ── Navigation entre vues ── */
+function showView(id){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active", v.id===id));
+}
+
+/* ── Auth ── */
+function initAuth(){
+  // Onglets
+  document.querySelectorAll(".auth-tab").forEach(tab=>{
+    tab.addEventListener("click", ()=>{
+      document.querySelectorAll(".auth-tab").forEach(t=>t.classList.remove("active"));
+      tab.classList.add("active");
+      ["login","register","recover"].forEach(n=>{
+        const f=document.getElementById("f-"+n);
+        if(f) f.style.display=(n===tab.dataset.tab)?"flex":"none";
+      });
+      document.getElementById("auth-err").textContent="";
     });
   });
-  $("#set-dur")?.addEventListener("input", e=>{
-    settings.chronoDur = parseInt(e.target.value);
-    $("#chrono-lbl").textContent = settings.chronoDur + " min";
-    saveSettings();
+
+  const setErr=(t,ok=false)=>{
+    const e=document.getElementById("auth-err");
+    if(e){e.textContent=t;e.className="msg"+(ok?" ok":" err");}
+  };
+  const setLoad=on=>{
+    ["btn-login","btn-register","btn-recover"].forEach(id=>{
+      const b=document.getElementById(id); if(b) b.disabled=on;
+    });
+  };
+
+  document.getElementById("btn-login")?.addEventListener("click", async()=>{
+    const p=document.getElementById("login-pseudo")?.value||"";
+    const pw=document.getElementById("login-pass")?.value||"";
+    setLoad(true); setErr("");
+    const r=await authLogin(p,pw);
+    setLoad(false);
+    if(!r.ok){setErr(r.err);return;}
+    currentUser={pseudo:r.pseudo,token:r.token};
+    saveSession(currentUser);
+    await afterLogin();
   });
 
-  // Déconnexion
-  $("#btn-logout")?.addEventListener("click", ()=>{
-    clearSession();
-    chronoStop();
-    showView("v-auth");
+  document.getElementById("btn-register")?.addEventListener("click", async()=>{
+    const p=document.getElementById("reg-pseudo")?.value||"";
+    const pw=document.getElementById("reg-pass")?.value||"";
+    const pw2=document.getElementById("reg-pass2")?.value||"";
+    setLoad(true); setErr("");
+    const r=await authRegister(p,pw,pw2);
+    setLoad(false);
+    if(!r.ok){setErr(r.err);return;}
+    currentUser={pseudo:r.pseudo,token:r.token};
+    saveSession(currentUser);
+    await afterLogin();
   });
 
-  // Navigation METHODS → THEMODS et vice versa
-  $("#btn-to-themods")?.addEventListener("click", ()=>{
+  document.getElementById("btn-recover")?.addEventListener("click", async()=>{
+    const p=document.getElementById("rec-pseudo")?.value||"";
+    const op=document.getElementById("rec-pass")?.value||"";
+    const np=document.getElementById("rec-new")?.value||"";
+    setLoad(true); setErr("");
+    const r=await authRecover(p,op,np);
+    setLoad(false);
+    if(!r.ok){setErr(r.err);return;}
+    setErr("Mot de passe changé. Reconnecte-toi.",true);
+  });
+
+  // Enter pour valider
+  [["login-pass","btn-login"],["reg-pass2","btn-register"],["rec-new","btn-recover"]].forEach(([inp,btn])=>{
+    document.getElementById(inp)?.addEventListener("keydown",e=>{
+      if(e.key==="Enter") document.getElementById(btn)?.click();
+    });
+  });
+}
+
+/* ── Après login ── */
+async function afterLogin(){
+  await Promise.all([loadMethodsState(), loadThemodsState()]);
+  const chip=document.getElementById("user-chip");
+  if(chip) chip.textContent=currentUser.pseudo;
+  showView("v-select");
+  // interval auto-persist
+  setInterval(()=>{ persistMethodsState().catch(()=>{}); persistThemods().catch(()=>{}); }, 60000);
+}
+
+/* ── Select ── */
+function initSelect(){
+  document.getElementById("btn-go-methods")?.addEventListener("click", ()=>{
+    showView("v-methods");
+    initMethods();
+  });
+  document.getElementById("btn-go-themods")?.addEventListener("click", ()=>{
+    showView("v-themods");
+    initThemods();
+  });
+}
+
+/* ── Navigation globale ── */
+function initNav(){
+  // METHODS → THEMODS
+  document.getElementById("btn-to-themods")?.addEventListener("click", ()=>{
     chronoStop();
     showView("v-themods");
-    renderTmHome();
+    initThemods();
   });
-  $("#btn-tm-back")?.addEventListener("click", ()=>{
+  // THEMODS → METHODS
+  document.getElementById("btn-tm-back")?.addEventListener("click", ()=>{
     showView("v-methods");
+    // Pas besoin de re-init METHODS, juste reprendre
+    computeStats();
   });
-
-  // F1 : relancer
+  // Déconnexion
+  document.getElementById("btn-logout")?.addEventListener("click", ()=>{
+    chronoStop();
+    clearSession();
+    currentUser=null;
+    showView("v-auth");
+  });
+  // F1
   document.addEventListener("keydown", e=>{
     if(e.key==="F1"){
       e.preventDefault();
-      const v = document.querySelector(".view.active");
-      if(v?.id==="v-methods") methodsReplay();
-      if(v?.id==="v-themods") tmReplay();
+      const v=document.querySelector(".view.active")?.id;
+      if(v==="v-methods" && mSolutionsShown) methodsReplay();
+      if(v==="v-themods") tmReplay();
     }
     if(e.key==="Escape") closeDef();
   });
+}
+
+/* ── Settings UI ── */
+function initSettingsUI(){
+  const overlay=document.getElementById("settings");
+  document.getElementById("btn-settings")?.addEventListener("click", ()=>{
+    document.getElementById("set-abc").checked=settings.showAbc;
+    document.getElementById("set-def").checked=settings.showDef;
+    document.getElementById("set-len").checked=settings.showLen;
+    document.getElementById("set-chrono").checked=settings.chronoEnabled;
+    document.getElementById("set-dur").value=settings.chronoDur;
+    document.getElementById("chrono-lbl").textContent=settings.chronoDur+" min";
+    document.getElementById("row-dur").style.display=settings.chronoEnabled?"":"none";
+    overlay.classList.add("open");
+  });
+  const close=()=>overlay.classList.remove("open");
+  document.getElementById("btn-close-settings")?.addEventListener("click",close);
+  document.getElementById("settings-bd")?.addEventListener("click",close);
+
+  document.getElementById("set-abc")?.addEventListener("change",e=>{settings.showAbc=e.target.checked;saveSettings();renderSlots();});
+  document.getElementById("set-def")?.addEventListener("change",e=>{settings.showDef=e.target.checked;saveSettings();renderSlots();});
+  document.getElementById("set-len")?.addEventListener("change",e=>{settings.showLen=e.target.checked;saveSettings();renderSlots();});
+  document.getElementById("set-chrono")?.addEventListener("change",e=>{
+    settings.chronoEnabled=e.target.checked;
+    document.getElementById("row-dur").style.display=e.target.checked?"":"none";
+    saveSettings();
+    if(!e.target.checked) chronoStop();
+  });
+  document.getElementById("set-dur")?.addEventListener("input",e=>{
+    settings.chronoDur=parseInt(e.target.value);
+    document.getElementById("chrono-lbl").textContent=settings.chronoDur+" min";
+    saveSettings();
+  });
+}
+
+/* ── START ── */
+async function start(){
+  loadSettings();
+  initKeyboardDetection();
+  wireDefModal();
+  initAuth();
+  initSelect();
+  initNav();
+  initSettingsUI();
+
+  const saved=loadSession();
+  if(saved?.pseudo){
+    currentUser=saved;
+    await afterLogin();
+    return;
+  }
+  showView("v-auth");
 }
 
 document.addEventListener("DOMContentLoaded", start);
