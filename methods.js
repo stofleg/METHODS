@@ -27,6 +27,7 @@ let hintMode = Array(10).fill("none");
 let hintUsed = Array(10).fill(false);
 let mNoHelp = true;
 let mSolutionsShown = true;
+let mGameStarted = false;
 let mKb = null;
 let mInited = false;
 
@@ -213,6 +214,7 @@ function buildTargets(s){
 
 function mValidateWord(raw){
   const n=norm(raw); if(!n) return;
+  if(!mGameStarted){ mGameStarted=true; startMethodsGame(); }
   // Après solutions : mode vérification libre
   if(mSolutionsShown){
     if(!DICT.has(n)) setMethodsMsg("Mot inconnu.","err");
@@ -264,19 +266,32 @@ function mFinalizeList(ok){
 function methodsReplay(){
   const idx=pickNext();
   if(idx===null){ setMethodsMsg("Toutes les listes sont à jour !","ok"); return; }
-  startMethodsGame(idx);
+  prepareGame(idx);
 }
 
-function startMethodsGame(idx){
+// Phase 1 : prépare la liste, affiche JOUER — PAS de chrono
+function prepareGame(idx){
   seq={...sequences[idx], seqIndex:idx};
   mFound=new Set(); hintMode=Array(10).fill("none"); hintUsed=Array(10).fill(false);
-  mNoHelp=true; mSolutionsShown=false;
+  mNoHelp=true; mSolutionsShown=true; mGameStarted=false; // true = affiche "JOUER"
   buildTargets(seq);
   renderBounds(); renderSlots();
   const c=$("#compteur"); if(c) c.textContent="0/10";
+  // Chrono : afficher 00:00 statique sans démarrer
+  const el=$("#chrono");
+  if(el){
+    el.textContent=settings.chronoEnabled ? chronoFmt(settings.chronoDur*60) : "";
+    el.className="chrono";
+  }
   updateSolutionsBtn(); computeStats();
-  chronoStart();
   setMethodsMsg("");
+}
+
+// Phase 2 : démarre le jeu et le chrono (au clic Jouer)
+function startMethodsGame(){
+  mSolutionsShown=false;
+  updateSolutionsBtn();
+  chronoStart();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) $("#saisie")?.focus(); },80);
 }
 
@@ -297,7 +312,19 @@ function initMethods(){
     }
   });
 
-  const onSol=()=>{ mSolutionsShown ? methodsReplay() : mShowSolutions(); };
+  const onSol=()=>{
+    if(!mGameStarted && mSolutionsShown && seq){
+      // Première fois : lancer la partie
+      startMethodsGame();
+      mGameStarted=true;
+    } else if(mSolutionsShown){
+      // Partie terminée : charger suivante
+      methodsReplay();
+    } else {
+      // En cours : afficher solutions
+      mShowSolutions();
+    }
+  };
   $("#btn-solutions")?.addEventListener("click", onSol);
   $("#btn-solutions-kb")?.addEventListener("click", onSol);
 
