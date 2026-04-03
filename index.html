@@ -407,20 +407,8 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 /* Slots courts (< 10 lettres) : trait plein au lieu de pointillé */
 .slot-short{ border-style: solid; }
 
-/* THEMODS : trait plein (pas de pointillés), toujours visible en jeu */
-#v-themods .slot{
-  border-style: solid;
-  border-color: rgba(255,255,255,.2);
-}
-@media(prefers-color-scheme:light){
-  #v-themods .slot{ border-color: rgba(0,0,0,.15); }
-}
-#v-themods .slot.found,
-#v-themods .slot.found-helped,
-#v-themods .slot.revealed{
-  border-color: inherit;
-  background: inherit;
-}
+/* THEMODS : trait plein au lieu de pointillé (les couleurs found/revealed restent globales) */
+#v-themods .slot{ border-style: solid; }
 </style>
 </head>
 <body>
