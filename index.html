@@ -404,23 +404,8 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   padding-top: max(20px, env(safe-area-inset-top, 20px));
 }
 
-/* Slots courts (< 10 lettres) : pas de bordure pointillée en WAITING */
-.slot-short{
-  border-color: transparent !important;
-  background: transparent !important;
-}
-.slot-short.playing-slot{
-  border-style: solid !important;
-  border-color: rgba(255,255,255,.2) !important;
-  background: rgba(255,255,255,.04) !important;
-}
-@media(prefers-color-scheme:light){
-  .slot-short.playing-slot{ border-color: rgba(0,0,0,.15) !important; background: rgba(0,0,0,.04) !important; }
-}
-.slot-short.found, .slot-short.found-helped, .slot-short.revealed{
-  border-color: inherit !important;
-  background: inherit !important;
-}
+/* Slots courts (< 10 lettres) : trait plein au lieu de pointillé */
+.slot-short{ border-style: solid; }
 
 /* THEMODS : trait plein (pas de pointillés), toujours visible en jeu */
 #v-themods .slot{

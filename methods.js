@@ -168,7 +168,6 @@ function renderSlots(){
 
     } else {
       // WAITING ou PLAYING : slot vide avec indices possibles
-      if(mPhase==="PLAYING") li.classList.add("playing-slot");
       if(hintMode[i]==="tirage"){
         li.textContent=t.c.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
         li.style.cssText="font-style:italic;color:var(--muted);";
