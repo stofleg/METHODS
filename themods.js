@@ -237,10 +237,15 @@ function updateTmBtn(){
   const solKb=document.getElementById("tm-btn-sol-kb");
   const isGM=tmTheme==="gm";
 
-  // Pour GM : pas de bouton Solutions (navigation via "Entrée suivante" dans la liste)
   [sol,solKb].forEach(b=>{
     if(!b) return;
-    if(isGM){ b.style.display="none"; return; }
+    if(isGM){
+      // GM : Solutions visible avant résolution, masqué après
+      if(tmSolutions){ b.style.display="none"; return; }
+      b.style.display="";
+      b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary");
+      return;
+    }
     b.style.display="";
     if(tmSolutions){
       b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
