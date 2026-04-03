@@ -147,7 +147,7 @@ function renderSlots(){
     const t=targets[i];
     const li=document.createElement("li");
     li.dataset.slot=i;
-    li.className="slot";
+    li.className="slot"+(t.c.length<10?" slot-short":"");
 
     if(mFound.has(i)){
       // Trouvé : vert sans aide, orange avec aide
