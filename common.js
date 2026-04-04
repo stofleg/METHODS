@@ -75,26 +75,38 @@ async function authLogin(pseudo, pass){
   await fbSet("users", p, {...r.data, token, lastLogin:new Date().toISOString()});
   return {ok:true, pseudo:p, token};
 }
-async function authRegister(pseudo, pass, pass2){
+async function authRegister(pseudo, pass, pass2, secretQ, secretA){
   const p = pseudo.trim().toLowerCase();
   if(!p||!pass) return {ok:false, err:"Remplis tous les champs."};
   if(pass !== pass2) return {ok:false, err:"Les mots de passe ne correspondent pas."};
+  if(!secretQ||!secretA?.trim()) return {ok:false, err:"Choisis une question secrète et saisis ta réponse."};
   if(p.length < 3) return {ok:false, err:"Pseudo trop court (3 caractères min)."};
   const exists = await fbGet("users", p);
   if(exists.ok) return {ok:false, err:"Pseudo déjà utilisé."};
   const salt = randomToken();
   const hash = await sha256(pass + salt);
+  const secretASalt = randomToken();
+  const secretAHash = await sha256(secretA.trim().toLowerCase() + secretASalt);
   const token = randomToken();
-  await fbSet("users", p, {hash, salt, token, createdAt:new Date().toISOString()});
+  await fbSet("users", p, {hash, salt, token, secretQ, secretAHash, secretASalt, createdAt:new Date().toISOString()});
   return {ok:true, pseudo:p, token};
 }
-async function authRecover(pseudo, oldPass, newPass){
+async function authGetQuestion(pseudo){
   const p = pseudo.trim().toLowerCase();
-  if(!p||!oldPass||!newPass) return {ok:false, err:"Remplis tous les champs."};
+  if(!p) return {ok:false, err:"Saisis ton pseudo."};
   const r = await fbGet("users", p);
   if(!r.ok) return {ok:false, err:"Pseudo introuvable."};
-  const hash = await sha256(oldPass + (r.data.salt||""));
-  if(hash !== r.data.hash) return {ok:false, err:"Ancien mot de passe incorrect."};
+  if(!r.data.secretQ) return {ok:false, err:"Pas de question secrète enregistrée pour ce compte."};
+  return {ok:true, question:r.data.secretQ};
+}
+async function authRecover(pseudo, answer, newPass){
+  const p = pseudo.trim().toLowerCase();
+  if(!p||!answer||!newPass) return {ok:false, err:"Remplis tous les champs."};
+  const r = await fbGet("users", p);
+  if(!r.ok) return {ok:false, err:"Pseudo introuvable."};
+  if(!r.data.secretQ) return {ok:false, err:"Pas de question secrète. Contacte l'admin."};
+  const ansHash = await sha256(answer.trim().toLowerCase() + (r.data.secretASalt||""));
+  if(ansHash !== r.data.secretAHash) return {ok:false, err:"Réponse incorrecte."};
   const newHash = await sha256(newPass + (r.data.salt||""));
   const token = randomToken();
   await fbSet("users", p, {...r.data, hash:newHash, token});
@@ -264,25 +276,37 @@ function wireAuthUI(onSuccess){
   $("#btn-register")?.addEventListener("click", async()=>{
     const p=$("#reg-pseudo")?.value||"";
     const pw=$("#reg-pass")?.value||"", pw2=$("#reg-pass2")?.value||"";
+    const secretQ=$("#reg-question")?.value||"", secretA=$("#reg-answer")?.value||"";
     setLoading(true); setErr("");
-    const r = await authRegister(p, pw, pw2);
+    const r = await authRegister(p, pw, pw2, secretQ, secretA);
     setLoading(false);
     if(!r.ok){ setErr(r.err); return; }
     onSuccess(r.pseudo, r.token);
   });
 
+  $("#btn-find-question")?.addEventListener("click", async()=>{
+    const p=$("#rec-pseudo")?.value||"";
+    setLoading(true); setErr("");
+    const r = await authGetQuestion(p);
+    setLoading(false);
+    if(!r.ok){ setErr(r.err); return; }
+    const qDiv=$("#rec-question-display");
+    if(qDiv){qDiv.textContent=r.question;qDiv.style.display="";}
+    ["rec-answer","rec-new","btn-recover"].forEach(id=>{ const el=document.getElementById(id); if(el) el.style.display=""; });
+  });
+
   $("#btn-recover")?.addEventListener("click", async()=>{
     const p=$("#rec-pseudo")?.value||"";
-    const op=$("#rec-pass")?.value||"", np=$("#rec-new")?.value||"";
+    const ans=$("#rec-answer")?.value||"", np=$("#rec-new")?.value||"";
     setLoading(true); setErr("");
-    const r = await authRecover(p, op, np);
+    const r = await authRecover(p, ans, np);
     setLoading(false);
     if(!r.ok){ setErr(r.err); return; }
     setErr("Mot de passe changé. Reconnecte-toi.", true);
   });
 
   // Enter pour valider
-  [["login-pass","btn-login"],["reg-pass2","btn-register"],["rec-new","btn-recover"]].forEach(([inp,btn])=>{
+  [["login-pass","btn-login"],["reg-answer","btn-register"],["rec-new","btn-recover"]].forEach(([inp,btn])=>{
     document.getElementById(inp)?.addEventListener("keydown", e=>{
       if(e.key==="Enter") document.getElementById(btn)?.click();
     });

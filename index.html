@@ -149,6 +149,10 @@ input[type=range]{accent-color:var(--accent);}
 @media(prefers-color-scheme:light){.auth-form input{background:rgba(255,255,255,.8);}}
 .auth-form input:focus{box-shadow:0 0 0 3px var(--focus);}
 .auth-form input::placeholder{color:var(--muted);}
+.auth-select{padding:9px 14px;border-radius:11px;border:1px solid var(--stroke);background:rgba(255,255,255,.07);color:var(--txt);font-size:14px;outline:none;font-family:inherit;width:100%;cursor:pointer;}
+@media(prefers-color-scheme:light){.auth-select{background:rgba(255,255,255,.8);}}
+.auth-question{font-size:13px;font-weight:700;padding:8px 14px;border-radius:11px;background:rgba(105,167,255,.12);border:1px solid rgba(105,167,255,.3);}
+.srs-prompt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:13px;}
 
 /* ══ SELECT ══ */
 #v-select{align-items:center;justify-content:center;gap:16px;}
@@ -360,6 +364,10 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 @media(prefers-color-scheme:light){.auth-form input{background:rgba(255,255,255,.8);}}
 .auth-form input:focus{box-shadow:0 0 0 3px var(--focus);}
 .auth-form input::placeholder{color:var(--muted);}
+.auth-select{padding:9px 14px;border-radius:11px;border:1px solid var(--stroke);background:rgba(255,255,255,.07);color:var(--txt);font-size:14px;outline:none;font-family:inherit;width:100%;cursor:pointer;}
+@media(prefers-color-scheme:light){.auth-select{background:rgba(255,255,255,.8);}}
+.auth-question{font-size:13px;font-weight:700;padding:8px 14px;border-radius:11px;background:rgba(105,167,255,.12);border:1px solid rgba(105,167,255,.3);}
+.srs-prompt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:13px;}
 /* iOS */
 
 
@@ -431,13 +439,25 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
       <input id="reg-pseudo" type="text" placeholder="Pseudo" autocomplete="username" autocapitalize="none"/>
       <input id="reg-pass" type="password" placeholder="Mot de passe" autocomplete="new-password"/>
       <input id="reg-pass2" type="password" placeholder="Confirmer" autocomplete="new-password"/>
+      <select id="reg-question" class="auth-select">
+        <option value="">— Question secrète —</option>
+        <option value="Prénom de votre meilleur(e) ami(e) d'enfance ?">Prénom de votre meilleur(e) ami(e) d'enfance ?</option>
+        <option value="Nom de jeune fille de votre mère ?">Nom de jeune fille de votre mère ?</option>
+        <option value="Nom de votre animal de compagnie ?">Nom de votre animal de compagnie ?</option>
+        <option value="Ville où vous êtes né(e) ?">Ville où vous êtes né(e) ?</option>
+        <option value="Titre de votre film préféré ?">Titre de votre film préféré ?</option>
+        <option value="Prénom de votre père ?">Prénom de votre père ?</option>
+      </select>
+      <input id="reg-answer" type="text" placeholder="Votre réponse secrète" autocapitalize="none"/>
       <button id="btn-register" class="btn btn-primary" style="padding:10px;font-size:14px;font-weight:800;border-radius:11px;">S'inscrire</button>
     </div>
     <div id="f-recover" class="auth-form" style="display:none;">
       <input id="rec-pseudo" type="text" placeholder="Pseudo" autocapitalize="none"/>
-      <input id="rec-pass" type="password" placeholder="Ancien mot de passe"/>
-      <input id="rec-new" type="password" placeholder="Nouveau mot de passe"/>
-      <button id="btn-recover" class="btn btn-primary" style="padding:10px;font-size:14px;font-weight:800;border-radius:11px;">Changer</button>
+      <button id="btn-find-question" class="btn" style="font-size:13px;padding:8px;border-radius:11px;">Trouver ma question →</button>
+      <div id="rec-question-display" class="auth-question" style="display:none;"></div>
+      <input id="rec-answer" type="text" placeholder="Votre réponse secrète" autocapitalize="none" style="display:none;"/>
+      <input id="rec-new" type="password" placeholder="Nouveau mot de passe" style="display:none;"/>
+      <button id="btn-recover" class="btn btn-primary" style="display:none;padding:10px;font-size:14px;font-weight:800;border-radius:11px;">Changer le mot de passe</button>
     </div>
     <div id="auth-err" class="msg"></div>
   </div>
@@ -528,6 +548,11 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
           </div>
         </div>
         <p id="tm-home-msg" class="tm-msg"></p>
+        <div id="tm-srs-prompt" class="srs-prompt" style="display:none;">
+          <span id="tm-srs-count"></span> à réviser —
+          <button id="tm-srs-ok" class="btn btn-primary" style="font-size:12px;padding:5px 12px;">Jouer</button>
+          <button id="tm-srs-skip" class="btn" style="font-size:12px;padding:5px 10px;">Passer</button>
+        </div>
       </div>
     </div>
     <!-- sous-vue : finales -->
@@ -616,11 +641,11 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   </div>
 </div>
 
-<script src="data.js?v=3.2"></script>
-<script src="themods_data.js?v=3.2"></script>
-<script src="common.js?v=3.2"></script>
-<script src="methods.js?v=3.2"></script>
-<script src="themods.js?v=3.2"></script>
-<script src="app.js?v=3.2"></script>
+<script src="data.js?v=3.3"></script>
+<script src="themods_data.js?v=3.3"></script>
+<script src="common.js?v=3.3"></script>
+<script src="methods.js?v=3.3"></script>
+<script src="themods.js?v=3.3"></script>
+<script src="app.js?v=3.3"></script>
 </body>
 </html>

@@ -81,8 +81,10 @@ function initAuth(){
     const p=document.getElementById("reg-pseudo")?.value||"";
     const pw=document.getElementById("reg-pass")?.value||"";
     const pw2=document.getElementById("reg-pass2")?.value||"";
+    const secretQ=document.getElementById("reg-question")?.value||"";
+    const secretA=document.getElementById("reg-answer")?.value||"";
     setLoad(true); setErr("");
-    const r=await authRegister(p,pw,pw2);
+    const r=await authRegister(p,pw,pw2,secretQ,secretA);
     setLoad(false);
     if(!r.ok){setErr(r.err);return;}
     currentUser={pseudo:r.pseudo,token:r.token};
@@ -90,19 +92,32 @@ function initAuth(){
     await afterLogin();
   });
 
+  document.getElementById("btn-find-question")?.addEventListener("click", async()=>{
+    const p=document.getElementById("rec-pseudo")?.value||"";
+    setLoad(true); setErr("");
+    const r=await authGetQuestion(p);
+    setLoad(false);
+    if(!r.ok){setErr(r.err);return;}
+    const qDiv=document.getElementById("rec-question-display");
+    if(qDiv){qDiv.textContent=r.question;qDiv.style.display="";}
+    ["rec-answer","rec-new","btn-recover"].forEach(id=>{
+      const el=document.getElementById(id); if(el) el.style.display="";
+    });
+  });
+
   document.getElementById("btn-recover")?.addEventListener("click", async()=>{
     const p=document.getElementById("rec-pseudo")?.value||"";
-    const op=document.getElementById("rec-pass")?.value||"";
+    const ans=document.getElementById("rec-answer")?.value||"";
     const np=document.getElementById("rec-new")?.value||"";
     setLoad(true); setErr("");
-    const r=await authRecover(p,op,np);
+    const r=await authRecover(p,ans,np);
     setLoad(false);
     if(!r.ok){setErr(r.err);return;}
     setErr("Mot de passe changé. Reconnecte-toi.",true);
   });
 
   // Enter pour valider
-  [["login-pass","btn-login"],["reg-pass2","btn-register"],["rec-new","btn-recover"]].forEach(([inp,btn])=>{
+  [["login-pass","btn-login"],["reg-answer","btn-register"],["rec-new","btn-recover"]].forEach(([inp,btn])=>{
     document.getElementById(inp)?.addEventListener("keydown",e=>{
       if(e.key==="Enter") document.getElementById(btn)?.click();
     });

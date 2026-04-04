@@ -104,20 +104,50 @@ function updateFinalesStats(){
 }
 
 /* ── Lancement session ── */
+function pickFromQueue(theme, unseenPool, data){
+  if(!tmState.themes[theme]) tmState.themes[theme]={};
+  const st=tmState.themes[theme];
+  let q=(st._q||[]).filter(l=>unseenPool.some(s=>s.label===l));
+  if(!q.length) q=shuffleArray(unseenPool.map(s=>s.label));
+  const label=q.shift();
+  st._q=q;
+  return data.find(s=>s.label===label)||unseenPool[0];
+}
+
+function showSrsPrompt(theme, srsPool){
+  const prompt=document.getElementById("tm-srs-prompt"); if(!prompt) return;
+  const n=srsPool.length;
+  const countEl=document.getElementById("tm-srs-count");
+  if(countEl) countEl.textContent=n+" liste"+(n>1?"s":"");
+  // Clone buttons to clear stale listeners
+  ["tm-srs-ok","tm-srs-skip"].forEach(id=>{
+    const old=document.getElementById(id); if(!old) return;
+    const fresh=old.cloneNode(true); old.parentNode.replaceChild(fresh,old);
+  });
+  document.getElementById("tm-srs-ok")?.addEventListener("click",()=>{
+    prompt.style.display="none";
+    startSession(theme, srsPool[Math.floor(Math.random()*srsPool.length)]);
+  });
+  document.getElementById("tm-srs-skip")?.addEventListener("click",()=>{
+    prompt.style.display="none";
+  });
+  prompt.style.display="";
+}
+
 function playTheme(theme){
   tmTheme=theme;
   if(theme==="gm"){ startGM(); return; }
   const data=window.THEMODS_DATA?.[theme]; if(!data) return;
   const today=todayStr();
-  let pool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
-  if(!pool.length) pool=data.filter(({label})=>!getSt(theme,label).seen);
-  if(!pool.length){
-    const msg=document.getElementById("tm-home-msg");
-    if(msg){msg.textContent="Toutes les sessions sont validées !";msg.className="tm-msg ok";}
-    showTmView("tv-home");
-    return;
-  }
-  startSession(theme, pool[Math.floor(Math.random()*pool.length)]);
+  const prompt=document.getElementById("tm-srs-prompt"); if(prompt) prompt.style.display="none";
+  const msg=document.getElementById("tm-home-msg"); if(msg){msg.textContent="";msg.className="tm-msg";}
+
+  const unseenPool=data.filter(({label})=>!getSt(theme,label).seen);
+  const srsPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
+
+  if(unseenPool.length){ startSession(theme, pickFromQueue(theme, unseenPool, data)); return; }
+  if(srsPool.length){ showSrsPrompt(theme, srsPool); return; }
+  if(msg){msg.textContent="Toutes les sessions sont validées !";msg.className="tm-msg ok";}
 }
 
 function startSession(theme, session){
