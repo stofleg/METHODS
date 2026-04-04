@@ -169,9 +169,10 @@ input[type=range]{accent-color:var(--accent);}
 .user-chip{font-size:11px;font-weight:700;color:var(--muted);padding:3px 8px;
   border-radius:20px;border:1px solid var(--stroke);}
 .m-prog{padding:5px 12px 4px;border-bottom:1px solid var(--stroke);flex-shrink:0;}
-.bounds-row{display:flex;align-items:center;justify-content:space-between;
-  padding:5px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;gap:8px;}
-.borne{font-size:16px;font-weight:900;letter-spacing:.06em;
+.bounds-row{display:flex;align-items:center;
+  padding:5px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;gap:6px;}
+.borne{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  font-size:clamp(11px,3.8vw,16px);font-weight:900;letter-spacing:.03em;
   background:none;border:none;border-radius:6px;padding:2px 4px;transition:background .12s;}
 .borne:hover{background:rgba(255,255,255,.1);}
 .chrono{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--muted);}
@@ -334,8 +335,8 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 .user-bar{display:flex;align-items:center;gap:6px;margin-left:auto;}
 .user-chip{font-size:11px;font-weight:700;color:var(--muted);padding:3px 8px;border-radius:20px;border:1px solid var(--stroke);}
 .m-prog{padding:5px 12px 4px;border-bottom:1px solid var(--stroke);flex-shrink:0;}
-.bounds-row{display:flex;align-items:center;justify-content:space-between;padding:5px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;gap:8px;}
-.borne{font-size:16px;font-weight:900;letter-spacing:.06em;background:none;border:none;border-radius:6px;padding:2px 4px;transition:background .12s;color:var(--txt);}
+.bounds-row{display:flex;align-items:center;padding:5px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;gap:6px;}
+.borne{flex:1;min-width:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:clamp(11px,3.8vw,16px);font-weight:900;letter-spacing:.03em;background:none;border:none;border-radius:6px;padding:2px 4px;transition:background .12s;color:var(--txt);}
 .borne:hover{background:rgba(255,255,255,.1);}
 .chrono{font-size:17px;font-weight:900;font-variant-numeric:tabular-nums;color:var(--muted);}
 .chrono.running{color:var(--accent);}.chrono.expired{color:var(--danger);}
@@ -474,7 +475,6 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
     <div class="bounds-row">
       <button id="borne-a" class="borne">—</button>
       <span id="chrono" class="chrono"></span>
-      <span id="compteur" style="font-size:13px;font-weight:700;color:var(--muted);">0/10</span>
       <button id="borne-b" class="borne">—</button>
     </div>
     <ul id="word-list" class="word-list"></ul>
