@@ -104,16 +104,6 @@ function updateFinalesStats(){
 }
 
 /* ── Lancement session ── */
-function pickFromQueue(theme, unseenPool, data){
-  if(!tmState.themes[theme]) tmState.themes[theme]={};
-  const st=tmState.themes[theme];
-  let q=(st._q||[]).filter(l=>unseenPool.some(s=>s.label===l));
-  if(!q.length) q=shuffleArray(unseenPool.map(s=>s.label));
-  const label=q.shift();
-  st._q=q;
-  return data.find(s=>s.label===label)||unseenPool[0];
-}
-
 function showSrsPrompt(theme, srsPool){
   const prompt=document.getElementById("tm-srs-prompt"); if(!prompt) return;
   const n=srsPool.length;
@@ -145,7 +135,7 @@ function playTheme(theme){
   const unseenPool=data.filter(({label})=>!getSt(theme,label).seen);
   const srsPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
 
-  if(unseenPool.length){ startSession(theme, pickFromQueue(theme, unseenPool, data)); return; }
+  if(unseenPool.length){ startSession(theme, unseenPool[Math.floor(Math.random()*unseenPool.length)]); return; }
   if(srsPool.length){ showSrsPrompt(theme, srsPool); return; }
   if(msg){msg.textContent="Toutes les sessions sont validées !";msg.className="tm-msg ok";}
 }
