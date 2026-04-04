@@ -308,10 +308,8 @@ function startGM(){
   }
   gmEntryIdx=prog.idx; gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
   showTmView("tv-game");
-  document.getElementById("tm-gtitle").textContent="";
-  document.getElementById("tm-gtheme").textContent="Graphies multiples";
-  document.getElementById("tm-gtotal").textContent="";
-  document.getElementById("tm-counter").textContent="";
+  document.getElementById("tm-gtitle").textContent="Graphies multiples";
+  const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderGMGame();
   if(tmKb) tmKb.clear();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
