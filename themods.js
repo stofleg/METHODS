@@ -144,9 +144,7 @@ function renderTmGame(){
   const el=id=>document.getElementById(id);
   const sfx=THEME_SFX[tmTheme];
   if(el("tm-gtitle")) el("tm-gtitle").textContent=THEME_NAMES[tmTheme]||tmTheme;
-  if(el("tm-gtheme")) el("tm-gtheme").textContent=sess.label+(sfx?"…"+sfx:"…");
-  if(el("tm-gtotal")) el("tm-gtotal").textContent=sess.words.length+" mot"+(sess.words.length>1?"s":"")+" à trouver";
-  if(el("tm-counter")) el("tm-counter").textContent=tmFound.size+" / "+sess.words.length;
+  if(el("tm-session-label")) el("tm-session-label").textContent=sess.label+(sfx?"…"+sfx:"…");
 
   const list=el("tm-wlist"); if(!list) return;
   list.innerHTML="";
@@ -324,8 +322,8 @@ function renderGMGame(){
   const entry=currentGMEntry();
   const list=document.getElementById("tm-wlist"); if(!list) return;
   list.innerHTML="";
-  const counter=document.getElementById("tm-counter");
-  if(counter) counter.textContent=entry?(gmEntryIdx+1)+" / "+all.length:"";
+  const lbl=document.getElementById("tm-session-label");
+  if(lbl) lbl.textContent="";
   if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
 
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
