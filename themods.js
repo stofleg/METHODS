@@ -92,12 +92,33 @@ function updateTmStats(){
   const viEl=document.getElementById("vi-desc");
   if(viEl) viEl.textContent="575 verbes · 193 sessions"+(viVal>0?" · "+viVal+"/"+viData.length+" val.":"");
 
-  // ODS8
-  const ods8Data=window.THEMODS_DATA?.ods8||[];
-  let ods8Val=0;
-  ods8Data.forEach(({label})=>{ if(getSt("ods8",label).validated) ods8Val++; });
-  const ods8El=document.getElementById("ods8-desc");
-  if(ods8El) ods8El.textContent="1 254 mots · "+ods8Data.length+" sessions"+(ods8Val>0?" · "+ods8Val+"/"+ods8Data.length+" val.":"");
+  // ODS 1-9 (home summary)
+  const odsEl=document.getElementById("ods-desc");
+  if(odsEl){
+    let totalSess=0, totalVal=0;
+    for(let v=1;v<=9;v++){
+      const d=window.THEMODS_DATA?.["ods"+v]||[];
+      totalSess+=d.length;
+      d.forEach(({label})=>{ if(getSt("ods"+v,label).validated) totalVal++; });
+    }
+    odsEl.textContent="9 éditions"+(totalVal>0?" · "+totalVal+"/"+totalSess+" val.":"");
+  }
+}
+
+function renderTmOds(){
+  showTmView("tv-ods");
+  updateOdsStats();
+}
+
+function updateOdsStats(){
+  const counts={ods1:3426,ods2:1441,ods3:1492,ods4:738,ods5:1081,ods6:1081,ods7:1179,ods8:1254,ods9:807};
+  for(let v=1;v<=9;v++){
+    const th="ods"+v;
+    const d=window.THEMODS_DATA?.[th]||[];
+    let val=0; d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
+    const el=document.getElementById(th+"-desc");
+    if(el) el.textContent=(counts[th]||"?")+" mots · "+d.length+" sessions"+(val>0?" · "+val+"/"+d.length+" val.":"");
+  }
 }
 
 function updateFinalesStats(){
@@ -159,14 +180,18 @@ function startSession(theme, session){
 }
 
 /* ── Rendu jeu ── */
-const THEME_NAMES={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples",ods8:"Nouveautés ODS8"};
-const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:"",ods8:""};
+const THEME_NAMES={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples",
+  ods1:"Nouveautés ODS1",ods2:"Nouveautés ODS2",ods3:"Nouveautés ODS3",ods4:"Nouveautés ODS4",ods5:"Nouveautés ODS5",
+  ods6:"Nouveautés ODS6",ods7:"Nouveautés ODS7",ods8:"Nouveautés ODS8",ods9:"Nouveautés ODS9"};
+const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:"",
+  ods1:"",ods2:"",ods3:"",ods4:"",ods5:"",ods6:"",ods7:"",ods8:"",ods9:""};
+function isOds(th){ return /^ods\d$/.test(th); }
 
-function renderODS8Game(){
+function renderOdsGame(){
   const sess=tmSession; if(!sess) return;
   const entries=sess.entries||[];
   const el=id=>document.getElementById(id);
-  if(el("tm-gtitle")) el("tm-gtitle").textContent="Nouveautés ODS8";
+  if(el("tm-gtitle")) el("tm-gtitle").textContent=THEME_NAMES[tmTheme]||tmTheme;
   if(el("tm-session-label")) el("tm-session-label").textContent=sess.label+"…";
   const list=el("tm-wlist"); if(!list) return;
   list.innerHTML="";
@@ -206,7 +231,7 @@ function renderODS8Game(){
 
 function renderTmGame(){
   if(tmTheme==="gm"){ renderGMGame(); return; }
-  if(tmTheme==="ods8"){ renderODS8Game(); return; }
+  if(isOds(tmTheme)){ renderOdsGame(); return; }
   const sess=tmSession; if(!sess) return;
 
   const el=id=>document.getElementById(id);
@@ -234,7 +259,7 @@ function renderTmGame(){
 
 function validateTmWord(raw){
   if(tmTheme==="gm"){ validateGMWord(norm(raw)); return; }
-  if(tmTheme==="ods8"){
+  if(isOds(tmTheme)){
     if(tmSolutions) return;
     const n=norm(raw); if(!n) return;
     const entries=tmSession?.entries||[];
@@ -248,7 +273,7 @@ function validateTmWord(raw){
       if(!getTmDict().has(n)) setTimeout(()=>showTmSolutions(),800);
       return;
     }
-    setTmMsg(""); renderODS8Game();
+    setTmMsg(""); renderOdsGame();
     if(entries.every(e=>tmFound.has(norm(e.forms[0])))) finalizeTm(tmNoHelp);
     else persistThemods().catch(()=>{});
     return;
@@ -284,9 +309,9 @@ function validateTmWord(raw){
 function showTmSolutions(){
   tmNoHelp=false;
   if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
-  if(tmTheme==="ods8"){
+  if(isOds(tmTheme)){
     (tmSession?.entries||[]).forEach(e=>tmFound.add(norm(e.forms[0])));
-    renderODS8Game(); finalizeTm(false); return;
+    renderOdsGame(); finalizeTm(false); return;
   }
   const sess=tmSession; if(!sess) return;
   sess.words.forEach((w,i)=>{
@@ -617,7 +642,11 @@ function initThemods(){
     document.getElementById("tm-btn-sol")?.addEventListener("click", onSolBtn);
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
 
-    document.getElementById("btn-back-game")?.addEventListener("click",()=>renderTmHome());
+    document.getElementById("btn-back-game")?.addEventListener("click",()=>{
+      if(isOds(tmTheme)) renderTmOds();
+      else if(["able","age","ique","oir"].includes(tmTheme)) renderTmFinales();
+      else renderTmHome();
+    });
 
     // GM éditeur
     document.getElementById("gm-ed-btn")?.addEventListener("click",()=>openGMEditor());
@@ -643,6 +672,8 @@ function initThemods(){
     });
     document.getElementById("btn-finales")?.addEventListener("click",()=>renderTmFinales());
     document.getElementById("btn-back-finales")?.addEventListener("click",()=>renderTmHome());
+    document.getElementById("btn-ods")?.addEventListener("click",()=>renderTmOds());
+    document.getElementById("btn-back-ods")?.addEventListener("click",()=>renderTmHome());
 
     document.querySelectorAll("#v-themods .tc[data-theme]").forEach(card=>{
       card.addEventListener("click",()=>playTheme(card.dataset.theme));
