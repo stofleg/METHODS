@@ -327,10 +327,9 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 @media(prefers-color-scheme:light){.gt.empty{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.25);}}
 .gt.ok{background:var(--ok);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25);}
 .gt.miss{background:var(--danger);color:#fff;opacity:.7;}
-.ods8-slot{display:flex;flex-direction:column;gap:5px;padding:10px 14px;border-bottom:1px solid var(--stroke);}
-.ods8-slot:last-child{border-bottom:none;}
-.ods8-def{font-size:13px;color:var(--fg2);line-height:1.4;}
-.ods8-slot .gm-row{justify-content:flex-start;}
+.gt.also{background:rgba(105,167,255,.18);color:var(--accent);border:2px solid rgba(105,167,255,.4);}
+@media(prefers-color-scheme:light){.gt.also{background:#ddeeff;color:#1a65d6;border-color:rgba(26,101,214,.3);}}
+.gm-also-label{font-size:11px;color:var(--muted);margin:8px 0 4px;text-align:center;}
 .gm-nav{padding:10px 16px;border-top:1px solid var(--stroke);display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .gm-pos{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;}
 /* sous-vues THEMODS */
@@ -606,15 +605,15 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
       <div class="tm-body">
         <p class="tm-subtitle" style="font-size:12px;line-height:1.4;">Retrouvez les entrées de chaque ODS à partir de leurs définitions.</p>
         <div class="tm-grid">
-          <div class="tc tc-o" data-theme="ods1"><div><div class="tc-lbl">ODS 1</div><div class="tc-desc" id="ods1-desc">3 426 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods2"><div><div class="tc-lbl">ODS 2</div><div class="tc-desc" id="ods2-desc">1 441 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods3"><div><div class="tc-lbl">ODS 3</div><div class="tc-desc" id="ods3-desc">1 492 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods4"><div><div class="tc-lbl">ODS 4</div><div class="tc-desc" id="ods4-desc">738 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods5"><div><div class="tc-lbl">ODS 5</div><div class="tc-desc" id="ods5-desc">1 693 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods6"><div><div class="tc-lbl">ODS 6</div><div class="tc-desc" id="ods6-desc">1 081 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods7"><div><div class="tc-lbl">ODS 7</div><div class="tc-desc" id="ods7-desc">1 179 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods8"><div><div class="tc-lbl">ODS 8</div><div class="tc-desc" id="ods8-desc">1 254 mots</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-o" data-theme="ods9"><div><div class="tc-lbl">ODS 9</div><div class="tc-desc" id="ods9-desc">807 mots</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods1"><div><div class="tc-lbl">ODS 1</div><div class="tc-desc" id="ods1-desc">3 403 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods2"><div><div class="tc-lbl">ODS 2</div><div class="tc-desc" id="ods2-desc">1 427 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods3"><div><div class="tc-lbl">ODS 3</div><div class="tc-desc" id="ods3-desc">1 471 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods4"><div><div class="tc-lbl">ODS 4</div><div class="tc-desc" id="ods4-desc">728 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods5"><div><div class="tc-lbl">ODS 5</div><div class="tc-desc" id="ods5-desc">1 654 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods6"><div><div class="tc-lbl">ODS 6</div><div class="tc-desc" id="ods6-desc">1 060 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods7"><div><div class="tc-lbl">ODS 7</div><div class="tc-desc" id="ods7-desc">1 166 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods8"><div><div class="tc-lbl">ODS 8</div><div class="tc-desc" id="ods8-desc">1 230 entrées</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-o" data-theme="ods9"><div><div class="tc-lbl">ODS 9</div><div class="tc-desc" id="ods9-desc">788 entrées</div></div><span class="tc-arr">›</span></div>
         </div>
       </div>
     </div>
@@ -710,12 +709,12 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   </div>
 </div>
 
-<script src="data.js?v=3.14"></script>
-<script src="themods_data.js?v=3.14"></script>
-<script src="ods_data.js?v=3.14"></script>
-<script src="common.js?v=3.14"></script>
-<script src="methods.js?v=3.14"></script>
-<script src="themods.js?v=3.14"></script>
-<script src="app.js?v=3.14"></script>
+<script src="data.js?v=3.15"></script>
+<script src="themods_data.js?v=3.15"></script>
+<script src="ods_data.js?v=3.15"></script>
+<script src="common.js?v=3.15"></script>
+<script src="methods.js?v=3.15"></script>
+<script src="themods.js?v=3.15"></script>
+<script src="app.js?v=3.15"></script>
 </body>
 </html>

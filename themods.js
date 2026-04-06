@@ -44,6 +44,7 @@ function getTmDict(){
 let tmTheme=null, tmSession=null;
 let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmEntryIdx=0, gmFound=new Set();
+let odsEntryIdx=0, odsFnd=new Set();
 
 /* ── Navigation sous-vues ── */
 function showTmView(id){
@@ -95,13 +96,14 @@ function updateTmStats(){
   // ODS 1-9 (home summary)
   const odsEl=document.getElementById("ods-desc");
   if(odsEl){
-    let totalSess=0, totalVal=0;
+    let totalDone=0, totalEntries=0;
     for(let v=1;v<=9;v++){
-      const d=window.THEMODS_DATA?.["ods"+v]||[];
-      totalSess+=d.length;
-      d.forEach(({label})=>{ if(getSt("ods"+v,label).validated) totalVal++; });
+      const th="ods"+v;
+      const all=getAllOdsEntries(th);
+      totalEntries+=all.length;
+      totalDone+=(getOdsProgress(th).done||0);
     }
-    odsEl.textContent="9 éditions"+(totalVal>0?" · "+totalVal+"/"+totalSess+" val.":"");
+    odsEl.textContent="9 éditions"+(totalDone>0?" · "+totalDone+"/"+totalEntries+" résolus":"");
   }
 }
 
@@ -111,13 +113,12 @@ function renderTmOds(){
 }
 
 function updateOdsStats(){
-  const counts={ods1:3426,ods2:1441,ods3:1492,ods4:738,ods5:1693,ods6:1081,ods7:1179,ods8:1254,ods9:807};
   for(let v=1;v<=9;v++){
     const th="ods"+v;
-    const d=window.THEMODS_DATA?.[th]||[];
-    let val=0; d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
+    const all=getAllOdsEntries(th);
+    const done=getOdsProgress(th).done||0;
     const el=document.getElementById(th+"-desc");
-    if(el) el.textContent=(counts[th]||"?")+" mots · "+d.length+" sessions"+(val>0?" · "+val+"/"+d.length+" val.":"");
+    if(el) el.textContent=all.length+" entrées"+(done>0?" · "+done+"/"+all.length+" résolues":"");
   }
 }
 
@@ -155,6 +156,7 @@ function showSrsPrompt(theme, srsPool){
 function playTheme(theme){
   tmTheme=theme;
   if(theme==="gm"){ startGM(); return; }
+  if(isOds(theme)){ startOds(theme); return; }
   const data=window.THEMODS_DATA?.[theme]; if(!data) return;
   const today=todayStr();
   const prompt=document.getElementById("tm-srs-prompt"); if(prompt) prompt.style.display="none";
@@ -187,29 +189,94 @@ const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:"",
   ods1:"",ods2:"",ods3:"",ods4:"",ods5:"",ods6:"",ods7:"",ods8:"",ods9:""};
 function isOds(th){ return /^ods\d$/.test(th); }
 
+/* ── ODS helper functions ── */
+function getAllOdsEntries(theme){
+  const all=[];
+  (window.THEMODS_DATA?.[theme]||[]).forEach(s=>{ (s.entries||[]).forEach(e=>all.push(e)); });
+  return all;
+}
+function getOdsProgress(theme){
+  if(!tmState.themes) tmState.themes={};
+  if(!tmState.themes[theme]) tmState.themes[theme]={};
+  if(!tmState.themes[theme]._p) tmState.themes[theme]._p={idx:0,done:0,order:null};
+  return tmState.themes[theme]._p;
+}
+function currentOdsEntry(theme){
+  const all=getAllOdsEntries(theme), prog=getOdsProgress(theme);
+  const realIdx=prog.order?.[odsEntryIdx];
+  return realIdx!==undefined ? all[realIdx] : null;
+}
+function startOds(theme){
+  const all=getAllOdsEntries(theme), prog=getOdsProgress(theme);
+  if(!prog.order||prog.order.length!==all.length){
+    prog.order=shuffleArray(all.map((_,i)=>i));
+    prog.idx=0; prog.done=0;
+  }
+  odsEntryIdx=prog.idx; odsFnd=new Set(); tmSolutions=false; tmNoHelp=true;
+  showTmView("tv-game");
+  const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="";
+  document.getElementById("tm-gtitle").textContent=THEME_NAMES[theme]||theme;
+  const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
+  updateTmBtn(); setTmMsg(""); renderOdsGame();
+  if(tmKb) tmKb.clear();
+  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
+}
+function isOdsResolved(){
+  const entry=currentOdsEntry(tmTheme); if(!entry) return false;
+  return tmSolutions||entry.forms.every(f=>odsFnd.has(norm(f)));
+}
+function validateOdsWord(n){
+  const entry=currentOdsEntry(tmTheme); if(!entry) return;
+  if(!entry.forms.find(f=>norm(f)===n)){
+    setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot non valide.",
+             getTmDict().has(n)?"warn":"err");
+    return;
+  }
+  odsFnd.add(n); setTmMsg("");
+  const allFound=entry.forms.every(f=>odsFnd.has(norm(f)));
+  if(allFound){
+    const prog=getOdsProgress(tmTheme);
+    prog.done=(prog.done||0)+1; prog.idx=odsEntryIdx+1;
+    const msg=entry.forms.length>1?"✓ Toutes les graphies trouvées !":"✓";
+    setTmMsg(msg,"ok");
+    persistThemods().catch(()=>{});
+  }
+  renderOdsGame();
+  updateTmBtn();
+}
+
 function renderOdsGame(){
-  const sess=tmSession; if(!sess) return;
-  const entries=sess.entries||[];
-  const el=id=>document.getElementById(id);
-  if(el("tm-gtitle")) el("tm-gtitle").textContent=THEME_NAMES[tmTheme]||tmTheme;
-  if(el("tm-session-label")) el("tm-session-label").textContent=sess.label+"…";
-  const list=el("tm-wlist"); if(!list) return;
+  const entry=currentOdsEntry(tmTheme);
+  const list=document.getElementById("tm-wlist"); if(!list) return;
   list.innerHTML="";
-  let foundCount=0;
-  entries.forEach(entry=>{
-    const word=entry.forms[0];
-    const def=cleanDef(entry.def)||entry.def||"";
-    const n=norm(word);
-    const isFound=tmFound.has(n);
-    if(isFound) foundCount++;
+  const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
+  if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
+
+  const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+  const allFormsFound=sortedForms.every(f=>odsFnd.has(norm(f)));
+  const custom=getEntryCustom(entry);
+
+  const defDiv=document.createElement("div");
+  defDiv.className="gm-def";
+  if(custom.img){
+    const img=document.createElement("img"); img.src=custom.img; img.alt="";
+    img.style.cssText="max-width:100%;max-height:180px;border-radius:8px;display:block;margin:0 auto 10px;object-fit:contain;";
+    defDiv.appendChild(img);
+  }
+  const defText=document.createElement("span");
+  defText.textContent=(custom.def!==undefined?custom.def:cleanDef(entry.def))||"…";
+  if(custom.def!==undefined||custom.img){
+    const mark=document.createElement("span"); mark.textContent=" ✎"; mark.style.cssText="font-size:10px;opacity:.45;";
+    defText.appendChild(mark);
+  }
+  defDiv.appendChild(defText);
+  list.appendChild(defDiv);
+
+  const tilesDiv=document.createElement("div"); tilesDiv.className="gm-tiles";
+  sortedForms.forEach(form=>{
+    const isFound=odsFnd.has(norm(form))||allFormsFound;
     const revealed=isFound||tmSolutions;
-    const li=document.createElement("li");
-    li.className="slot ods8-slot"+(revealed?(isFound?" found":" revealed"):"");
-    const defSpan=document.createElement("span");
-    defSpan.className="ods8-def";
-    defSpan.textContent=def||"?";
-    li.appendChild(defSpan);
-    const letters=word.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").toUpperCase();
+    const letters=form.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").toUpperCase();
     const row=document.createElement("div"); row.className="gm-row";
     for(let i=0;i<letters.length;i++){
       const t=document.createElement("span");
@@ -218,15 +285,31 @@ function renderOdsGame(){
       else { t.className="gt empty"; }
       row.appendChild(t);
     }
-    li.appendChild(row);
     if(revealed){
-      li.classList.add("clickable");
-      li.addEventListener("click",()=>openDef(n,word));
+      row.style.cursor="pointer";
+      row.addEventListener("click",()=>openDef(norm(form),form));
     }
-    list.appendChild(li);
+    tilesDiv.appendChild(row);
   });
-  const ctr=el("tm-counter");
-  if(ctr) ctr.textContent=foundCount+" / "+entries.length;
+  // Graphies existantes (also) — affichées après résolution
+  if((allFormsFound||tmSolutions)&&entry.also?.length){
+    const alsoLabel=document.createElement("div");
+    alsoLabel.className="gm-also-label";
+    alsoLabel.textContent=(entry.also.length>1?"Autres graphies existantes :":"Autre graphie existante :");
+    tilesDiv.appendChild(alsoLabel);
+    entry.also.forEach(form=>{
+      const letters=form.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").toUpperCase();
+      const row=document.createElement("div"); row.className="gm-row";
+      for(let i=0;i<letters.length;i++){
+        const t=document.createElement("span"); t.className="gt also"; t.textContent=letters[i];
+        row.appendChild(t);
+      }
+      row.style.cursor="pointer";
+      row.addEventListener("click",()=>openDef(norm(form),form));
+      tilesDiv.appendChild(row);
+    });
+  }
+  list.appendChild(tilesDiv);
 }
 
 function renderTmGame(){
@@ -259,25 +342,7 @@ function renderTmGame(){
 
 function validateTmWord(raw){
   if(tmTheme==="gm"){ validateGMWord(norm(raw)); return; }
-  if(isOds(tmTheme)){
-    if(tmSolutions) return;
-    const n=norm(raw); if(!n) return;
-    const entries=tmSession?.entries||[];
-    let matched=false;
-    for(const entry of entries){
-      if(!tmFound.has(norm(entry.forms[0]))&&norm(entry.forms[0])===n){ tmFound.add(n); matched=true; break; }
-    }
-    if(!matched){
-      setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot inconnu — la partie s'arrête.",
-               getTmDict().has(n)?"warn":"err");
-      if(!getTmDict().has(n)) setTimeout(()=>showTmSolutions(),800);
-      return;
-    }
-    setTmMsg(""); renderOdsGame();
-    if(entries.every(e=>tmFound.has(norm(e.forms[0])))) finalizeTm(tmNoHelp);
-    else persistThemods().catch(()=>{});
-    return;
-  }
+  if(isOds(tmTheme)){ validateOdsWord(norm(raw)); return; }
   if(tmSolutions) return;
   const n=norm(raw); if(!n) return;
   const sess=tmSession; if(!sess) return;
@@ -309,10 +374,7 @@ function validateTmWord(raw){
 function showTmSolutions(){
   tmNoHelp=false;
   if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
-  if(isOds(tmTheme)){
-    (tmSession?.entries||[]).forEach(e=>tmFound.add(norm(e.forms[0])));
-    renderOdsGame(); finalizeTm(false); return;
-  }
+  if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
   const sess=tmSession; if(!sess) return;
   sess.words.forEach((w,i)=>{
     if(!tmFound.has(i)){
@@ -355,20 +417,20 @@ function isGMResolved(){
 function updateTmBtn(){
   const sol=document.getElementById("tm-btn-sol");
   const solKb=document.getElementById("tm-btn-sol-kb");
-  const isGM=tmTheme==="gm";
+  const gmLike=tmTheme==="gm"||isOds(tmTheme);
 
   [sol,solKb].forEach(b=>{
     if(!b) return;
-    if(isGM){
-      b.style.display="";
-      if(isGMResolved()){
+    b.style.display="";
+    if(gmLike){
+      const resolved=tmTheme==="gm"?isGMResolved():isOdsResolved();
+      if(resolved){
         b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
       } else {
         b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary");
       }
       return;
     }
-    b.style.display="";
     if(tmSolutions){
       b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
     } else {
@@ -388,28 +450,37 @@ function tmReplay(){
   else renderTmHome();
 }
 
-/* ── GM éditeur ── */
+/* ── Éditeur (GM + ODS) ── */
 let gmEdPendingImg = undefined; // undefined=inchangé, null=effacé, string=nouvelle image
 
 function gmEntryKey(entry){
   return entry.forms.slice().map(f=>norm(f)).sort().join("|");
 }
-function gmGetCustom(entry){
-  return tmState.themes?.gm?._custom?.[gmEntryKey(entry)] || {};
+function getEntryCustom(entry){
+  const th=tmTheme||"gm";
+  return tmState.themes?.[th]?._custom?.[gmEntryKey(entry)] || {};
 }
-function gmSetCustom(entry, data){
+function setEntryCustom(entry, data){
+  const th=tmTheme||"gm";
   if(!tmState.themes) tmState.themes={};
-  if(!tmState.themes.gm) tmState.themes.gm={};
-  if(!tmState.themes.gm._custom) tmState.themes.gm._custom={};
+  if(!tmState.themes[th]) tmState.themes[th]={};
+  if(!tmState.themes[th]._custom) tmState.themes[th]._custom={};
   const k=gmEntryKey(entry);
-  const prev=tmState.themes.gm._custom[k]||{};
-  tmState.themes.gm._custom[k]={...prev,...data};
+  const prev=tmState.themes[th]._custom[k]||{};
+  tmState.themes[th]._custom[k]={...prev,...data};
   persistThemods().catch(()=>{});
+}
+function gmGetCustom(entry){ return getEntryCustom(entry); }
+function gmSetCustom(entry, data){ setEntryCustom(entry, data); }
+function currentEntry(){
+  if(tmTheme==="gm") return currentGMEntry();
+  if(isOds(tmTheme)) return currentOdsEntry(tmTheme);
+  return null;
 }
 
 function openGMEditor(){
-  const entry=currentGMEntry(); if(!entry) return;
-  const custom=gmGetCustom(entry);
+  const entry=currentEntry(); if(!entry) return;
+  const custom=getEntryCustom(entry);
   gmEdPendingImg=undefined;
   const defEl=document.getElementById("gm-ed-def");
   const imgEl=document.getElementById("gm-ed-img");
@@ -427,22 +498,21 @@ function closeGMEditor(){
   gmEdPendingImg=undefined;
 }
 function saveGMEditor(){
-  const entry=currentGMEntry(); if(!entry) return;
+  const entry=currentEntry(); if(!entry) return;
   const defEl=document.getElementById("gm-ed-def");
   const data={};
   if(defEl) data.def=defEl.value.trim();
   if(gmEdPendingImg!==undefined){
-    // Supprimer l'ancienne image Storage si elle est remplacée/effacée
-    const prev=gmGetCustom(entry).img;
+    const prev=getEntryCustom(entry).img;
     if(prev&&prev.includes("firebasestorage")){
       const pathMatch=prev.match(/\/o\/([^?]+)/);
       if(pathMatch) fbStorageDelete(decodeURIComponent(pathMatch[1])).catch(()=>{});
     }
-    data.img=gmEdPendingImg; // null=effacé, string=URL Storage
+    data.img=gmEdPendingImg;
   }
-  gmSetCustom(entry, data);
+  setEntryCustom(entry, data);
   closeGMEditor();
-  renderGMGame();
+  if(tmTheme==="gm") renderGMGame(); else renderOdsGame();
 }
 async function pasteGMImage(){
   try{
@@ -462,8 +532,9 @@ async function pasteGMImage(){
         if(delBtn) delBtn.style.display="";
         // Upload Firebase Storage
         setTmMsg("Envoi…","warn");
-        const entry=currentGMEntry(); if(!entry) return;
-        const path=`gmimages/${currentUser?.pseudo||"guest"}/${gmEntryKey(entry)}.jpg`;
+        const entry=currentEntry(); if(!entry) return;
+        const folder=isOds(tmTheme)?"odsimages/"+tmTheme:"gmimages";
+        const path=`${folder}/${currentUser?.pseudo||"guest"}/${gmEntryKey(entry)}.jpg`;
         try{
           const storageUrl=await fbStorageUpload(path, jpegBlob);
           gmEdPendingImg=storageUrl;
@@ -635,6 +706,15 @@ function initThemods(){
           if(tmKb) tmKb.clear();
           persistThemods().catch(()=>{});
         } else { showTmSolutions(); }
+      } else if(isOds(tmTheme)){
+        if(isOdsResolved()){
+          const prog=getOdsProgress(tmTheme);
+          odsEntryIdx++; prog.idx=odsEntryIdx;
+          odsFnd=new Set(); tmSolutions=false;
+          updateTmBtn(); setTmMsg(""); renderOdsGame();
+          if(tmKb) tmKb.clear();
+          persistThemods().catch(()=>{});
+        } else { showTmSolutions(); }
       } else {
         tmSolutions ? playTheme(tmTheme) : showTmSolutions();
       }
@@ -662,7 +742,7 @@ function initThemods(){
       if(delBtn) delBtn.style.display="none";
     });
     document.getElementById("gm-ed-search")?.addEventListener("click",()=>{
-      const entry=currentGMEntry(); if(!entry) return;
+      const entry=currentEntry(); if(!entry) return;
       const word=entry.forms[0].replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
       window.open("https://www.google.com/search?q="+encodeURIComponent(word)+"&tbm=isch","_blank","noopener");
     });
