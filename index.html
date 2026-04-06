@@ -304,6 +304,9 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 .tc-v{background:rgba(183,138,247,.1);border-color:rgba(183,138,247,.28);}
 .tc-v:hover{background:rgba(183,138,247,.18);}
 .tc-v .tc-lbl,.tc-v .tc-arr{color:var(--warn);}
+.tc-o{background:rgba(255,165,60,.1);border-color:rgba(255,165,60,.28);}
+.tc-o:hover{background:rgba(255,165,60,.18);}
+.tc-o .tc-lbl,.tc-o .tc-arr{color:#e07800;}
 @media(prefers-color-scheme:light){
   .tc-f{background:#e8f0ff;border-color:rgba(26,101,214,.28);}
   .tc-f:hover{background:#d4e4ff;}.tc-f .tc-lbl,.tc-f .tc-arr{color:#1a65d6;}
@@ -311,6 +314,8 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
   .tc-g:hover{background:#c8f0ec;}.tc-g .tc-lbl,.tc-g .tc-arr{color:#0d6e6e;}
   .tc-v{background:#f0eaff;border-color:rgba(107,53,194,.28);}
   .tc-v:hover{background:#e4d8ff;}.tc-v .tc-lbl,.tc-v .tc-arr{color:#6b35c2;}
+  .tc-o{background:#fff3e0;border-color:rgba(200,100,0,.28);}
+  .tc-o:hover{background:#ffe0b2;}.tc-o .tc-lbl,.tc-o .tc-arr{color:#c05000;}
 }
 /* GM tiles */
 .gm-def{text-align:center;padding:18px 16px 14px;font-size:16px;font-weight:800;line-height:1.5;border-bottom:1px solid var(--stroke);}
@@ -322,6 +327,10 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 @media(prefers-color-scheme:light){.gt.empty{background:rgba(0,0,0,.05);border-color:rgba(0,0,0,.25);}}
 .gt.ok{background:var(--ok);color:#fff;box-shadow:0 3px 0 rgba(0,0,0,.25);}
 .gt.miss{background:var(--danger);color:#fff;opacity:.7;}
+.ods8-slot{display:flex;flex-direction:column;gap:5px;padding:10px 14px;border-bottom:1px solid var(--stroke);}
+.ods8-slot:last-child{border-bottom:none;}
+.ods8-def{font-size:13px;color:var(--fg2);line-height:1.4;}
+.ods8-slot .gm-row{justify-content:flex-start;}
 .gm-nav{padding:10px 16px;border-top:1px solid var(--stroke);display:flex;align-items:center;justify-content:space-between;gap:12px;}
 .gm-pos{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;}
 /* sous-vues THEMODS */
@@ -556,6 +565,10 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
             <div><div class="tc-lbl">Intransitifs</div><div class="tc-desc" id="vi-desc">575 verbes · 193 sessions</div></div>
             <span class="tc-arr">›</span>
           </div>
+          <div class="tc tc-o" data-theme="ods8">
+            <div><div class="tc-lbl">Nouveautés ODS8</div><div class="tc-desc" id="ods8-desc">1 254 mots · 180 sessions</div></div>
+            <span class="tc-arr">›</span>
+          </div>
         </div>
         <p id="tm-home-msg" class="tm-msg"></p>
         <div id="tm-srs-prompt" class="srs-prompt" style="display:none;">
@@ -674,11 +687,12 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   </div>
 </div>
 
-<script src="data.js?v=3.11"></script>
-<script src="themods_data.js?v=3.11"></script>
-<script src="common.js?v=3.11"></script>
-<script src="methods.js?v=3.11"></script>
-<script src="themods.js?v=3.11"></script>
-<script src="app.js?v=3.11"></script>
+<script src="data.js?v=3.12"></script>
+<script src="themods_data.js?v=3.12"></script>
+<script src="ods_data.js?v=3.12"></script>
+<script src="common.js?v=3.12"></script>
+<script src="methods.js?v=3.12"></script>
+<script src="themods.js?v=3.12"></script>
+<script src="app.js?v=3.12"></script>
 </body>
 </html>

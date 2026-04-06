@@ -91,6 +91,13 @@ function updateTmStats(){
   viData.forEach(({label})=>{ if(getSt("vi",label).validated) viVal++; });
   const viEl=document.getElementById("vi-desc");
   if(viEl) viEl.textContent="575 verbes · 193 sessions"+(viVal>0?" · "+viVal+"/"+viData.length+" val.":"");
+
+  // ODS8
+  const ods8Data=window.THEMODS_DATA?.ods8||[];
+  let ods8Val=0;
+  ods8Data.forEach(({label})=>{ if(getSt("ods8",label).validated) ods8Val++; });
+  const ods8El=document.getElementById("ods8-desc");
+  if(ods8El) ods8El.textContent="1 254 mots · "+ods8Data.length+" sessions"+(ods8Val>0?" · "+ods8Val+"/"+ods8Data.length+" val.":"");
 }
 
 function updateFinalesStats(){
@@ -152,11 +159,54 @@ function startSession(theme, session){
 }
 
 /* ── Rendu jeu ── */
-const THEME_NAMES={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples"};
-const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:""};
+const THEME_NAMES={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples",ods8:"Nouveautés ODS8"};
+const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:"",ods8:""};
+
+function renderODS8Game(){
+  const sess=tmSession; if(!sess) return;
+  const entries=sess.entries||[];
+  const el=id=>document.getElementById(id);
+  if(el("tm-gtitle")) el("tm-gtitle").textContent="Nouveautés ODS8";
+  if(el("tm-session-label")) el("tm-session-label").textContent=sess.label+"…";
+  const list=el("tm-wlist"); if(!list) return;
+  list.innerHTML="";
+  let foundCount=0;
+  entries.forEach(entry=>{
+    const word=entry.forms[0];
+    const def=cleanDef(entry.def)||entry.def||"";
+    const n=norm(word);
+    const isFound=tmFound.has(n);
+    if(isFound) foundCount++;
+    const revealed=isFound||tmSolutions;
+    const li=document.createElement("li");
+    li.className="slot ods8-slot"+(revealed?(isFound?" found":" revealed"):"");
+    const defSpan=document.createElement("span");
+    defSpan.className="ods8-def";
+    defSpan.textContent=def||"?";
+    li.appendChild(defSpan);
+    const letters=word.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").toUpperCase();
+    const row=document.createElement("div"); row.className="gm-row";
+    for(let i=0;i<letters.length;i++){
+      const t=document.createElement("span");
+      if(revealed){ t.className="gt "+(isFound?"ok":"miss"); t.textContent=letters[i]; }
+      else if(i===0){ t.className="gt init"; t.textContent=letters[0]; }
+      else { t.className="gt empty"; }
+      row.appendChild(t);
+    }
+    li.appendChild(row);
+    if(revealed){
+      li.classList.add("clickable");
+      li.addEventListener("click",()=>openDef(n,word));
+    }
+    list.appendChild(li);
+  });
+  const ctr=el("tm-counter");
+  if(ctr) ctr.textContent=foundCount+" / "+entries.length;
+}
 
 function renderTmGame(){
   if(tmTheme==="gm"){ renderGMGame(); return; }
+  if(tmTheme==="ods8"){ renderODS8Game(); return; }
   const sess=tmSession; if(!sess) return;
 
   const el=id=>document.getElementById(id);
@@ -184,6 +234,25 @@ function renderTmGame(){
 
 function validateTmWord(raw){
   if(tmTheme==="gm"){ validateGMWord(norm(raw)); return; }
+  if(tmTheme==="ods8"){
+    if(tmSolutions) return;
+    const n=norm(raw); if(!n) return;
+    const entries=tmSession?.entries||[];
+    let matched=false;
+    for(const entry of entries){
+      if(!tmFound.has(norm(entry.forms[0]))&&norm(entry.forms[0])===n){ tmFound.add(n); matched=true; break; }
+    }
+    if(!matched){
+      setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot inconnu — la partie s'arrête.",
+               getTmDict().has(n)?"warn":"err");
+      if(!getTmDict().has(n)) setTimeout(()=>showTmSolutions(),800);
+      return;
+    }
+    setTmMsg(""); renderODS8Game();
+    if(entries.every(e=>tmFound.has(norm(e.forms[0])))) finalizeTm(tmNoHelp);
+    else persistThemods().catch(()=>{});
+    return;
+  }
   if(tmSolutions) return;
   const n=norm(raw); if(!n) return;
   const sess=tmSession; if(!sess) return;
@@ -215,6 +284,10 @@ function validateTmWord(raw){
 function showTmSolutions(){
   tmNoHelp=false;
   if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
+  if(tmTheme==="ods8"){
+    (tmSession?.entries||[]).forEach(e=>tmFound.add(norm(e.forms[0])));
+    renderODS8Game(); finalizeTm(false); return;
+  }
   const sess=tmSession; if(!sess) return;
   sess.words.forEach((w,i)=>{
     if(!tmFound.has(i)){
