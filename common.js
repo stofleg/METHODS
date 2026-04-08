@@ -256,6 +256,7 @@ function wireKeyboard(kbId, dispId, msgId, onKey){
 
 function setDictBtnVisible(v){
   document.getElementById("btn-dict")?.classList.toggle("hidden", !v);
+  document.querySelectorAll(".btn-dict-kb").forEach(b=>b.classList.toggle("hidden",!v));
 }
 
 // Binary search: premier index i dans le tableau trié A tel que A[i] >= prefix
@@ -356,6 +357,7 @@ function closeDictModal(){
 
 function wireDictModal(){
   document.getElementById("btn-dict")?.addEventListener("click", openDictModal);
+  document.querySelectorAll(".btn-dict-kb").forEach(b=>b.addEventListener("click", openDictModal));
   document.getElementById("dict-close")?.addEventListener("click", closeDictModal);
   document.getElementById("dict-bd")?.addEventListener("click", closeDictModal);
 
