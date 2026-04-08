@@ -108,7 +108,7 @@ function updateTmStats(){
   if(gmEl) gmEl.textContent="1 808 groupes · "+prog.done+"/"+gmTotal+" résolus";
 
   // Finales
-  const finales=["able","age","ique","oir"];
+  const finales=["able","age","ique","oir","ure","ard","ant","if","in","ais","ois","erie","et","ette","ide","ite","eau","ot","um","eux","ail","al","ase","ose","eur","ier","ien","isme","iste"];
   let totalSess=0, totalVal=0;
   finales.forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
@@ -116,7 +116,7 @@ function updateTmStats(){
     d.forEach(({label})=>{ if(getSt(th,label).validated) totalVal++; });
   });
   const fEl=document.getElementById("finales-desc");
-  if(fEl) fEl.textContent="4 finales · 2 488 mots"+(totalVal>0?" · "+totalVal+"/"+totalSess+" validées":"");
+  if(fEl) fEl.textContent="29 finales"+(totalVal>0?" · "+totalVal+"/"+totalSess+" validées":"");
 
   // VI
   const viData=window.THEMODS_DATA?.vi||[];
@@ -155,8 +155,18 @@ function updateOdsStats(){
 }
 
 function updateFinalesStats(){
-  const bases={able:"293 mots · 136 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions"};
-  ["able","age","ique","oir"].forEach(th=>{
+  const bases={
+    able:"293 mots · 136 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions",
+    ure:"726 mots · 232 sessions",ard:"274 mots · 90 sessions",ant:"1 363 mots · 403 sessions",
+    if:"519 mots · 193 sessions",in:"784 mots · 260 sessions",ais:"250 mots · 110 sessions",
+    ois:"279 mots · 103 sessions",erie:"612 mots · 192 sessions",et:"579 mots · 171 sessions",
+    ette:"601 mots · 200 sessions",ide:"656 mots · 179 sessions",ite:"1 717 mots · 538 sessions",
+    eau:"271 mots · 95 sessions",ot:"267 mots · 101 sessions",um:"363 mots · 143 sessions",
+    eux:"651 mots · 192 sessions",ail:"50 mots · 38 sessions",al:"987 mots · 294 sessions",
+    ase:"129 mots · 62 sessions",ose:"292 mots · 115 sessions",eur:"1 344 mots · 383 sessions",
+    ier:"668 mots · 209 sessions",ien:"1 012 mots · 328 sessions",isme:"1 199 mots · 347 sessions",iste:"617 mots · 199 sessions"
+  };
+  Object.keys(bases).forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
     let val=0; d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
     const el=document.getElementById(th+"-desc");
@@ -220,9 +230,17 @@ function startSession(theme, session){
 /* ── Rendu jeu ── */
 const THEME_NAMES={age:"Finale -AGE",vi:"Intransitifs",oir:"Finale -OIR",able:"Finale -ABLE",ique:"Finale -IQUE",gm:"Graphies multiples",
   ods1:"Nouveautés ODS1",ods2:"Nouveautés ODS2",ods3:"Nouveautés ODS3",ods4:"Nouveautés ODS4",ods5:"Nouveautés ODS5",
-  ods6:"Nouveautés ODS6",ods7:"Nouveautés ODS7",ods8:"Nouveautés ODS8",ods9:"Nouveautés ODS9"};
+  ods6:"Nouveautés ODS6",ods7:"Nouveautés ODS7",ods8:"Nouveautés ODS8",ods9:"Nouveautés ODS9",
+  ure:"Finale -URE",ard:"Finale -ARD",ant:"Finale -ANT",if:"Finale -IF",in:"Finale -IN",
+  ais:"Finale -AIS",ois:"Finale -OIS",erie:"Finale -ERIE",et:"Finale -ET",ette:"Finale -ETTE",
+  ide:"Finale -IDE",ite:"Finale -ITE",eau:"Finale -EAU",ot:"Finale -OT",um:"Finale -UM",
+  eux:"Finale -EUX",ail:"Finale -AIL",al:"Finale -AL",ase:"Finale -ASE",ose:"Finale -OSE",
+  eur:"Finale -EUR",ier:"Finale -IER",ien:"Finale -IEN",isme:"Finale -ISME",iste:"Finale -ISTE"};
 const THEME_SFX={age:"AGE",vi:"",oir:"OIR",able:"ABLE",ique:"IQUE",gm:"",
-  ods1:"",ods2:"",ods3:"",ods4:"",ods5:"",ods6:"",ods7:"",ods8:"",ods9:""};
+  ods1:"",ods2:"",ods3:"",ods4:"",ods5:"",ods6:"",ods7:"",ods8:"",ods9:"",
+  ure:"URE",ard:"ARD",ant:"ANT",if:"IF",in:"IN",ais:"AIS",ois:"OIS",erie:"ERIE",
+  et:"ET",ette:"ETTE",ide:"IDE",ite:"ITE",eau:"EAU",ot:"OT",um:"UM",eux:"EUX",
+  ail:"AIL",al:"AL",ase:"ASE",ose:"OSE",eur:"EUR",ier:"IER",ien:"IEN",isme:"ISME",iste:"ISTE"};
 function isOds(th){ return /^ods\d$/.test(th); }
 
 /* ── ODS helper functions ── */
@@ -363,14 +381,17 @@ function renderTmGame(){
   sess.words.forEach((word,i)=>{
     const li=document.createElement("li");
     li.dataset.idx=i; li.className="slot";
+    const display=getNormToE()[word]||word;
+    const cousin=sess.cousins?.[word];
+    const fullDisplay=cousin?display+" (→ "+cousin+")":display;
     if(tmFound.has(i)){
       li.classList.add("found","clickable");
-      li.textContent=word;
-      li.addEventListener("click",()=>openDef(norm(word),word));
+      li.textContent=fullDisplay;
+      li.addEventListener("click",()=>openDef(word,display));
     } else if(tmSolutions){
       li.classList.add("revealed","clickable");
-      li.textContent=word;
-      li.addEventListener("click",()=>openDef(norm(word),word));
+      li.textContent=fullDisplay;
+      li.addEventListener("click",()=>openDef(word,display));
     }
     list.appendChild(li);
   });
@@ -404,9 +425,12 @@ function validateTmWord(raw){
     tmFound.add(i);
     const li=document.querySelector("#tm-wlist li[data-idx='"+i+"']");
     if(li){
+      const w=sess.words[i];
+      const display=getNormToE()[w]||w;
+      const cousin=sess.cousins?.[w];
       li.className="slot found clickable";
-      li.textContent=sess.words[i];
-      li.addEventListener("click",()=>openDef(norm(sess.words[i]),sess.words[i]));
+      li.textContent=cousin?display+" (→ "+cousin+")":display;
+      li.addEventListener("click",()=>openDef(w,display));
       li.scrollIntoView({behavior:"smooth",block:"nearest"});
     }
   });
@@ -427,9 +451,11 @@ function showTmSolutions(){
       tmFound.add(i);
       const li=document.querySelector("#tm-wlist li[data-idx='"+i+"']");
       if(li){
+        const display=getNormToE()[w]||w;
+        const cousin=sess.cousins?.[w];
         li.className="slot revealed clickable";
-        li.textContent=w;
-        li.addEventListener("click",()=>openDef(norm(w),w));
+        li.textContent=cousin?display+" (→ "+cousin+")":display;
+        li.addEventListener("click",()=>openDef(w,display));
       }
     }
   });
