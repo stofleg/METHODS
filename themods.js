@@ -738,15 +738,6 @@ function renderGMGame(){
       row.appendChild(t);
     }
     wrap.appendChild(row);
-    if(revealed){
-      const inflected=getInflected(norm(form));
-      if(inflected){
-        const lbl=document.createElement("div");
-        lbl.className="gm-inflected";
-        lbl.textContent=inflected;
-        wrap.appendChild(lbl);
-      }
-    }
     tilesDiv.appendChild(wrap);
   });
   list.appendChild(tilesDiv);
