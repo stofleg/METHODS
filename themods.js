@@ -157,14 +157,14 @@ function updateOdsStats(){
 function updateFinalesStats(){
   const bases={
     able:"293 mots · 136 sessions",age:"1 311 mots · 360 sessions",ique:"629 mots · 177 sessions",oir:"253 mots · 99 sessions",
-    ure:"726 mots · 232 sessions",ard:"274 mots · 90 sessions",ant:"1 363 mots · 403 sessions",
-    if:"519 mots · 193 sessions",in:"784 mots · 260 sessions",ais:"250 mots · 110 sessions",
-    ois:"279 mots · 103 sessions",erie:"612 mots · 192 sessions",et:"579 mots · 171 sessions",
-    ette:"601 mots · 200 sessions",ide:"656 mots · 179 sessions",ite:"1 717 mots · 538 sessions",
-    eau:"271 mots · 95 sessions",ot:"267 mots · 101 sessions",um:"363 mots · 143 sessions",
-    eux:"651 mots · 192 sessions",ail:"50 mots · 38 sessions",al:"987 mots · 294 sessions",
-    ase:"129 mots · 62 sessions",ose:"292 mots · 115 sessions",eur:"1 344 mots · 383 sessions",
-    ier:"668 mots · 209 sessions",ien:"1 012 mots · 328 sessions",isme:"1 199 mots · 347 sessions",iste:"617 mots · 199 sessions"
+    ure:"455 mots · 152 sessions",ard:"233 mots · 79 sessions",ant:"767 mots · 226 sessions",
+    if:"293 mots · 130 sessions",in:"657 mots · 218 sessions",ais:"147 mots · 87 sessions",
+    ois:"180 mots · 89 sessions",erie:"278 mots · 100 sessions",et:"544 mots · 169 sessions",
+    ette:"436 mots · 148 sessions",ide:"446 mots · 142 sessions",ite:"803 mots · 246 sessions",
+    eau:"242 mots · 92 sessions",ot:"261 mots · 101 sessions",um:"267 mots · 117 sessions",
+    eux:"414 mots · 136 sessions",ail:"44 mots · 34 sessions",al:"665 mots · 199 sessions",
+    ase:"81 mots · 47 sessions",ose:"134 mots · 83 sessions",eur:"601 mots · 189 sessions",
+    ier:"495 mots · 142 sessions",ien:"601 mots · 223 sessions",isme:"356 mots · 142 sessions",iste:"218 mots · 115 sessions"
   };
   Object.keys(bases).forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
