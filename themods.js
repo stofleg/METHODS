@@ -517,6 +517,15 @@ function isGMResolved(){
 }
 
 /* ── Feuilletage (stof2 uniquement) ── */
+function stopBrowse(){
+  tmBrowse=false;
+  tmSolutions=false; tmFound=new Set();
+  if(tmTheme==="gm"){ gmFound=new Set(); renderGMGame(); }
+  else if(isOds(tmTheme)){ odsFnd=new Set(); renderOdsGame(); }
+  else renderTmGame();
+  updateTmBtn(); setTmMsg("");
+}
+function toggleBrowse(){ tmBrowse ? stopBrowse() : startBrowse(); }
 function startBrowse(){
   if(!isEditor()) return;
   tmBrowse=true;
@@ -561,7 +570,11 @@ function updateTmBtn(){
   const solKb=document.getElementById("tm-btn-sol-kb");
   const browseBtn=document.getElementById("tm-btn-browse");
   const nextBtn=document.getElementById("tm-btn-next");
-  if(browseBtn) browseBtn.style.display=isEditor()&&!tmBrowse?"":"none";
+  if(browseBtn){
+    browseBtn.style.display=isEditor()?"":"none";
+    browseBtn.textContent=tmBrowse?"⏹ Arrêter":"Feuilleter";
+    browseBtn.classList.toggle("btn-danger", tmBrowse);
+  }
   if(nextBtn) nextBtn.style.display=tmBrowse?"":"none";
   const gmLike=tmTheme==="gm"||isOds(tmTheme);
 
@@ -883,8 +896,10 @@ function initThemods(){
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
 
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
+      tmBrowse=false;
       if(isOds(tmTheme)) renderTmOds();
-      else if(["able","age","ique","oir"].includes(tmTheme)) renderTmFinales();
+      else if(window.THEMODS_DATA?.[tmTheme]&&!["gm","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
+      else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
       else renderTmHome();
     });
 
@@ -915,7 +930,7 @@ function initThemods(){
     document.getElementById("btn-back-ods")?.addEventListener("click",()=>renderTmHome());
     document.getElementById("btn-verbes")?.addEventListener("click",()=>renderTmVerbes());
     document.getElementById("btn-back-verbes")?.addEventListener("click",()=>renderTmHome());
-    document.getElementById("tm-btn-browse")?.addEventListener("click",()=>startBrowse());
+    document.getElementById("tm-btn-browse")?.addEventListener("click",()=>toggleBrowse());
     document.getElementById("tm-btn-next")?.addEventListener("click",()=>browseNext());
 
     document.querySelectorAll("#v-themods .tc[data-theme]").forEach(card=>{
