@@ -275,7 +275,11 @@ function isOds(th){ return /^ods\d$/.test(th); }
 /* ── ODS helper functions ── */
 function getAllOdsEntries(theme){
   const all=[];
-  (window.THEMODS_DATA?.[theme]||[]).forEach(s=>{ (s.entries||[]).forEach(e=>all.push(e)); });
+  (window.THEMODS_DATA?.[theme]||[]).forEach(s=>{
+    (s.entries||[]).forEach(e=>{
+      if(!(e.def||"").includes("Nouveau participe")) all.push(e);
+    });
+  });
   return all;
 }
 function getOdsProgress(theme){
