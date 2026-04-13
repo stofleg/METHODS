@@ -114,7 +114,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .modal-panel{position:relative;z-index:1;background:var(--card);border:1px solid var(--stroke);
   border-radius:var(--radius) var(--radius) 0 0;box-shadow:var(--shadow);
   padding:16px;width:100%;max-width:640px;max-height:80svh;overflow-y:auto;}
-#dict-modal{align-items:flex-start;}
+#dict-modal{align-items:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 42px);}
 #dict-modal .modal-bd{pointer-events:none;}
 #dict-modal .modal-panel{border-radius:var(--radius);max-height:70svh;}
 .modal-panel h2{font-size:18px;font-weight:950;}

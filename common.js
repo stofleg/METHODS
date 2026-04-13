@@ -403,13 +403,6 @@ function _dictBdResize(){
 function openDictModal(){
   const m=document.getElementById("dict-modal"); if(!m) return;
   m.classList.add("open");
-  // Align panel top with bottom of visible header
-  const panel=m.querySelector(".modal-panel");
-  if(panel){
-    const hdr=document.querySelector(".tm-shdr, .m-hdr");
-    const top=hdr ? hdr.getBoundingClientRect().bottom : 8;
-    panel.style.marginTop=top+"px";
-  }
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=""; }
   document.getElementById("dict-sugg").innerHTML="";
