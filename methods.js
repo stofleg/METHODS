@@ -293,7 +293,7 @@ function launchGame(){
 
 function methodsReplay(){
   const idx=pickNext();
-  if(idx===null){ setMethodsMsg("Toutes les listes sont à jour !","ok"); return; }
+  if(idx===null){ setMethodsMsg("100%","ok"); return; }
   prepareGame(idx);
 }
 

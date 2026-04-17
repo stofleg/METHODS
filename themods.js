@@ -107,17 +107,17 @@ function updateVerbesStats(){
   const viData=window.THEMODS_DATA?.vi||[];
   let viVal=0; viData.forEach(({label})=>{ if(getSt("vi",label).validated) viVal++; });
   const viEl=document.getElementById("vi-desc2");
-  if(viEl) viEl.textContent="575 verbes · 193 sessions"+(viVal>0?" · "+viVal+"/"+viData.length+" val.":"");
+  if(viEl) viEl.textContent="575 verbes · 193 sessions"+fmtPct(viVal,viData.length);
 
   const vtData=window.THEMODS_DATA?.vt||[];
   let vtVal=0; vtData.forEach(({label})=>{ if(getSt("vt",label).validated) vtVal++; });
   const vtEl=document.getElementById("vt-desc");
-  if(vtEl) vtEl.textContent="4 968 verbes · 1 580 sessions"+(vtVal>0?" · "+vtVal+"/"+vtData.length+" val.":"");
+  if(vtEl) vtEl.textContent="4 968 verbes · 1 580 sessions"+fmtPct(vtVal,vtData.length);
 
   const vdData=window.THEMODS_DATA?.vd||[];
   let vdVal=0; vdData.forEach(({label})=>{ if(getSt("vd",label).validated) vdVal++; });
   const vdEl=document.getElementById("vd-desc");
-  if(vdEl) vdEl.textContent="66 verbes · 42 sessions"+(vdVal>0?" · "+vdVal+"/"+vdData.length+" val.":"");
+  if(vdEl) vdEl.textContent="66 verbes · 42 sessions"+fmtPct(vdVal,vdData.length);
 }
 
 function renderTmFinales(){
@@ -126,13 +126,18 @@ function renderTmFinales(){
   setDictBtnVisible(true);
 }
 
+function fmtPct(val, total){
+  if(!total || !val) return "";
+  return " · "+Math.round(val/total*100)+"%";
+}
+
 function updateTmStats(){
   if(!tmState) return;
   // GM
   const prog=getGMProgress();
   const gmTotal=getAllGMEntries().length;
   const gmEl=document.getElementById("gm-desc");
-  if(gmEl) gmEl.textContent="1 808 groupes · "+prog.done+"/"+gmTotal+" résolus";
+  if(gmEl) gmEl.textContent="1 808 groupes"+fmtPct(prog.done,gmTotal);
 
   // Finales
   const finales=["able","age","ique","oir","ure","ard","ant","if","in","ais","ois","erie","et","ette","ide","ite","eau","ot","um","eux","ail","al","ase","ose","eur","ier","ien","isme","iste"];
@@ -143,14 +148,14 @@ function updateTmStats(){
     d.forEach(({label})=>{ if(getSt(th,label).validated) totalVal++; });
   });
   const fEl=document.getElementById("finales-desc");
-  if(fEl) fEl.textContent="29 finales"+(totalVal>0?" · "+totalVal+"/"+totalSess+" validées":"");
+  if(fEl) fEl.textContent="29 finales"+fmtPct(totalVal,totalSess);
 
   // Verbes
   const verbesThemes=["vi","vt","vd"];
   let vTotal=0, vVal=0;
   verbesThemes.forEach(th=>{ const d=window.THEMODS_DATA?.[th]; if(!d) return; vTotal+=d.length; d.forEach(({label})=>{ if(getSt(th,label).validated) vVal++; }); });
   const viEl=document.getElementById("verbes-desc");
-  if(viEl) viEl.textContent="3 thèmes · 5 230 verbes"+(vVal>0?" · "+vVal+"/"+vTotal+" validées":"");
+  if(viEl) viEl.textContent="3 thèmes · 5 230 verbes"+fmtPct(vVal,vTotal);
 
   // ODS 1-9 (home summary)
   const odsEl=document.getElementById("ods-desc");
@@ -162,7 +167,7 @@ function updateTmStats(){
       totalEntries+=all.length;
       totalDone+=(getOdsProgress(th).done||0);
     }
-    odsEl.textContent="9 éditions"+(totalDone>0?" · "+totalDone+"/"+totalEntries+" résolus":"");
+    odsEl.textContent="9 éditions"+fmtPct(totalDone,totalEntries);
   }
 }
 
@@ -177,7 +182,7 @@ function updateOdsStats(){
     const all=getAllOdsEntries(th);
     const done=getOdsProgress(th).done||0;
     const el=document.getElementById(th+"-desc");
-    if(el) el.textContent=all.length+" entrées"+(done>0?" · "+done+"/"+all.length+" résolues":"");
+    if(el) el.textContent=all.length+" entrées"+fmtPct(done,all.length);
   }
 }
 
@@ -197,7 +202,7 @@ function updateFinalesStats(){
     const d=window.THEMODS_DATA?.[th]; if(!d) return;
     let val=0; d.forEach(({label})=>{ if(getSt(th,label).validated) val++; });
     const el=document.getElementById(th+"-desc");
-    if(el) el.textContent=bases[th]+(val>0?" · "+val+"/"+d.length+" val.":"");
+    if(el) el.textContent=bases[th]+fmtPct(val,d.length);
   });
 }
 
@@ -243,7 +248,7 @@ function playTheme(theme){
   }
   if(msg){
     const total=data.length, val=data.filter(({label})=>getSt(theme,label).validated).length;
-    msg.textContent= val===total ? "Toutes les sessions sont validées ! 🎉" : "Aucune session disponible.";
+    msg.textContent= val===total ? "100%" : "Aucune session disponible.";
     msg.className="tm-msg ok";
   }
 }
