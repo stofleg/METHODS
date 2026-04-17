@@ -68,6 +68,12 @@ function pickNext(){
   if(!pool.length){
     for(let i=0;i<TOTAL_SEQ;i++){ if(!mState.lists[String(i)]?.seen) pool.push(i); }
   }
+  if(!pool.length){
+    for(let i=0;i<TOTAL_SEQ;i++){
+      const s=mState.lists[String(i)];
+      if(s?.seen && !s.validated) pool.push(i);
+    }
+  }
   if(!pool.length) return null;
   return pool[Math.floor(Math.random()*pool.length)];
 }

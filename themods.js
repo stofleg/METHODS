@@ -308,6 +308,7 @@ function startOds(theme){
     prog.order=shuffleArray(all.map((_,i)=>i));
     prog.idx=0; prog.done=0;
   }
+  if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
   odsEntryIdx=prog.idx; odsFnd=new Set(); tmSolutions=false; tmNoHelp=true;
   showTmView("tv-game");
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display=isEditor()?"":"none";
@@ -781,6 +782,7 @@ function startGM(){
     prog.order=shuffleArray(all.map((_,i)=>i));
     prog.idx=0; prog.done=0;
   }
+  if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
   gmEntryIdx=prog.idx; gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
   setDictBtnVisible(false);
   showTmView("tv-game");
