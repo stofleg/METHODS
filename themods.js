@@ -30,7 +30,10 @@ async function persistThemods(){
 function getSt(theme, label){
   if(!tmState.themes[theme]) tmState.themes[theme]={};
   if(!tmState.themes[theme][label]) tmState.themes[theme][label]={seen:false,validated:false,lastResult:"",lastSeen:"",interval:1,due:todayStr()};
-  return tmState.themes[theme][label];
+  const s=tmState.themes[theme][label];
+  if(!s.due) s.due=todayStr();
+  if(!s.interval) s.interval=1;
+  return s;
 }
 
 /* ── Droits éditeur ── */

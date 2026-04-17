@@ -54,7 +54,10 @@ async function persistMethodsState(){
 function ensureListState(idx){
   const k = String(idx);
   if(!mState.lists[k]) mState.lists[k]={seen:false,validated:false,lastResult:"",lastSeen:"",interval:1,due:todayStr()};
-  return mState.lists[k];
+  const s=mState.lists[k];
+  if(!s.due) s.due=todayStr();
+  if(!s.interval) s.interval=1;
+  return s;
 }
 
 /* ── SRS ── */
