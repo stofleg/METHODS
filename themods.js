@@ -233,23 +233,19 @@ function playTheme(theme){
   if(isOds(theme)){ startOds(theme); return; }
   const data=window.THEMODS_DATA?.[theme]; if(!data) return;
   const today=todayStr();
-  const prompt=document.getElementById("tm-srs-prompt"); if(prompt) prompt.style.display="none";
   const msg=document.getElementById("tm-home-msg"); if(msg){msg.textContent="";msg.className="tm-msg";}
 
   const unseenPool=data.filter(({label})=>!getSt(theme,label).seen);
   const srsPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
   const lockedPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due>today; });
 
-  if(unseenPool.length){ startSession(theme, unseenPool[Math.floor(Math.random()*unseenPool.length)]); return; }
-  if(srsPool.length){ showSrsPrompt(theme, srsPool); return; }
-  if(lockedPool.length){
-    // Sessions non validées mais en cooldown SRS — on joue quand même
-    startSession(theme, lockedPool[Math.floor(Math.random()*lockedPool.length)]); return;
-  }
+  const playPool = unseenPool.length ? unseenPool : srsPool.length ? srsPool : lockedPool;
+  if(playPool.length){ startSession(theme, playPool[Math.floor(Math.random()*playPool.length)]); return; }
   if(msg){
     const total=data.length, val=data.filter(({label})=>getSt(theme,label).validated).length;
     msg.textContent= val===total ? "100%" : "Aucune session disponible.";
     msg.className="tm-msg ok";
+    showTmView("");
   }
 }
 
