@@ -281,6 +281,17 @@ function setDictBtnVisible(v){
   document.querySelectorAll(".btn-dict-kb").forEach(b=>b.classList.toggle("hidden",!v));
 }
 
+// Extrait la nature grammaticale depuis le début d'une définition ("v.", "n.m.", "adj.", etc.)
+function _posLabel(def){
+  const d=(def||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim();
+  const parts=[];
+  for(const t of d.split(/\s+/)){
+    if(parts.length>=2||!t.endsWith(".")||t.length>6) break;
+    parts.push(t);
+  }
+  return parts.join(" ");
+}
+
 // Binary search: premier index i dans le tableau trié A tel que A[i] >= prefix
 function _dictBisect(A, prefix){
   let lo=0, hi=A.length;
@@ -308,13 +319,13 @@ function dictUpdateLinks(displayWord){
 }
 
 // Afficher le résultat pour un mot canonique normalisé (présent dans d[])
-function dictSelectWord(w){
+function dictSelectWord(w, idx){
   const DATA=window.SEQODS_DATA; if(!DATA) return;
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=w; }
   document.getElementById("dict-sugg").innerHTML="";
 
-  const cIdx=_getCMap().get(w);
+  const cIdx=(idx!==undefined)?idx:_getCMap().get(w);
   if(cIdx!==undefined){
     // Entrée complète : forme fléchie, définition, rallonges
     const display=DATA.e[cIdx]||w;
@@ -374,19 +385,30 @@ function _dictRenderSugg(prefix){
   sugg.innerHTML="";
   if(!prefix) return;
   const DATA=window.SEQODS_DATA; if(!DATA?.c) return;
-  const C=DATA.c, E=DATA.e||[];
+  const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
-  const frag=document.createDocumentFragment();
-  let count=0;
-  for(let i=start; i<C.length && count<14; i++){
+  // Collecter les candidats avec leur index
+  const candidates=[];
+  for(let i=start; i<C.length && candidates.length<14; i++){
     if(!C[i].startsWith(prefix)) break;
-    const li=document.createElement("li");
-    li.textContent=E[i]||C[i];
-    li.addEventListener("click",()=>dictSelectWord(C[i]));
-    frag.appendChild(li);
-    count++;
+    candidates.push(i);
   }
-  if(!count){
+  // Détecter les formes canoniques en double pour afficher la nature
+  const canon2count=new Map();
+  candidates.forEach(i=>canon2count.set(C[i],(canon2count.get(C[i])||0)+1));
+  const frag=document.createDocumentFragment();
+  candidates.forEach(i=>{
+    const li=document.createElement("li");
+    let label=E[i]||C[i];
+    if(canon2count.get(C[i])>1){
+      const pos=_posLabel(F[i]);
+      if(pos) label+=" "+pos;
+    }
+    li.textContent=label;
+    li.addEventListener("click",()=>dictSelectWord(C[i],i));
+    frag.appendChild(li);
+  });
+  if(!candidates.length){
     const li=document.createElement("li"); li.className="dict-no-result";
     li.textContent="Mot inconnu."; frag.appendChild(li);
   }
