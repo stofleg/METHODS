@@ -632,6 +632,11 @@ function updateTmBtn(){
   const prevBtn=document.getElementById("tm-btn-prev");
   if(prevBtn) prevBtn.style.display=tmBrowse?"":"none";
   if(nextBtn) nextBtn.style.display=tmBrowse?"":"none";
+  // Masquer ✏️ et 🗑️ en mode feuilleter pour éviter le débordement du header
+  const edBtnU=document.getElementById("gm-ed-btn");
+  const delBtnU=document.getElementById("dn-del-btn");
+  if(edBtnU && tmBrowse) edBtnU.style.display="none";
+  if(delBtnU && tmBrowse) delBtnU.style.display="none";
   const gmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
 
   [sol,solKb].forEach(b=>{
