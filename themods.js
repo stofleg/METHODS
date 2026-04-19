@@ -262,6 +262,7 @@ function playTheme(theme){
 function startSession(theme, session){
   tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false;
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="none";
+  const delBtn=document.getElementById("dn-del-btn"); if(delBtn) delBtn.style.display="none";
   getSt(theme, session.label).seen=true;
   getSt(theme, session.label).lastSeen=todayStr();
   persistThemods().catch(()=>{});
@@ -323,6 +324,7 @@ function startOds(theme){
   odsEntryIdx=prog.idx; odsFnd=new Set(); tmSolutions=false; tmNoHelp=true;
   showTmView("tv-game");
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display=isEditor()?"":"none";
+  const delBtnGm=document.getElementById("dn-del-btn"); if(delBtnGm) delBtnGm.style.display="none";
   document.getElementById("tm-gtitle").textContent=THEME_NAMES[theme]||theme;
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderOdsGame();
@@ -903,8 +905,23 @@ function getDNProgress(){
 function getAllDNEntries(){ return window.THEMODS_DATA?.dn||[]; }
 function currentDNEntry(){
   const all=getAllDNEntries(), prog=getDNProgress();
-  const realIdx=prog.order?.[dnEntryIdx];
-  return realIdx!==undefined ? all[realIdx] : null;
+  while(true){
+    const realIdx=prog.order?.[dnEntryIdx];
+    if(realIdx===undefined) return null;
+    const entry=all[realIdx];
+    if(!tmState.themes?.dn?._custom?.[entry.canon]?.deleted) return entry;
+    dnEntryIdx++; prog.idx=dnEntryIdx;
+  }
+}
+function deleteDNEntry(){
+  const entry=currentDNEntry(); if(!entry) return;
+  setDNCustom(entry,{deleted:true});
+  const prog=getDNProgress();
+  dnEntryIdx++; prog.idx=dnEntryIdx; dnFound=false; tmSolutions=false;
+  closeDNEditor();
+  setTmMsg("Carte supprimée.","warn"); updateTmBtn(); renderDNGame();
+  if(tmKb) tmKb.clear();
+  persistThemods().catch(()=>{});
 }
 function isDNResolved(){ return dnFound||tmSolutions; }
 
@@ -929,6 +946,8 @@ function startDN(){
   showTmView("tv-game");
   const edBtn=document.getElementById("gm-ed-btn");
   if(edBtn) edBtn.style.display=isEditor()?"":"none";
+  const delBtn=document.getElementById("dn-del-btn");
+  if(delBtn) delBtn.style.display=isEditor()?"":"none";
   document.getElementById("tm-gtitle").textContent="Double nature";
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderDNGame();
@@ -1176,9 +1195,11 @@ function initThemods(){
     document.getElementById("gm-ed-cancel")?.addEventListener("click",()=>closeGMEditor());
     document.getElementById("gm-ed-save")?.addEventListener("click",()=>saveGMEditor());
     // DN éditeur
+    document.getElementById("dn-del-btn")?.addEventListener("click",()=>deleteDNEntry());
     document.getElementById("dn-ed-close")?.addEventListener("click",()=>closeDNEditor());
     document.getElementById("dn-ed-cancel")?.addEventListener("click",()=>closeDNEditor());
     document.getElementById("dn-ed-save")?.addEventListener("click",()=>saveDNEditor());
+    document.getElementById("dn-ed-del")?.addEventListener("click",()=>deleteDNEntry());
     document.getElementById("dn-ed-wikt")?.addEventListener("click",()=>fetchWiktForDN());
     document.getElementById("dn-editor")?.addEventListener("click",e=>{
       if(e.target===document.getElementById("dn-editor")) closeDNEditor();
