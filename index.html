@@ -501,6 +501,19 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 .em-create-btn{padding:13px;font-size:15px;font-weight:800;border-radius:13px;width:100%;}
 @media(max-width:640px){#em-btn-solutions{display:none;}#em-msg{display:none;}}
 @media(min-width:641px){#em-btn-solutions-kb{display:none;}}
+/* Clavier ENTREMODS agrandi (confort iPhone 13 mini) */
+#em-kb{padding:5px 4px 14px;}
+#em-kb .kb-rows{gap:6px;}
+#em-kb .kb-row{gap:4px;}
+#em-kb .kk{height:46px;font-size:19px;border-radius:10px;}
+#em-kb .kk.wide{font-size:15px;}
+#em-kb .kb-top{padding:3px 3px 6px;}
+#em-kb .kb-disp{font-size:16px;min-height:34px;}
+/* Slots ENTREMODS : trait plein, légèrement plus hauts */
+#v-entremods .slot{border-style:solid;min-height:40px;font-size:15px;}
+#v-entremods .slot.found{border-color:rgba(45,212,212,.7);background:rgba(45,212,212,.18);}
+#v-entremods .slot.found-helped{border-color:rgba(255,167,50,.8);background:rgba(255,167,50,.2);}
+#v-entremods .slot.revealed{border-color:rgba(255,107,107,.7);background:rgba(255,107,107,.18);}
 
 /* Les vues couvrent tout l'écran (position:fixed;inset:0)
    On compense le notch avec du padding sur chaque vue */
@@ -657,7 +670,10 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
         </div>
         <div class="em-field">
           <span class="em-label">Mots max par session</span>
-          <input id="em-max-cluster" class="em-num-input" type="number" min="1" max="5" value="2"/>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <input id="em-max-cluster" type="range" min="1" max="5" value="2" style="width:90px;accent-color:var(--accent);"/>
+            <span id="em-cluster-lbl" style="font-size:19px;font-weight:800;min-width:1em;text-align:center;">2</span>
+          </div>
         </div>
         <div id="em-create-preview" class="em-preview"></div>
         <button id="em-btn-create" class="btn btn-primary em-create-btn">Créer la liste</button>
@@ -979,7 +995,7 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.16</div>
+  pointer-events:none;user-select:none;">v3.17</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>

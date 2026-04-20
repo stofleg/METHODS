@@ -271,7 +271,7 @@ function emPrepareGame(listId,sessionIdx){
 }
 function emLaunchGame(){
   emPhase="PLAYING"; emUpdateBtn(); emSetMsg("");
-  emRenderBounds(); emChronoStart(); setDictBtnVisible(false);
+  emRenderBounds(); emRenderSlots(); emChronoStart(); setDictBtnVisible(false);
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("em-saisie")?.focus(); },80);
 }
 function emValidateWord(raw){
@@ -387,6 +387,8 @@ function emGetCreateParams(){
 }
 function emUpdateCreatePreview(){
   const {minLen,maxLen,maxCluster}=emGetCreateParams();
+  const lbl=document.getElementById("em-cluster-lbl");
+  if(lbl) lbl.textContent=maxCluster;
   const count=emGenerateSessions(minLen,maxLen,maxCluster).length;
   const p=document.getElementById("em-create-preview");
   if(p) p.textContent=count?count+" sessions générées":"Aucune session pour ces critères.";
