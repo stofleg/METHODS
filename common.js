@@ -13,7 +13,6 @@
     if(ei.includes(',') && !ej.includes(',')){
       // swap i et i+1
       if(E.length){ const t=E[i]; E[i]=E[i+1]; E[i+1]=t; }
-      if(F.length){ const t=F[i]; F[i]=F[i+1]; F[i+1]=t; }
     }
   }
 })();
