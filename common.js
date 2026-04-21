@@ -38,12 +38,20 @@ function getAnagramCount(canon){
   return (_anaIdx.get(key)||1)-1;
 }
 
-/* ── Rallonges (hooks) ── */
-const ALPHA = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+/* ── Rallonges (hooks) — toute extension valide en tête ou en queue ── */
+let _hookSet = null;
 function hasHook(canon){
-  const S = getCanonSet();
-  for(const l of ALPHA) if(S.has(l+canon) || S.has(canon+l)) return true;
-  return false;
+  if(!_hookSet){
+    _hookSet = new Set();
+    for(const w of getCanonSet()){
+      const n = w.length;
+      for(let i=1; i<n; i++){
+        _hookSet.add(w.slice(i));   // w est une extension-avant de w.slice(i)
+        _hookSet.add(w.slice(0,i)); // w est une extension-arrière de w.slice(0,i)
+      }
+    }
+  }
+  return _hookSet.has(canon);
 }
 
 /* ── Affichage mot + puce + exposant ── */
