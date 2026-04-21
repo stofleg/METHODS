@@ -1,5 +1,5 @@
-/* ══ Service Worker METHODS — network-first v3.17 ══ */
-const CACHE_NAME = "methods-v38";
+/* ══ Service Worker METHODS — network-first v3.38 ══ */
+const CACHE_NAME = "methods-v39";
 
 /* ── Install : prendre le contrôle immédiatement ── */
 self.addEventListener("install", e => {
@@ -10,7 +10,7 @@ self.addEventListener("install", e => {
 self.addEventListener("activate", e => {
   e.waitUntil(
     caches.keys()
-      .then(keys => Promise.all(keys.map(k => caches.delete(k)))) // purge totale
+      .then(keys => Promise.all(keys.map(k => caches.delete(k))))
       .then(() => self.clients.claim())
   );
 });
@@ -20,8 +20,14 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   if (e.request.url.includes("firestore.googleapis.com")) return;
 
+  // Pour les navigations HTML : bypasser le cache HTTP du navigateur
+  // afin que index.html soit toujours servi frais depuis le serveur.
+  const req = e.request.mode === "navigate"
+    ? new Request(e.request, { cache: "no-store" })
+    : e.request;
+
   e.respondWith(
-    fetch(e.request)
+    fetch(req)
       .then(resp => {
         if (resp && resp.status === 200 && resp.type !== "opaque") {
           const clone = resp.clone();
