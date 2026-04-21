@@ -50,13 +50,17 @@ function hasHook(canon){
 /* ── Affichage mot + puce + exposant ── */
 function setElWord(el, display, canon, suffix=""){
   el.textContent = "";
+  el.style.letterSpacing = "0";
   if(hasHook(canon)){
     const dot = document.createElement("span");
     dot.className = "hook";
     dot.textContent = "•";
     el.appendChild(dot);
   }
-  el.appendChild(document.createTextNode(display));
+  const ws = document.createElement("span");
+  ws.className = "wt";
+  ws.textContent = display;
+  el.appendChild(ws);
   const n = getAnagramCount(canon);
   if(n > 0){
     const sup = document.createElement("sup");
