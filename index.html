@@ -1017,7 +1017,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.35</div>
+  pointer-events:none;user-select:none;">v3.36</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1029,16 +1029,24 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v35";
+  const CURRENT_CACHE="methods-v36";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
-    navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload());
+    // Skip controllerchange reload if we just did a nuclear purge reload (avoid double reload)
+    if(!sessionStorage.getItem("sw_reloaded")){
+      navigator.serviceWorker.addEventListener("controllerchange",()=>{
+        sessionStorage.setItem("sw_reloaded","1");
+        location.reload();
+      },{once:true});
+    }
+    sessionStorage.removeItem("sw_reloaded");
   }
   if("caches" in window){
     caches.keys().then(keys=>{
       const stale=keys.filter(k=>k.startsWith("methods-")&&k!==CURRENT_CACHE);
       if(stale.length){
+        sessionStorage.setItem("sw_reloaded","1");
         Promise.all([
           navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))),
           Promise.all(keys.map(k=>caches.delete(k)))

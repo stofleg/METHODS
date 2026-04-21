@@ -23,6 +23,7 @@ function getDictArr(){ return window.SEQODS_DATA?.d || window.SEQODS_DATA?.c || 
 /* ── Index anagrammes ── */
 let _anaIdx = null;
 function getAnagramCount(canon){
+  if(!canon) return 0;
   if(!_anaIdx){
     _anaIdx = new Map();
     for(const w of getDictArr()){
@@ -42,6 +43,7 @@ function hasHook(canon){
 /* ── Affichage mot + puce + exposant ── */
 function setElWord(el, display, canon, suffix=""){
   el.textContent = "";
+  if(!display || !canon) return;
   const w = document.createElement("span");
   w.style.letterSpacing = "0";
   if(hasHook(canon)){
