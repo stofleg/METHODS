@@ -34,21 +34,9 @@ function getAnagramCount(canon){
   return (_anaIdx.get(key)||1)-1;
 }
 
-/* ── Rallonges — extensions sur lemmes uniquement (c[], pas d[]) ── */
-let _hookSet = null;
+/* ── Rallonges — données précalculées dans DATA.r ── */
 function hasHook(canon){
-  if(!_hookSet){
-    _hookSet = new Set();
-    const C = window.SEQODS_DATA?.c || [];
-    for(const w of C){
-      const n = w.length;
-      for(let i=1; i<n; i++){
-        _hookSet.add(w.slice(i));
-        _hookSet.add(w.slice(0,i));
-      }
-    }
-  }
-  return _hookSet.has(canon);
+  return (window.SEQODS_DATA?.r?.[canon]?.length || 0) > 0;
 }
 
 /* ── Affichage mot + puce + exposant ── */
