@@ -17,6 +17,24 @@
   }
 })();
 
+/* ── Index anagrammes ── */
+let _anaIdx = null;
+function getAnagramCount(canon){
+  if(!_anaIdx){
+    _anaIdx = new Map();
+    const C = window.SEQODS_DATA?.c || [];
+    const seen = new Set();
+    for(const c of C){
+      if(seen.has(c)) continue;
+      seen.add(c);
+      const key = c.split("").sort().join("");
+      _anaIdx.set(key, (_anaIdx.get(key)||0)+1);
+    }
+  }
+  const key = canon.split("").sort().join("");
+  return (_anaIdx.get(key)||1)-1;
+}
+
 /* ── Sélecteur ── */
 const $ = s => document.querySelector(s);
 

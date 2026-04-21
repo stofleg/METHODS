@@ -8,6 +8,18 @@
 /* ── Données ── */
 function emC(){ return window.SEQODS_DATA?.c||[]; }
 function emE(){ return window.SEQODS_DATA?.e||[]; }
+
+/* ── Mot + exposant anagrammes ── */
+function setElWord(el, display, canon){
+  el.textContent = display;
+  const n = getAnagramCount(canon);
+  if(n > 0){
+    const sup = document.createElement("sup");
+    sup.className = "ana";
+    sup.textContent = n;
+    el.appendChild(sup);
+  }
+}
 function emF(){ return window.SEQODS_DATA?.f||[]; }
 function emDict(){
   const d=window.SEQODS_DATA?.d;
@@ -175,8 +187,8 @@ function emRenderBounds(){
   const C=emC(), E=emE();
   const ea=E[sess.lowerIdx]||C[sess.lowerIdx];
   const eb=E[sess.upperIdx]||C[sess.upperIdx];
-  if(ba){ ba.textContent=ea; ba.onclick=()=>openDef(C[sess.lowerIdx],ea); }
-  if(bb){ bb.textContent=eb; bb.onclick=()=>openDef(C[sess.upperIdx],eb); }
+  if(ba){ setElWord(ba,ea,C[sess.lowerIdx]); ba.onclick=()=>openDef(C[sess.lowerIdx],ea); }
+  if(bb){ setElWord(bb,eb,C[sess.upperIdx]); bb.onclick=()=>openDef(C[sess.upperIdx],eb); }
 }
 
 function emRenderSlots(){
@@ -197,12 +209,12 @@ function emRenderSlots(){
       li.classList.add(emHintUsed[i]?"found-helped":"found","clickable");
       const btn=document.createElement("button");
       btn.style.cssText="background:none;border:none;font:inherit;color:inherit;font-weight:900;letter-spacing:.07em;cursor:pointer;padding:0;flex:1;text-align:left;";
-      btn.textContent=word;
+      setElWord(btn,word,canon);
       btn.addEventListener("click",e=>{ e.preventDefault(); openDef(canon,word); });
       li.appendChild(btn);
     } else if(emPhase==="DONE"){
       li.classList.add("revealed","clickable");
-      li.textContent=word;
+      setElWord(li,word,canon);
       li.addEventListener("click",()=>openDef(canon,word));
     } else {
       if(emHintMode[i]==="tirage"){
