@@ -42,24 +42,26 @@ function hasHook(canon){
 /* ── Affichage mot + puce + exposant ── */
 function setElWord(el, display, canon, suffix=""){
   el.textContent = "";
-  el.style.letterSpacing = "0";
+  const w = document.createElement("span");
+  w.style.letterSpacing = "0";
   if(hasHook(canon)){
     const dot = document.createElement("span");
     dot.className = "hook";
     dot.textContent = "•";
-    el.appendChild(dot);
+    w.appendChild(dot);
   }
   const ws = document.createElement("span");
   ws.className = "wt";
   ws.textContent = display;
-  el.appendChild(ws);
+  w.appendChild(ws);
   const n = getAnagramCount(canon);
   if(n > 0){
     const sup = document.createElement("sup");
     sup.className = "ana";
     sup.textContent = n;
-    el.appendChild(sup);
+    w.appendChild(sup);
   }
+  el.appendChild(w);
   if(suffix) el.appendChild(document.createTextNode(suffix));
 }
 
