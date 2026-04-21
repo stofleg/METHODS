@@ -9,24 +9,7 @@
 function emC(){ return window.SEQODS_DATA?.c||[]; }
 function emE(){ return window.SEQODS_DATA?.e||[]; }
 
-/* ── Mot + puce rallonge + exposant anagrammes ── */
-function setElWord(el, display, canon){
-  el.textContent = "";
-  if(hasHook(canon)){
-    const dot = document.createElement("span");
-    dot.className = "hook";
-    dot.textContent = "•";
-    el.appendChild(dot);
-  }
-  el.appendChild(document.createTextNode(display));
-  const n = getAnagramCount(canon);
-  if(n > 0){
-    const sup = document.createElement("sup");
-    sup.className = "ana";
-    sup.textContent = n;
-    el.appendChild(sup);
-  }
-}
+
 function emF(){ return window.SEQODS_DATA?.f||[]; }
 function emDict(){
   const d=window.SEQODS_DATA?.d;

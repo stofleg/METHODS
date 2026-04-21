@@ -46,6 +46,26 @@ function hasHook(canon){
   return false;
 }
 
+/* ── Affichage mot + puce + exposant ── */
+function setElWord(el, display, canon, suffix=""){
+  el.textContent = "";
+  if(hasHook(canon)){
+    const dot = document.createElement("span");
+    dot.className = "hook";
+    dot.textContent = "•";
+    el.appendChild(dot);
+  }
+  el.appendChild(document.createTextNode(display));
+  const n = getAnagramCount(canon);
+  if(n > 0){
+    const sup = document.createElement("sup");
+    sup.className = "ana";
+    sup.textContent = n;
+    el.appendChild(sup);
+  }
+  if(suffix) el.appendChild(document.createTextNode(suffix));
+}
+
 /* ── Sélecteur ── */
 const $ = s => document.querySelector(s);
 
