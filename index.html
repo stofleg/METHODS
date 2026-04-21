@@ -590,7 +590,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <!-- ══ SELECT ══ -->
 <div id="v-select" class="view">
   <div class="card sel-card" id="btn-go-entremods">
-    <div class="sel-name"><span class="l1">ENTREM</span><span class="l2">ODS</span></div>
+    <div class="sel-name"><span class="l1">METH</span><span class="l2">ODS</span></div>
     <div class="sel-desc">Trouver les mots d'une longueur donnée entre deux bornes</div>
   </div>
   <div class="card sel-card" id="btn-go-themods">
@@ -600,53 +600,12 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 </div>
 
 <!-- ══ METHODS ══ -->
-<div id="v-methods" class="view">
-  <div class="card m-card">
-    <div class="m-hdr">
-      <span id="user-chip" class="user-chip"></span>
-      <button id="btn-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <div class="logo m-hdr-logo"><span class="l1">METH</span><span class="l2">ODS</span></div>
-      <button id="btn-to-themods" class="btn" style="font-size:11px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">THEM</span><span class="l2">ODS</span></button>
-      <button id="btn-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
-    </div>
-    <div class="m-prog"><div id="m-prog-row" class="prog-row"></div></div>
-    <div class="bounds-row">
-      <button id="borne-a" class="borne">—</button>
-      <span id="chrono" class="chrono"></span>
-      <button id="borne-b" class="borne">—</button>
-    </div>
-    <ul id="word-list" class="word-list"></ul>
-    <div class="m-bottom">
-      <div id="m-msg" class="msg"></div>
-      <button id="btn-solutions" class="btn btn-danger">Jouer</button>
-    </div>
-    <div class="inp-bar">
-      <input id="saisie" type="text" autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false" placeholder="Saisie…"/>
-    </div>
-  </div>
-  <!-- Clavier mobile METHODS -->
-  <div id="m-kb" class="keyboard">
-    <div class="kb-top">
-      <button class="btn-dict-kb hidden" aria-label="Dictionnaire">📚</button>
-      <div id="m-kb-disp" class="kb-disp"></div>
-      <button id="btn-solutions-kb" class="btn btn-danger" style="font-size:12px;padding:5px 10px;">Jouer</button>
-    </div>
-    <div id="m-kb-msg" class="kb-msg"></div>
-    <div class="kb-rows">
-      <div class="kb-row"><button class="kk" data-k="A">A</button><button class="kk" data-k="Z">Z</button><button class="kk" data-k="E">E</button><button class="kk" data-k="R">R</button><button class="kk" data-k="T">T</button><button class="kk" data-k="Y">Y</button><button class="kk" data-k="U">U</button><button class="kk" data-k="I">I</button><button class="kk" data-k="O">O</button><button class="kk" data-k="P">P</button></div>
-      <div class="kb-row"><button class="kk" data-k="Q">Q</button><button class="kk" data-k="S">S</button><button class="kk" data-k="D">D</button><button class="kk" data-k="F">F</button><button class="kk" data-k="G">G</button><button class="kk" data-k="H">H</button><button class="kk" data-k="J">J</button><button class="kk" data-k="K">K</button><button class="kk" data-k="L">L</button><button class="kk" data-k="M">M</button></div>
-      <div class="kb-row"><button class="kk wide clr" data-k="CLR">✕</button><button class="kk wide" data-k="DEL">⌫</button><button class="kk" data-k="W">W</button><button class="kk" data-k="X">X</button><button class="kk" data-k="C">C</button><button class="kk" data-k="V">V</button><button class="kk" data-k="B">B</button><button class="kk" data-k="N">N</button><button class="kk wide enter" data-k="OK">OK</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- ══ ENTREMODS ══ -->
 <div id="v-entremods" class="view">
   <div class="card em-outer">
     <div class="em-shdr">
       <span id="em-user-chip" class="user-chip"></span>
       <button id="em-btn-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <div class="logo em-hdr-logo"><span class="l1">ENTREM</span><span class="l2">ODS</span></div>
+      <div class="logo em-hdr-logo"><span class="l1">METH</span><span class="l2">ODS</span></div>
       <button id="em-btn-to-themods" class="btn" style="font-size:10px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">THEM</span><span class="l2">ODS</span></button>
       <button id="em-btn-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
     </div>
@@ -748,7 +707,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
       <span id="tm-user-chip" class="user-chip"></span>
       <button id="btn-tm-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
       <div class="logo tm-hdr-logo"><span class="l1">THEM</span><span class="l2">ODS</span></div>
-      <button id="btn-tm-back" class="btn" style="font-size:10px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">ENTREM</span><span class="l2">ODS</span></button>
+      <button id="btn-tm-back" class="btn" style="font-size:10px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">METH</span><span class="l2">ODS</span></button>
       <button id="btn-tm-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
     </div>
     <!-- sous-vue : accueil -->
@@ -1024,7 +983,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="themods_data.js"></script>
 <script src="ods_data.js"></script>
 <script src="common.js"></script>
-<script src="methods.js"></script>
 <script src="themods.js"></script>
 <script src="entremods.js"></script>
 <script src="app.js"></script>
