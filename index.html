@@ -1027,12 +1027,23 @@ sup.ana{font-size:.6em;font-weight:700;color:var(--muted);margin-left:0;vertical
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  navigator.serviceWorker.register("./sw.js", {updateViaCache:"none"})
-    .then(reg=>reg.update())
-    .catch(()=>{});
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    window.location.reload();
-  });
+  const CURRENT_CACHE="methods-v23";
+  function doRegister(){
+    navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
+      .then(reg=>reg.update()).catch(()=>{});
+    navigator.serviceWorker.addEventListener("controllerchange",()=>location.reload());
+  }
+  if("caches" in window){
+    caches.keys().then(keys=>{
+      const stale=keys.filter(k=>k.startsWith("methods-")&&k!==CURRENT_CACHE);
+      if(stale.length){
+        Promise.all([
+          navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))),
+          Promise.all(keys.map(k=>caches.delete(k)))
+        ]).then(()=>location.reload());
+      } else { doRegister(); }
+    }).catch(doRegister);
+  } else { doRegister(); }
 }
 </script>
 </body>
