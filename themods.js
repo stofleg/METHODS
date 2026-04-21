@@ -149,7 +149,7 @@ function updateTmStats(){
   if(dnEl) dnEl.textContent=dnTotal+" mots"+fmtPct(dnProg.done,dnTotal);
 
   // Finales
-  const finales=["able","age","ique","oir","ure","ard","ant","if","in","ais","ois","erie","et","ette","ide","ite","eau","ot","um","eux","ail","al","ase","ose","eur","ier","ien","isme","iste"];
+  const finales=["able","age","ique","oir","ure","ard","ant","if","in","ail","ais","ois","erie","et","ette","ide","ite","eau","ot","um","eux","al","ase","ose","eur","ier","ien","isme","iste"];
   let totalSess=0, totalVal=0;
   finales.forEach(th=>{
     const d=window.THEMODS_DATA?.[th]; if(!d) return;

@@ -693,6 +693,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         <button id="em-btn-prev" class="btn btn-primary" style="display:none;font-size:16px;padding:5px 10px;" title="Précédent">←</button>
         <button id="em-btn-next" class="btn btn-primary" style="display:none;font-size:16px;padding:5px 10px;" title="Suivant">→</button>
         <button id="em-btn-solutions" class="btn btn-primary" style="font-size:12px;padding:6px 12px;">Jouer</button>
+        <button id="em-btn-restart" class="btn btn-primary" style="display:none;font-size:12px;padding:6px 12px;">↺ Recommencer</button>
         <button id="em-btn-back-game" class="btn" style="font-size:12px;padding:6px 12px;white-space:nowrap;">← Listes</button>
       </div>
       <div class="bounds-row">
@@ -815,8 +816,8 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         <div class="tm-grid">
           <div class="tc tc-f" data-theme="able"><div><div class="tc-lbl">-ABLE</div><div class="tc-desc" id="able-desc">293 mots · 136 sessions</div></div><span class="tc-arr">›</span></div>
           <div class="tc tc-f" data-theme="age"><div><div class="tc-lbl">-AGE</div><div class="tc-desc" id="age-desc">1 311 mots · 360 sessions</div></div><span class="tc-arr">›</span></div>
-          <div class="tc tc-f" data-theme="ais"><div><div class="tc-lbl">-AIS</div><div class="tc-desc" id="ais-desc">147 mots · 87 sessions</div></div><span class="tc-arr">›</span></div>
           <div class="tc tc-f" data-theme="ail"><div><div class="tc-lbl">-AIL</div><div class="tc-desc" id="ail-desc">44 mots · 34 sessions</div></div><span class="tc-arr">›</span></div>
+          <div class="tc tc-f" data-theme="ais"><div><div class="tc-lbl">-AIS</div><div class="tc-desc" id="ais-desc">147 mots · 87 sessions</div></div><span class="tc-arr">›</span></div>
           <div class="tc tc-f" data-theme="al"><div><div class="tc-lbl">-AL</div><div class="tc-desc" id="al-desc">665 mots · 199 sessions</div></div><span class="tc-arr">›</span></div>
           <div class="tc tc-f" data-theme="ant"><div><div class="tc-lbl">-ANT</div><div class="tc-desc" id="ant-desc">767 mots · 226 sessions</div></div><span class="tc-arr">›</span></div>
           <div class="tc tc-f" data-theme="ard"><div><div class="tc-lbl">-ARD</div><div class="tc-desc" id="ard-desc">233 mots · 79 sessions</div></div><span class="tc-arr">›</span></div>
@@ -1017,7 +1018,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.36</div>
+  pointer-events:none;user-select:none;">v3.37</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1029,7 +1030,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v36";
+  const CURRENT_CACHE="methods-v37";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

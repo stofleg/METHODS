@@ -399,9 +399,23 @@ function emFinalizeSession(ok){
   }
   persistEntreModsState().catch(()=>{});
 }
+function emResetList(){
+  const list=emState?.lists[emCurrentListId]; if(!list) return;
+  list.sessions={};
+  document.getElementById("em-btn-restart").style.display="none";
+  persistEntreModsState().catch(()=>{});
+  emOpenList(emCurrentListId);
+}
+
 function emReplay(){
   const idx=emPickNext(emCurrentListId);
-  if(idx===null){ emSetMsg("100%","ok"); emUpdateBtn(); return; }
+  if(idx===null){
+    emSetMsg("100% — liste terminée !","ok");
+    emUpdateBtn();
+    document.getElementById("em-btn-restart").style.display="";
+    return;
+  }
+  document.getElementById("em-btn-restart").style.display="none";
   emPrepareGame(emCurrentListId,idx);
 }
 
@@ -515,6 +529,8 @@ function initEntremods(){
   document.getElementById("em-btn-back-game")?.addEventListener("click",()=>{
     emChronoStop(); emBrowse=false; emBrowseSave=null; emRenderHome();
   });
+
+  document.getElementById("em-btn-restart")?.addEventListener("click",emResetList);
 
   document.getElementById("em-btn-browse")?.addEventListener("click",()=>{
     if(emBrowse) emStopBrowse(); else emStartBrowse();

@@ -40,28 +40,96 @@ function hasHook(canon){
   return (window.SEQODS_DATA?.r?.[canon]?.length || 0) > 0;
 }
 
+/* ── Résolution forme fléchie : canon + suffixe affiché → canonique fléchi ── */
+let _dSet = null;
+function _getDSet(){ if(!_dSet) _dSet = new Set(getDictArr()); return _dSet; }
+
+const _dSufCache = new Map();
+function resolveInflectedCanon(canon, rawSuffix){
+  const suf = norm(rawSuffix.trim());
+  if(!suf) return null;
+  const simple = canon + suf;
+  if(_getDSet().has(simple)) return simple;
+  if(!_dSufCache.has(suf)){
+    _dSufCache.set(suf, getDictArr().filter(w => w.endsWith(suf)));
+  }
+  const candidates = _dSufCache.get(suf);
+  let best=null, bestLen=0;
+  for(const w of candidates){
+    let j=0; while(j<canon.length && j<w.length && canon[j]===w[j]) j++;
+    if(j>bestLen && j>=Math.ceil(canon.length*0.5)){ bestLen=j; best=w; }
+  }
+  return best;
+}
+
+/* ── Carte inverse formes fléchies → lemme (entrées à virgule de c[]) ── */
+let _inflMap = null;
+function _getInflMap(){
+  if(!_inflMap){
+    _inflMap = new Map();
+    const {c,e}=window.SEQODS_DATA||{};
+    if(c&&e) for(let i=0;i<c.length;i++){
+      if(!e[i]?.includes(',')) continue;
+      const ic = resolveInflectedCanon(c[i], e[i].split(',')[1]);
+      if(ic && !_inflMap.has(ic)) _inflMap.set(ic, c[i]);
+    }
+  }
+  return _inflMap;
+}
+
+/* ── Lemme parent pour une forme fléchie ou conjuguée ── */
+function findLemma(w){
+  if(!w) return null;
+  const cm = _getCMap();
+  if(cm.has(w)) return w;
+  const im = _getInflMap();
+  if(im.has(w)) return im.get(w);
+  const strips = ['AIENT','ANT','ERENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
+    'AIT','AIS','ONS','ENT','EZ','AI','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIONS','IT',
+    'EAUX','AUX','AS','A','ERA','ERAS','ES','S','X'];
+  for(const s of strips){
+    if(!w.endsWith(s)) continue;
+    const stem = w.slice(0,-s.length);
+    if(stem.length<2) continue;
+    if(cm.has(stem)) return stem;
+    if(im.has(stem)) return im.get(stem);
+    if(s==='AUX' && cm.has(stem+'AL')) return stem+'AL';
+    if(s==='EAUX' && cm.has(stem+'EAU')) return stem+'EAU';
+  }
+  return null;
+}
+
 /* ── Affichage mot + puce + exposant ── */
+function _mkHook(ch){ const d=document.createElement("span"); d.className="hook"; d.textContent=ch; return d; }
+function _mkSup(n){ const s=document.createElement("sup"); s.className="ana"; s.textContent=n; return s; }
+function _mkWt(t){ const s=document.createElement("span"); s.className="wt"; s.textContent=t; return s; }
+
 function setElWord(el, display, canon, suffix=""){
   el.textContent = "";
   if(!display || !canon) return;
   const w = document.createElement("span");
   w.style.letterSpacing = "0";
-  if(hasHook(canon)){
-    const dot = document.createElement("span");
-    dot.className = "hook";
-    dot.textContent = "•";
-    w.appendChild(dot);
-  }
-  const ws = document.createElement("span");
-  ws.className = "wt";
-  ws.textContent = display;
-  w.appendChild(ws);
-  const n = getAnagramCount(canon);
-  if(n > 0){
-    const sup = document.createElement("sup");
-    sup.className = "ana";
-    sup.textContent = n;
-    w.appendChild(sup);
+  const commaIdx = display.indexOf(',');
+  if(commaIdx === -1){
+    if(hasHook(canon)) w.appendChild(_mkHook("•"));
+    w.appendChild(_mkWt(display));
+    const n = getAnagramCount(canon);
+    if(n>0) w.appendChild(_mkSup(n));
+  } else {
+    const mainDisp = display.substring(0, commaIdx).trim();
+    const inflDisp = display.substring(commaIdx+1).trim();
+    const inflCanon = resolveInflectedCanon(canon, inflDisp);
+    const mainHook = hasHook(canon);
+    const inflHook = inflCanon ? hasHook(inflCanon) : false;
+    if(mainHook && inflHook)       w.appendChild(_mkHook("•"));
+    else if(mainHook)              w.appendChild(_mkHook("◦"));
+    w.appendChild(_mkWt(mainDisp));
+    const n = getAnagramCount(canon);
+    if(n>0) w.appendChild(_mkSup(n));
+    w.appendChild(document.createTextNode(", "));
+    if(!mainHook && inflHook)      w.appendChild(_mkHook("◦"));
+    w.appendChild(_mkWt(inflDisp));
+    if(inflCanon){ const ni=getAnagramCount(inflCanon); if(ni>0) w.appendChild(_mkSup(ni)); }
   }
   el.appendChild(w);
   if(suffix) el.appendChild(document.createTextNode(suffix));
@@ -246,6 +314,10 @@ function openDef(canon, displayWord, defText){
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
   const idx = C.indexOf(canon);
+  if(idx < 0 && defText === undefined){
+    const lemma = findLemma(canon);
+    if(lemma && lemma !== canon){ openDef(lemma, displayWord); return; }
+  }
   const title = (displayWord || (idx>=0 ? E[idx].split(",")[0].trim() : canon)).replace(/\*/g,"");
   const def = (defText !== undefined) ? defText : (idx>=0 ? (F[idx]||"") : "");
 
@@ -435,7 +507,9 @@ function dictSelectWord(w, idx){
     }
     dictUpdateLinks(display);
   } else {
-    // Forme variable (fléchie) sans entrée propre
+    // Forme variable : tenter de naviguer vers le lemme
+    const lemma = findLemma(w);
+    if(lemma && lemma !== w){ dictSelectWord(lemma); return; }
     document.getElementById("dict-word").textContent=w;
     document.getElementById("dict-def").textContent="Forme variable · Mot valide ODS9";
     document.getElementById("dict-rall").innerHTML="";
