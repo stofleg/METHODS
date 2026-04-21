@@ -34,17 +34,21 @@ function getAnagramCount(canon){
   return (_anaIdx.get(key)||1)-1;
 }
 
-/* ── Rallonges — scan lazy mémoïsé sur le dictionnaire complet ── */
-const _hookCache = new Map();
+/* ── Rallonges — extensions sur lemmes uniquement (c[], pas d[]) ── */
+let _hookSet = null;
 function hasHook(canon){
-  if(_hookCache.has(canon)) return _hookCache.get(canon);
-  const d = getDictArr();
-  let result = false;
-  for(const w of d){
-    if(w !== canon && (w.startsWith(canon) || w.endsWith(canon))){ result=true; break; }
+  if(!_hookSet){
+    _hookSet = new Set();
+    const C = window.SEQODS_DATA?.c || [];
+    for(const w of C){
+      const n = w.length;
+      for(let i=1; i<n; i++){
+        _hookSet.add(w.slice(i));
+        _hookSet.add(w.slice(0,i));
+      }
+    }
   }
-  _hookCache.set(canon, result);
-  return result;
+  return _hookSet.has(canon);
 }
 
 /* ── Affichage mot + puce + exposant ── */
