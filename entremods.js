@@ -208,7 +208,7 @@ function emRenderSlots(){
     if(emFound.has(i)){
       li.classList.add(emHintUsed[i]?"found-helped":"found","clickable");
       const btn=document.createElement("button");
-      btn.style.cssText="background:none;border:none;font:inherit;color:inherit;font-weight:900;letter-spacing:.07em;cursor:pointer;padding:0;flex:1;text-align:left;";
+      btn.style.cssText="background:none;border:none;font:inherit;color:inherit;font-weight:900;cursor:pointer;padding:0;flex:1;text-align:left;";
       setElWord(btn,word,canon);
       btn.addEventListener("click",e=>{ e.preventDefault(); openDef(canon,word); });
       li.appendChild(btn);
