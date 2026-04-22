@@ -612,6 +612,21 @@ function showView(id){
 /* ── Modale définition ── */
 
 /* ── Modale définition simple (indice 📖) ── */
+function _renderWordLinks(container, list, label){
+  if(!list || !list.length) return;
+  const lbl = document.createElement("strong"); lbl.textContent = label;
+  container.appendChild(lbl);
+  const sp = document.createElement("span");
+  list.forEach((w,i)=>{
+    if(i) sp.appendChild(document.createTextNode(" • "));
+    const a = document.createElement("a"); a.href="#"; a.className="def-link";
+    a.textContent = w;
+    a.addEventListener("click", e=>{ e.preventDefault(); openDef(norm(w), w); });
+    sp.appendChild(a);
+  });
+  container.appendChild(sp);
+}
+
 function openDefSimple(defText){
   // Nettoyer la prononciation [xxx] en début
   let d = (defText||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim();
@@ -626,7 +641,7 @@ function openDefSimple(defText){
   mEl.classList.add("open");
 }
 
-function openDef(canon, displayWord, defText){
+function openDef(canon, displayWord, defText, flechie){
   const DATA = window.SEQODS_DATA;
   if(!DATA) return;
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
@@ -634,7 +649,7 @@ function openDef(canon, displayWord, defText){
   const idx = C.indexOf(canon);
   if(idx < 0 && defText === undefined){
     const lemma = findLemma(canon);
-    if(lemma && lemma !== canon){ openDef(lemma); return; }
+    if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
   }
   const title = (displayWord || (idx>=0 ? E[idx].split(",")[0].trim() : canon)).replace(/\*/g,"");
   const def = (defText !== undefined) ? defText : (idx>=0 ? (F[idx]||"") : "");
@@ -647,43 +662,44 @@ function openDef(canon, displayWord, defText){
   $("#def-img").href = "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(raw);
   $("#def-links").style.display = "flex";
 
-  // Anagrammes
-  const anaEl = $("#def-ana");
+  // Anagrammes du lemme
+  const anaEl = $("#def-ana"); if(anaEl) anaEl.innerHTML="";
   if(A && anaEl){
     const tir = canon.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
     const lst = (A[tir]||[]).filter(x=>norm(x)!==canon).slice(0,60);
-    if(lst.length){
-      anaEl.innerHTML="";
-      const lbl=document.createElement("strong"); lbl.textContent="Anagrammes"; anaEl.appendChild(lbl);
-      const sp=document.createElement("span");
-      lst.forEach((w,i)=>{
-        if(i) sp.appendChild(document.createTextNode(" • "));
-        const a=document.createElement("a"); a.href="#"; a.className="def-link";
-        a.textContent=w;
-        a.addEventListener("click",e=>{ e.preventDefault(); openDef(norm(w),w); });
-        sp.appendChild(a);
-      });
-      anaEl.appendChild(sp);
-    } else anaEl.innerHTML="";
+    if(lst.length){ _renderWordLinks(anaEl, lst, "Anagrammes"); }
   }
 
-  // Rallonges
-  const rallEl = $("#def-rall");
+  // Rallonges du lemme
+  const rallEl = $("#def-rall"); if(rallEl) rallEl.innerHTML="";
   if(R && rallEl){
     const lst = R[canon]||[];
-    if(lst.length){
-      rallEl.innerHTML="";
-      const lbl=document.createElement("strong"); lbl.textContent="Rallonges"; rallEl.appendChild(lbl);
-      const sp=document.createElement("span");
-      lst.forEach((w,i)=>{
-        if(i) sp.appendChild(document.createTextNode(" • "));
-        const a=document.createElement("a"); a.href="#"; a.className="def-link";
-        a.textContent=w;
-        a.addEventListener("click",e=>{ e.preventDefault(); openDef(norm(w),w); });
-        sp.appendChild(a);
-      });
-      rallEl.appendChild(sp);
-    } else rallEl.innerHTML="";
+    if(lst.length){ _renderWordLinks(rallEl, lst, "Rallonges"); }
+  }
+
+  // Section forme fléchie (si différente du lemme)
+  const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
+  if(flechie && flechie !== canon && A && flechieEl){
+    const ftir = flechie.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
+    const fAna = (A[ftir]||[]).filter(x=>norm(x)!==flechie).slice(0,60);
+    const fRal = R ? (R[flechie]||[]) : [];
+    if(fAna.length || fRal.length){
+      const sep = document.createElement("hr");
+      sep.style.cssText = "border:none;border-top:1px solid var(--stroke);margin:12px 0 4px";
+      flechieEl.appendChild(sep);
+      const sub = document.createElement("p");
+      sub.style.cssText = "font-size:11px;color:var(--muted);margin:0 0 2px";
+      sub.textContent = "Forme : " + flechie;
+      flechieEl.appendChild(sub);
+      if(fAna.length){
+        const sec = document.createElement("div"); sec.className="modal-sec";
+        _renderWordLinks(sec, fAna, "Anagrammes"); flechieEl.appendChild(sec);
+      }
+      if(fRal.length){
+        const sec = document.createElement("div"); sec.className="modal-sec";
+        _renderWordLinks(sec, fRal, "Rallonges"); flechieEl.appendChild(sec);
+      }
+    }
   }
 
   $("#def-modal").classList.add("open");
