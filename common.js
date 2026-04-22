@@ -95,6 +95,9 @@ function findLemma(w){
     if(im.has(stem)) return im.get(stem);
     if(s==='AUX' && cm.has(stem+'AL')) return stem+'AL';
     if(s==='EAUX' && cm.has(stem+'EAU')) return stem+'EAU';
+    if(cm.has(stem+'ER')) return stem+'ER';
+    if(cm.has(stem+'IR')) return stem+'IR';
+    if(cm.has(stem+'RE')) return stem+'RE';
   }
   return null;
 }
