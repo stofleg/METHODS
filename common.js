@@ -651,7 +651,7 @@ function openDef(canon, displayWord, defText, flechie){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
   }
-  const title = (displayWord || (idx>=0 ? E[idx].split(",")[0].trim() : canon)).replace(/\*/g,"");
+  const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
   const def = (defText !== undefined) ? defText : (idx>=0 ? (F[idx]||"") : "");
 
   $("#def-title").textContent = title;
@@ -679,7 +679,7 @@ function openDef(canon, displayWord, defText, flechie){
 
   // Section forme fléchie : soit redirect depuis conjugaison, soit entrée avec virgule (ex: PERLANT, E)
   let flechieToShow = flechie || null;
-  if(!flechieToShow && idx >= 0 && E[idx]?.includes(',')){
+  if(!flechieToShow && idx >= 0 && E?.[idx]?.includes(',')){
     const resolved = resolveInflectedCanon(canon, E[idx].split(',')[1]);
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
@@ -694,7 +694,12 @@ function openDef(canon, displayWord, defText, flechie){
       flechieEl.appendChild(sep);
       const sub = document.createElement("p");
       sub.style.cssText = "font-size:11px;color:var(--muted);margin:0 0 2px";
-      sub.textContent = "Forme : " + flechieToShow;
+      sub.appendChild(document.createTextNode("Forme : "));
+      const fLink = document.createElement("a"); fLink.href="#"; fLink.className="def-link";
+      fLink.style.cssText = "font-size:11px;";
+      fLink.textContent = flechieToShow;
+      fLink.addEventListener("click", e=>{ e.preventDefault(); openDef(flechieToShow, flechieToShow); });
+      sub.appendChild(fLink);
       flechieEl.appendChild(sub);
       if(fAna.length){
         const sec = document.createElement("div"); sec.className="modal-sec";
