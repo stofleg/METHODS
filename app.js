@@ -176,7 +176,7 @@ function initNav(){
       e.preventDefault();
       const v=document.querySelector(".view.active")?.id;
       if(v==="v-themods") tmReplay();
-      if(v==="v-entremods") emReplay();
+      if(v==="v-entremods"){ emReplay(); if(emPhase==="WAITING") emLaunchGame(); emRefocus(); }
     }
     if(e.key==="Escape") closeDef();
   });
