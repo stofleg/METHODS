@@ -684,9 +684,15 @@ function openDef(canon, displayWord, defText, flechie){
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
-  if(flechieToShow && flechieToShow !== canon && A && flechieEl){
-    const ftir = flechieToShow.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
-    const fAna = (A[ftir]||[]).filter(x=>norm(x)!==flechieToShow).slice(0,60);
+  if(flechieToShow && flechieToShow !== canon && flechieEl){
+    // Cherche dans toutes les formes (d[]), pas seulement les lemmes (A),
+    // car l'anagramme d'une forme fléchie peut être une autre forme fléchie.
+    const ftir = flechieToShow.split("").sort().join("");
+    const normToE = getNormToE();
+    const fAna = getDictArr()
+      .filter(w => w !== flechieToShow && w.split("").sort().join("") === ftir)
+      .slice(0, 60)
+      .map(w => normToE[w] || w);
     const fRal = R ? (R[flechieToShow]||[]) : [];
     if(fAna.length || fRal.length){
       const sep = document.createElement("hr");
