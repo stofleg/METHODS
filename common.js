@@ -717,6 +717,12 @@ function openDef(canon, displayWord, defText, flechie){
 
 function closeDef(){
   $("#def-modal")?.classList.remove("open");
+  if(!window.matchMedia("(pointer:fine)").matches) return;
+  setTimeout(()=>{
+    const active=document.querySelector(".view.active")?.id;
+    if(active==="v-entremods") document.getElementById("em-saisie")?.focus();
+    else if(active==="v-themods") document.getElementById("tm-saisie")?.focus();
+  }, 50);
 }
 
 function wireDefModal(){

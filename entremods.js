@@ -361,7 +361,7 @@ function emPrepareGame(listId,sessionIdx){
 }
 function emLaunchGame(){
   emPhase="PLAYING"; emUpdateBtn(); emSetMsg("");
-  emRenderBounds(); emRenderSlots(); emChronoStart(); setDictBtnVisible(false);
+  emRenderBounds(); emRenderSlots(); emUpdateCounter(); emChronoStart(); setDictBtnVisible(false);
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("em-saisie")?.focus(); },80);
 }
 function emValidateWord(raw){
@@ -518,8 +518,30 @@ function initEntremods(){
   const onSolBtn=()=>{
     if(emBrowse){ emStopBrowse(); return; }
     if(emPhase==="PLAYING"){ emShowSolutions(); return; }
-    if(emPhase==="DONE") emReplay();
-    emLaunchGame();
+    if(emPhase==="DONE"){
+      // Passe directement à PLAYING sans étape WAITING visible
+      const idx=emPickNext(emCurrentListId);
+      if(idx===null){
+        emSetMsg("100% — liste terminée !","ok");
+        emUpdateBtn();
+        document.getElementById("em-btn-restart").style.display="";
+        return;
+      }
+      document.getElementById("em-btn-restart").style.display="none";
+      emBrowse=false; emBrowseSave=null;
+      emSessionIdx=idx;
+      emFound=new Set();
+      const n=emCurrentSession()?.targetIdxs.length||0;
+      emHintMode=Array(n).fill("none"); emHintUsed=Array(n).fill(false);
+      emNoHelp=true;
+      emUpdateGameBtn();
+      const s=emSessionState(emCurrentListId,idx);
+      if(s){ s.seen=true; s.lastSeen=todayStr(); }
+      persistEntreModsState().catch(()=>{});
+      emLaunchGame();
+      return;
+    }
+    emLaunchGame(); // WAITING → PLAYING
   };
   document.getElementById("em-btn-solutions")?.addEventListener("click",onSolBtn);
   document.getElementById("em-btn-solutions-kb")?.addEventListener("click",onSolBtn);
