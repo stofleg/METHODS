@@ -512,7 +512,15 @@ function initEntremods(){
   emKb=wireKeyboard("em-kb","em-kb-disp","em-kb-msg",w=>emValidateWord(w));
 
   document.getElementById("em-saisie")?.addEventListener("keydown",e=>{
-    if(e.key==="Enter"&&!e.isComposing){ e.preventDefault(); emValidateWord(e.target.value); e.target.value=""; }
+    if(e.key==="Enter"&&!e.isComposing){ e.preventDefault(); emValidateWord(e.target.value); e.target.value=""; emRefocus(); }
+  });
+
+  // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
+  document.getElementById("ev-game")?.addEventListener("mousedown", e=>{
+    if(!window.matchMedia("(pointer:fine)").matches) return;
+    if(e.target.closest("input,button,a,textarea")) return;
+    e.preventDefault();
+    emRefocus();
   });
 
   const onSolBtn=()=>{

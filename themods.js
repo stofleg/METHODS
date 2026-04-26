@@ -72,6 +72,11 @@ function getNormToF(){
   }
   return _normToF;
 }
+function tmRefocus(){
+  if(window.matchMedia("(pointer:fine)").matches)
+    setTimeout(()=>document.getElementById("tm-saisie")?.focus(), 50);
+}
+
 // Vrai si le mot fait ≥10 lettres ET sa définition contient "(p.p.inv.)"
 function isLongPpInv(n){
   return n.length > 9 && (getNormToF()[n] || "").includes("(p.p.inv.)");
@@ -1172,8 +1177,17 @@ function initThemods(){
 
     document.getElementById("tm-saisie")?.addEventListener("keydown",e=>{
       if(e.key==="Enter"&&!e.isComposing){
-        e.preventDefault(); validateTmWord(e.target.value); e.target.value="";
+        e.preventDefault(); validateTmWord(e.target.value); e.target.value=""; tmRefocus();
       }
+    });
+
+    // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
+    document.getElementById("tv-game")?.addEventListener("mousedown", e=>{
+      if(!window.matchMedia("(pointer:fine)").matches) return;
+      if(tmBrowse) return;
+      if(e.target.closest("input,button,a,textarea")) return;
+      e.preventDefault();
+      tmRefocus();
     });
 
     const onSolBtn=()=>{
