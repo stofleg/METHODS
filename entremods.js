@@ -547,9 +547,11 @@ function initEntremods(){
       if(s){ s.seen=true; s.lastSeen=todayStr(); }
       persistEntreModsState().catch(()=>{});
       emLaunchGame();
+      emRefocus();
       return;
     }
     emLaunchGame(); // WAITING → PLAYING
+    emRefocus();
   };
   document.getElementById("em-btn-solutions")?.addEventListener("click",onSolBtn);
   document.getElementById("em-btn-solutions-kb")?.addEventListener("click",onSolBtn);

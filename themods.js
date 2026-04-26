@@ -1220,6 +1220,7 @@ function initThemods(){
       } else {
         tmSolutions ? playTheme(tmTheme) : showTmSolutions();
       }
+      tmRefocus();
     };
     document.getElementById("tm-btn-sol")?.addEventListener("click", onSolBtn);
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
