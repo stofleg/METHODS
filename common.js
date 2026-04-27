@@ -318,7 +318,68 @@ function _getIrregMap(){
     'NAITRAIS','NAITRAIT','NAITRIONS','NAITRIEZ','NAITRAIENT',
     'NAISSE','NAISSES','NAISSENT','NE','NAISSANT']);
 
+  add('SURSEOIR',['SURSISE']);
+
   return _irregMap;
+}
+
+/* ── Conjugation entries in c[] that should redirect to their infinitive ── */
+let _conjMap = null;
+function _getConjMap(){
+  if(_conjMap) return _conjMap;
+  _conjMap = new Map();
+  const irr = _getIrregMap();
+  const add = (inf, forms) => { for(const f of forms){ _conjMap.set(f, inf); irr.set(f, inf); } };
+  add('ABSOUDRE',['ABSOUT']);
+  add('BOIRE',['BUMES','BURENT','BUSSE','BUSSIEZ']);
+  add('BOUILLIR',['BOUS']);
+  add('BRAIRE',['BRAIT']);
+  add('CHOIR',['CHERRONT','CHU','CHUMES']);
+  add('COMPLAIRE',['COMPLUMES']);
+  add('CONCEVOIR',['CONCUMES','CONCURENT','CONCUSSE','CONCUT']);
+  add('COUDRE',['COUSE','COUSIMES','COUSIRENT']);
+  add('DEBOUILLIR',['DEBOUS']);
+  add('DECEVOIR',['DECUMES','DECURENT','DECUSSE','DECUT']);
+  add('DECHOIR',['DECHERRA','DECHET','DECHUMES']);
+  add('DECOUDRE',['DECOUSE','DECOUSIMES','DECOUSIRENT']);
+  add('DEMENTIR',['DEMENS']);
+  add('DEPLAIRE',['DEPLURENT']);
+  add('DEPRENDRE',['DEPRIRENT','DEPRISSE']);
+  add('DISSOUDRE',['DISSOUT']);
+  add('ECHOIR',['ECHEENT','ECHERRA','ECHET','ECHU']);
+  add('ELIRE',['ELUMES','ELUSSE']);
+  add('EMBOIRE',['EMBUMES','EMBUSSE']);
+  add('EMOUDRE',['EMOULE','EMOULUMES']);
+  add('EMOUVOIR',['EMEUT','EMEUVE','EMUMES']);
+  add('FLEURIR',['FLORISSAIS','FLORISSIEZ']);
+  add('LIRE',['LUMES','LURENT','LUSSE']);
+  add('MENTIR',['MENS']);
+  add('MOUDRE',['MOULUMES','MOULUSSE']);
+  add('MOUVOIR',['MEUS','MEUT','MEUVE','MUMES','MUT']);
+  add('NAITRE',['NAQUIMES']);
+  add('OINDRE',['OIGNE']);
+  add('OUIR',['OIENT','OIS','OIT','OYAIENT','OYEZ']);
+  add('PAITRE',['PAIS','PAISSE','PAIT']);
+  add('PERCEVOIR',['PERCUMES','PERCUT']);
+  add('PLAIRE',['PLURENT','PLUSSE']);
+  add('PROMOUVOIR',['PROMEUS','PROMUMES']);
+  add('RAIRE',['RAIT']);
+  add('REBOIRE',['REBUMES','REBUSSE']);
+  add('RECEVOIR',['RECUMES','RECUSSE']);
+  add('RECOUDRE',['RECOUSE','RECOUSIMES','RECOUSIRENT']);
+  add('REDEVOIR',['REDU','REDUMES','REDURENT']);
+  add('RELIRE',['RELUMES','RELURENT']);
+  add('REMOUDRE',['REMOULUT']);
+  add('RENAITRE',['RENAQUIS','RENE']);
+  add('REPAITRE',['REPAIS','REPUMES']);
+  add('RESOUDRE',['RESOUT']);
+  add('RETRAIRE',['RETRAIE','RETRAYAIS','RETRAYEZ']);
+  add('REVALOIR',['REVAILLE']);
+  add('SAVOIR',['SUMES','SURENT','SUSSE','SUTES']);
+  add('TAIRE',['TUMES','TURENT','TUSSE','TUSSIONS','TUT','TUTES']);
+  add('TRAIRE',['TRAIE','TRAYAIS','TRAYEZ']);
+  add('VALOIR',['VAILLE']);
+  return _conjMap;
 }
 
 /* ── Préfixes de verbes composés ── */
@@ -670,12 +731,23 @@ function openDef(canon, displayWord, defText, flechie){
   if(!DATA) return;
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
-  const allIdxs = _findAllIdxs(canon);
-  const idx = allIdxs[0] ?? -1;
+  let allIdxs = _findAllIdxs(canon);
   if(allIdxs.length === 0 && defText === undefined){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
   }
+  // Redirect pure conjugation-form entries to their infinitive
+  {
+    const conjM=_getConjMap();
+    if(conjM.has(canon) && defText===undefined){
+      const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+      const _CONJ=/-->\s+\S+\s+\d{2,}\./;
+      const real=allIdxs.filter(i=>{const f=F[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      if(real.length>0) allIdxs=real;
+      else{ openDef(conjM.get(canon)); return; }
+    }
+  }
+  const idx = allIdxs[0] ?? -1;
   const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
 
   // Build list of {label, text} for each definition to display.
@@ -896,6 +968,17 @@ function dictSelectWord(w, idx){
   if(idx!==undefined && allIdxs.length>1 && allIdxs[0]!==idx){
     allIdxs=[idx,...allIdxs.filter(i=>i!==idx)];
   }
+  // Filter/redirect pure conjugation-form entries
+  {
+    const conjM=_getConjMap();
+    if(conjM.has(w)){
+      const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+      const _CONJ=/-->\s+\S+\s+\d{2,}\./;
+      const real=allIdxs.filter(i=>{const f=DATA.f[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      if(real.length>0) allIdxs=real;
+      else{ dictSelectWord(conjM.get(w)); return; }
+    }
+  }
 
   if(allIdxs.length>0){
     const cIdx0=allIdxs[0];
@@ -993,16 +1076,24 @@ function _dictRenderSugg(prefix){
   const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
   const candidates=[];
+  const _conjM=_getConjMap();
+  const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+  const _CONJ=/-->\s+\S+\s+\d{2,}\./;
   for(let i=start; i<C.length && candidates.length<14; i++){
     if(!C[i].startsWith(prefix)) break;
+    if(_conjM.has(C[i])){
+      const f=F[i]||'';
+      if(!_POS.test(f) && _CONJ.test(f)) continue;
+    }
     candidates.push(i);
   }
   const frag=document.createDocumentFragment();
-  // If the exact prefix is a valid form (in d[]) but not a canonical entry,
-  // show "→ LEMMA" as the first item — even if there are other suggestions.
-  // This handles e.g. SERA (valid form of ÊTRE) alongside SERAC, SERAIL…
-  if(!_getCMap().has(prefix) && _getDSet().has(prefix)){
-    const lemma=findLemma(prefix);
+  // Show "→ LEMMA" if prefix is: (a) a valid form not in c[], or (b) a pure conjugation entry.
+  // (b) is detected when conjMap has it and no non-filtered candidate has it as exact canon.
+  const _prefixIsConj=_conjM.has(prefix)&&!candidates.some(i=>C[i]===prefix);
+  if((!_getCMap().has(prefix)||_prefixIsConj)&&(_getDSet().has(prefix)||_prefixIsConj)){
+    // For conj entries use conjMap directly (findLemma short-circuits for words still in c[]).
+    const lemma=_prefixIsConj ? _conjM.get(prefix) : findLemma(prefix);
     if(lemma && lemma!==prefix){
       const li=document.createElement("li");
       li.appendChild(document.createTextNode("→ "));
