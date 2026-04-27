@@ -114,9 +114,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .modal-panel{position:relative;z-index:1;background:var(--card);border:1px solid var(--stroke);
   border-radius:var(--radius) var(--radius) 0 0;box-shadow:var(--shadow);
   padding:16px;width:100%;max-width:640px;max-height:80svh;overflow-y:auto;}
-#dict-modal{align-items:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 42px);}
+#dict-modal{align-items:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 42px);pointer-events:none;}
 #dict-modal .modal-bd{pointer-events:none;}
-#dict-modal .modal-panel{border-radius:var(--radius);max-height:70svh;}
+#dict-modal .modal-panel{border-radius:var(--radius);max-height:70svh;pointer-events:auto;}
 .modal-panel h2{font-size:18px;font-weight:950;}
 .modal-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
 .modal-def{font-size:14px;line-height:1.4;color:var(--muted);}
@@ -979,7 +979,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.56</div>
+  pointer-events:none;user-select:none;">v3.57</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
