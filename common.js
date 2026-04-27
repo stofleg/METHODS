@@ -998,6 +998,21 @@ function _dictRenderSugg(prefix){
     candidates.push(i);
   }
   const frag=document.createDocumentFragment();
+  // If the exact prefix is a valid form (in d[]) but not a canonical entry,
+  // show "→ LEMMA" as the first item — even if there are other suggestions.
+  // This handles e.g. SERA (valid form of ÊTRE) alongside SERAC, SERAIL…
+  if(!_getCMap().has(prefix) && _getDSet().has(prefix)){
+    const lemma=findLemma(prefix);
+    if(lemma && lemma!==prefix){
+      const li=document.createElement("li");
+      li.appendChild(document.createTextNode("→ "));
+      const a=document.createElement("a"); a.href="#"; a.className="def-link";
+      a.textContent=lemma;
+      a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
+      li.appendChild(a);
+      frag.appendChild(li);
+    }
+  }
   candidates.forEach(i=>{
     const li=document.createElement("li");
     let label=E[i]||C[i];
@@ -1008,25 +1023,10 @@ function _dictRenderSugg(prefix){
     li.addEventListener("click",()=>dictSelectWord(C[i],i));
     frag.appendChild(li);
   });
-  if(!candidates.length){
+  if(!candidates.length && !frag.firstChild){
     const li=document.createElement("li");
-    if(_getDSet().has(prefix)){
-      const lemma=findLemma(prefix);
-      if(lemma && lemma!==prefix){
-        li.innerHTML=""; // safe — we build this manually
-        li.appendChild(document.createTextNode("→ "));
-        const a=document.createElement("a"); a.href="#"; a.className="def-link";
-        a.textContent=lemma;
-        a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
-        li.appendChild(a);
-      } else {
-        li.className="dict-no-result";
-        li.textContent="Forme variable · Mot valide ODS9";
-      }
-    } else {
-      li.className="dict-no-result";
-      li.textContent="Mot inconnu.";
-    }
+    li.className="dict-no-result";
+    li.textContent="Mot inconnu.";
     frag.appendChild(li);
   }
   sugg.appendChild(frag);
@@ -1081,6 +1081,8 @@ function openDictModal(){
   if(kbVisible){
     _dictKbEl=kb;
     _dictGameKbH=kb.offsetHeight;
+    // Shrink modal so the panel doesn't overlap the keyboard at the top
+    m.style.paddingBottom=_dictGameKbH+"px";
     inp?.setAttribute("readonly","");
     _startDictKbIntercept(kb,inp);
   }
@@ -1095,6 +1097,7 @@ function closeDictModal(){
   const bd=document.getElementById("dict-bd"); if(bd) bd.style.bottom="";
   _stopDictKbIntercept();
   _dictGameKbH=0;
+  document.getElementById("dict-modal").style.paddingBottom="";
   document.getElementById("dict-input")?.removeAttribute("readonly");
 }
 
@@ -1123,7 +1126,9 @@ function wireDictModal(){
         // Correspondance exacte dans c[]
         const start=_dictBisect(C,v);
         if(start<C.length && C[start]===v){ dictSelectWord(v); return; }
-        // Première suggestion
+        // Forme fléchie valide (dans d[]) → traiter directement (évite de cliquer SERAC pour SERA)
+        if(_getDSet().has(v)){ dictSelectWord(v); return; }
+        // Première suggestion canonique
         const first=document.querySelector("#dict-sugg li:not(.dict-no-result)");
         if(first) first.click();
       }
