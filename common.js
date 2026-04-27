@@ -641,21 +641,77 @@ function openDefSimple(defText){
   mEl.classList.add("open");
 }
 
+// Returns every index in c[] where c[i] === canon (handles homographs like CHOPPER x2).
+function _findAllIdxs(canon){
+  const C=window.SEQODS_DATA?.c; if(!C) return [];
+  const out=[];
+  for(let i=0;i<C.length;i++) if(C[i]===canon) out.push(i);
+  return out;
+}
+
+// If w is also a conjugated form of a *different* verb in c[], return that verb.
+// Handles cases like BRASQUE (noun) also being je/il brasque → BRASQUER.
+function _findConjLemma(w){
+  const cm=_getCMap();
+  if(w.endsWith('E')&&w.length>3){
+    const st=w.slice(0,-1);
+    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
+    if(cm.has(st+'RE')&&st+'RE'!==w) return st+'RE';
+  }
+  if(w.endsWith('ES')&&w.length>4){
+    const st=w.slice(0,-2);
+    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
+  }
+  return null;
+}
+
 function openDef(canon, displayWord, defText, flechie){
   const DATA = window.SEQODS_DATA;
   if(!DATA) return;
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
-  const idx = C.indexOf(canon);
-  if(idx < 0 && defText === undefined){
+  const allIdxs = _findAllIdxs(canon);
+  const idx = allIdxs[0] ?? -1;
+  if(allIdxs.length === 0 && defText === undefined){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
   }
   const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
-  const def = (defText !== undefined) ? defText : (idx>=0 ? (F[idx]||"") : "");
+
+  // Build list of {label, text} for each definition to display.
+  // label is non-null only for a related verb (e.g. BRASQUER for BRASQUE).
+  const defs = defText !== undefined
+    ? [{label:null, text:defText}]
+    : allIdxs.map(i=>({label:null, text:F?.[i]||""}));
+  if(allIdxs.length>0 && defText===undefined){
+    const cl=_findConjLemma(canon);
+    if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
+  }
 
   $("#def-title").textContent = title;
-  $("#def-body").textContent = def || "(définition absente)";
+  const bodyEl=$("#def-body");
+  if(defs.length<=1){
+    bodyEl.textContent = defs[0]?.text||"(définition absente)";
+  } else {
+    bodyEl.innerHTML="";
+    defs.forEach((d,i)=>{
+      if(i>0){
+        const hr=document.createElement("hr");
+        hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:8px 0 4px";
+        bodyEl.appendChild(hr);
+      }
+      if(d.label){
+        const lnk=document.createElement("a"); lnk.href="#"; lnk.className="def-link";
+        lnk.textContent=d.label;
+        lnk.addEventListener("click",ev=>{ev.preventDefault();openDef(d.label,d.label);});
+        bodyEl.appendChild(lnk);
+        bodyEl.appendChild(document.createTextNode(" "));
+      }
+      const p=document.createElement("p"); p.style.margin="0";
+      p.textContent=d.text||(d.label?"":"(définition absente)");
+      bodyEl.appendChild(p);
+    });
+  }
 
   const raw = title.split(",")[0].trim().toLowerCase();
   $("#def-wikt").href = "https://fr.wiktionary.org/wiki/" + encodeURIComponent(raw);
