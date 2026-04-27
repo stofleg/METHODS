@@ -452,6 +452,10 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   box-shadow:0 2px 0 rgba(0,0,0,.4);cursor:pointer;}
 @media(prefers-color-scheme:light){.btn-dict-kb{background:#fff;color:#0b1220;box-shadow:0 2px 0 rgba(0,0,0,.18);}}
 .btn-dict-kb.hidden{display:none!important;}
+/* Dict keyboard — compact, always show on mobile */
+#dict-kb{padding:4px 5px 8px;margin-top:4px;}
+#dict-kb .kk{height:30px;font-size:14px;}
+#dict-kb .kk.wide{max-width:44px;font-size:12px;}
 
 /* ── Modal dictionnaire ── */
 .dict-inp{width:100%;padding:9px 14px;border-radius:12px;
@@ -959,6 +963,13 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <input id="dict-input" class="dict-inp" type="text"
       autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
       placeholder="Saisir un mot…"/>
+    <div id="dict-kb" class="keyboard" style="padding:4px 3px 8px;">
+      <div class="kb-rows">
+        <div class="kb-row"><button class="kk" data-k="A">A</button><button class="kk" data-k="Z">Z</button><button class="kk" data-k="E">E</button><button class="kk" data-k="R">R</button><button class="kk" data-k="T">T</button><button class="kk" data-k="Y">Y</button><button class="kk" data-k="U">U</button><button class="kk" data-k="I">I</button><button class="kk" data-k="O">O</button><button class="kk" data-k="P">P</button></div>
+        <div class="kb-row"><button class="kk" data-k="Q">Q</button><button class="kk" data-k="S">S</button><button class="kk" data-k="D">D</button><button class="kk" data-k="F">F</button><button class="kk" data-k="G">G</button><button class="kk" data-k="H">H</button><button class="kk" data-k="J">J</button><button class="kk" data-k="K">K</button><button class="kk" data-k="L">L</button><button class="kk" data-k="M">M</button></div>
+        <div class="kb-row"><button class="kk wide clr" data-k="CLR">✕</button><button class="kk wide" data-k="DEL">⌫</button><button class="kk" data-k="W">W</button><button class="kk" data-k="X">X</button><button class="kk" data-k="C">C</button><button class="kk" data-k="V">V</button><button class="kk" data-k="B">B</button><button class="kk" data-k="N">N</button><button class="kk wide enter" data-k="OK">OK</button></div>
+      </div>
+    </div>
     <ul id="dict-sugg" class="dict-sugg"></ul>
     <div class="modal-links">
       <a id="dict-wikt" href="#" target="_blank" rel="noopener" class="btn btn-ok" style="font-size:12px;text-decoration:none;">📖 Wiktionnaire</a>
@@ -978,7 +989,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.54</div>
+  pointer-events:none;user-select:none;">v3.55</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>

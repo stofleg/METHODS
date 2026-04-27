@@ -688,7 +688,8 @@ function openDef(canon, displayWord, defText, flechie){
     if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
   }
 
-  $("#def-title").textContent = title;
+  const wSlash=_wantsSlash(canon)&&!title.includes('/');
+  $("#def-title").textContent = wSlash ? title+' /' : title;
   const bodyEl=$("#def-body");
   if(defs.length<=1){
     bodyEl.textContent = defs[0]?.text||"(définition absente)";
@@ -858,6 +859,23 @@ function _getCMap(){
   return _cMap;
 }
 
+// Returns true when canon is purely invariable (interj./loc./adv. not ending in -MENT)
+// and has no variable nature (n., adj., v., etc.) across all c[] entries.
+function _wantsSlash(canon){
+  const DATA=window.SEQODS_DATA; if(!DATA) return false;
+  const {e:E,f:F}=DATA;
+  const idxs=_findAllIdxs(canon);
+  if(!idxs.length) return false;
+  if(idxs.some(i=>(E[i]||'').includes('/'))) return false; // already has /
+  let hasInvar=false, hasVar=false;
+  for(const i of idxs){
+    const f=F[i]||'';
+    if(/\binterj\b|\bloc\b|\badv\b/.test(f)) hasInvar=true;
+    if(/\bn\.[mf]\b|\bn\.\s|\bn\.\)|\badj\b|\bv\.|\bpron\b|\bnum\b/.test(f)) hasVar=true;
+  }
+  return hasInvar && !hasVar && !canon.endsWith('MENT');
+}
+
 function dictUpdateLinks(displayWord){
   const raw=(displayWord||"").split(",")[0].trim().toLowerCase().replace(/\s+.*/,"");
   const w=document.getElementById("dict-wikt");
@@ -873,13 +891,40 @@ function dictSelectWord(w, idx){
   if(inp){ inp.value=w; }
   document.getElementById("dict-sugg").innerHTML="";
 
-  const cIdx=(idx!==undefined)?idx:_getCMap().get(w);
-  if(cIdx!==undefined){
-    // Entrée complète : forme fléchie, définition, rallonges
-    const display=DATA.e[cIdx]||w;
-    document.getElementById("dict-word").textContent=display;
-    document.getElementById("dict-def").textContent=
-      (DATA.f[cIdx]||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim()||"(définition absente)";
+  let allIdxs=_findAllIdxs(w);
+  // If a specific idx was passed (suggestion click), put it first
+  if(idx!==undefined && allIdxs.length>1 && allIdxs[0]!==idx){
+    allIdxs=[idx,...allIdxs.filter(i=>i!==idx)];
+  }
+
+  if(allIdxs.length>0){
+    const cIdx0=allIdxs[0];
+    const display=DATA.e[cIdx0]||w;
+    const slash=_wantsSlash(w)&&!display.includes('/');
+    document.getElementById("dict-word").textContent=display+(slash?' /':'');
+
+    const defEl=document.getElementById("dict-def");
+    if(allIdxs.length===1){
+      defEl.textContent=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim()||"(définition absente)";
+    } else {
+      defEl.innerHTML="";
+      allIdxs.forEach((i,n)=>{
+        if(n>0){
+          const hr=document.createElement("hr");
+          hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
+          defEl.appendChild(hr);
+          const dispI=DATA.e[i]||w;
+          if(dispI!==display){
+            const lbl=document.createElement("small");
+            lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
+            lbl.textContent=dispI; defEl.appendChild(lbl);
+          }
+        }
+        const raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        const p=document.createElement("p"); p.style.margin="0";
+        p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
+      });
+    }
     // Anagrammes
     const anaEl=document.getElementById("dict-ana");
     if(anaEl && DATA.a){
@@ -889,8 +934,8 @@ function dictSelectWord(w, idx){
       if(anaLst.length){
         const lbl=document.createElement("strong"); lbl.textContent="Anagrammes"; anaEl.appendChild(lbl);
         const sp=document.createElement("span");
-        anaLst.forEach((aw,i)=>{
-          if(i) sp.appendChild(document.createTextNode(" • "));
+        anaLst.forEach((aw,ai)=>{
+          if(ai) sp.appendChild(document.createTextNode(" • "));
           const a=document.createElement("a"); a.href="#"; a.className="def-link";
           a.textContent=aw;
           a.addEventListener("click",e=>{ e.preventDefault(); dictSelectWord(norm(aw)); });
@@ -907,8 +952,8 @@ function dictSelectWord(w, idx){
       if(lst.length){
         const lbl=document.createElement("strong"); lbl.textContent="Rallonges"; rallEl.appendChild(lbl);
         const sp=document.createElement("span");
-        lst.forEach((rw,i)=>{
-          if(i) sp.appendChild(document.createTextNode(" • "));
+        lst.forEach((rw,ri)=>{
+          if(ri) sp.appendChild(document.createTextNode(" • "));
           const a=document.createElement("a"); a.href="#"; a.className="def-link";
           a.textContent=rw;
           a.addEventListener("click",e=>{ e.preventDefault(); dictSelectWord(norm(rw)); });
@@ -919,12 +964,22 @@ function dictSelectWord(w, idx){
     }
     dictUpdateLinks(display);
   } else {
-    // Forme variable : tenter de naviguer vers le lemme
-    const lemma = findLemma(w);
-    if(lemma && lemma !== w){ dictSelectWord(lemma); return; }
+    // Not a canonical entry
+    const lemma=findLemma(w);
     document.getElementById("dict-word").textContent=w;
-    document.getElementById("dict-def").textContent="Forme variable · Mot valide ODS9";
+    document.getElementById("dict-ana").innerHTML="";
     document.getElementById("dict-rall").innerHTML="";
+    const defEl=document.getElementById("dict-def");
+    if(lemma && lemma!==w){
+      defEl.innerHTML="";
+      defEl.appendChild(document.createTextNode("→ "));
+      const lnk=document.createElement("a"); lnk.href="#"; lnk.className="def-link";
+      lnk.textContent=lemma;
+      lnk.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
+      defEl.appendChild(lnk);
+    } else {
+      defEl.textContent=_getDSet().has(w)?"Forme variable · Mot valide ODS9":"Mot inconnu.";
+    }
     dictUpdateLinks(w);
   }
   document.getElementById("dict-result").style.display="";
@@ -937,30 +992,42 @@ function _dictRenderSugg(prefix){
   const DATA=window.SEQODS_DATA; if(!DATA?.c) return;
   const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
-  // Collecter les candidats avec leur index
   const candidates=[];
   for(let i=start; i<C.length && candidates.length<14; i++){
     if(!C[i].startsWith(prefix)) break;
     candidates.push(i);
   }
-  // Détecter les formes canoniques en double pour afficher la nature
-  const canon2count=new Map();
-  candidates.forEach(i=>canon2count.set(C[i],(canon2count.get(C[i])||0)+1));
   const frag=document.createDocumentFragment();
   candidates.forEach(i=>{
     const li=document.createElement("li");
     let label=E[i]||C[i];
-    if(canon2count.get(C[i])>1){
-      const pos=_posLabel(F[i]);
-      if(pos) label+=" "+pos;
-    }
+    if(_wantsSlash(C[i]) && !label.includes('/')) label+=' /';
+    const pos=_posLabel(F[i]);
+    if(pos) label+="  "+pos;
     li.textContent=label;
     li.addEventListener("click",()=>dictSelectWord(C[i],i));
     frag.appendChild(li);
   });
   if(!candidates.length){
-    const li=document.createElement("li"); li.className="dict-no-result";
-    li.textContent="Mot inconnu."; frag.appendChild(li);
+    const li=document.createElement("li");
+    if(_getDSet().has(prefix)){
+      const lemma=findLemma(prefix);
+      if(lemma && lemma!==prefix){
+        li.innerHTML=""; // safe — we build this manually
+        li.appendChild(document.createTextNode("→ "));
+        const a=document.createElement("a"); a.href="#"; a.className="def-link";
+        a.textContent=lemma;
+        a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
+        li.appendChild(a);
+      } else {
+        li.className="dict-no-result";
+        li.textContent="Forme variable · Mot valide ODS9";
+      }
+    } else {
+      li.className="dict-no-result";
+      li.textContent="Mot inconnu.";
+    }
+    frag.appendChild(li);
   }
   sugg.appendChild(frag);
 }
@@ -998,6 +1065,32 @@ function _wireDictBtn(el){
   el.addEventListener("touchend", e=>{ e.preventDefault(); openDictModal(); });
   el.addEventListener("click", openDictModal);
 }
+function wireDictKeyboard(){
+  const kb=document.getElementById("dict-kb"); if(!kb) return;
+  const inp=document.getElementById("dict-input"); if(!inp) return;
+  // On touch devices: prevent system keyboard, use only custom keyboard
+  if(window.matchMedia("(pointer:coarse)").matches){
+    inp.setAttribute("readonly","");
+  }
+  const press=k=>{
+    if(k==="CLR"){ inp.value=""; }
+    else if(k==="DEL"){ inp.value=inp.value.slice(0,-1); }
+    else if(k==="OK"){
+      inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}));
+      return;
+    } else { inp.value+=k; }
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+  };
+  kb.addEventListener("mousedown",e=>{
+    const k=e.target.closest(".kk")?.dataset.k; if(!k) return;
+    e.preventDefault(); press(k);
+  });
+  kb.addEventListener("touchstart",e=>{
+    const k=e.target.closest(".kk")?.dataset.k; if(!k) return;
+    e.preventDefault(); press(k);
+  },{passive:false});
+}
+
 function wireDictModal(){
   _wireDictBtn(document.getElementById("btn-dict"));
   document.querySelectorAll(".btn-dict-kb").forEach(b=>_wireDictBtn(b));
@@ -1027,6 +1120,7 @@ function wireDictModal(){
   document.addEventListener("keydown", e=>{
     if(e.key==="Escape") closeDictModal();
   });
+  wireDictKeyboard();
 }
 
 /* ── Auth UI ── */
