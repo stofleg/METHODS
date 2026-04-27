@@ -318,7 +318,68 @@ function _getIrregMap(){
     'NAITRAIS','NAITRAIT','NAITRIONS','NAITRIEZ','NAITRAIENT',
     'NAISSE','NAISSES','NAISSENT','NE','NAISSANT']);
 
+  add('SURSEOIR',['SURSISE']);
+
   return _irregMap;
+}
+
+/* ── Conjugation entries in c[] that should redirect to their infinitive ── */
+let _conjMap = null;
+function _getConjMap(){
+  if(_conjMap) return _conjMap;
+  _conjMap = new Map();
+  const irr = _getIrregMap();
+  const add = (inf, forms) => { for(const f of forms){ _conjMap.set(f, inf); irr.set(f, inf); } };
+  add('ABSOUDRE',['ABSOUT']);
+  add('BOIRE',['BUMES','BURENT','BUSSE','BUSSIEZ']);
+  add('BOUILLIR',['BOUS']);
+  add('BRAIRE',['BRAIT']);
+  add('CHOIR',['CHERRONT','CHU','CHUMES']);
+  add('COMPLAIRE',['COMPLUMES']);
+  add('CONCEVOIR',['CONCUMES','CONCURENT','CONCUSSE','CONCUT']);
+  add('COUDRE',['COUSE','COUSIMES','COUSIRENT']);
+  add('DEBOUILLIR',['DEBOUS']);
+  add('DECEVOIR',['DECUMES','DECURENT','DECUSSE','DECUT']);
+  add('DECHOIR',['DECHERRA','DECHET','DECHUMES']);
+  add('DECOUDRE',['DECOUSE','DECOUSIMES','DECOUSIRENT']);
+  add('DEMENTIR',['DEMENS']);
+  add('DEPLAIRE',['DEPLURENT']);
+  add('DEPRENDRE',['DEPRIRENT','DEPRISSE']);
+  add('DISSOUDRE',['DISSOUT']);
+  add('ECHOIR',['ECHEENT','ECHERRA','ECHET','ECHU']);
+  add('ELIRE',['ELUMES','ELUSSE']);
+  add('EMBOIRE',['EMBUMES','EMBUSSE']);
+  add('EMOUDRE',['EMOULE','EMOULUMES']);
+  add('EMOUVOIR',['EMEUT','EMEUVE','EMUMES']);
+  add('FLEURIR',['FLORISSAIS','FLORISSIEZ']);
+  add('LIRE',['LUMES','LURENT','LUSSE']);
+  add('MENTIR',['MENS']);
+  add('MOUDRE',['MOULUMES','MOULUSSE']);
+  add('MOUVOIR',['MEUS','MEUT','MEUVE','MUMES','MUT']);
+  add('NAITRE',['NAQUIMES']);
+  add('OINDRE',['OIGNE']);
+  add('OUIR',['OIENT','OIS','OIT','OYAIENT','OYEZ']);
+  add('PAITRE',['PAIS','PAISSE','PAIT']);
+  add('PERCEVOIR',['PERCUMES','PERCUT']);
+  add('PLAIRE',['PLURENT','PLUSSE']);
+  add('PROMOUVOIR',['PROMEUS','PROMUMES']);
+  add('RAIRE',['RAIT']);
+  add('REBOIRE',['REBUMES','REBUSSE']);
+  add('RECEVOIR',['RECUMES','RECUSSE']);
+  add('RECOUDRE',['RECOUSE','RECOUSIMES','RECOUSIRENT']);
+  add('REDEVOIR',['REDU','REDUMES','REDURENT']);
+  add('RELIRE',['RELUMES','RELURENT']);
+  add('REMOUDRE',['REMOULUT']);
+  add('RENAITRE',['RENAQUIS','RENE']);
+  add('REPAITRE',['REPAIS','REPUMES']);
+  add('RESOUDRE',['RESOUT']);
+  add('RETRAIRE',['RETRAIE','RETRAYAIS','RETRAYEZ']);
+  add('REVALOIR',['REVAILLE']);
+  add('SAVOIR',['SUMES','SURENT','SUSSE','SUTES']);
+  add('TAIRE',['TUMES','TURENT','TUSSE','TUSSIONS','TUT','TUTES']);
+  add('TRAIRE',['TRAIE','TRAYAIS','TRAYEZ']);
+  add('VALOIR',['VAILLE']);
+  return _conjMap;
 }
 
 /* ── Préfixes de verbes composés ── */
@@ -641,21 +702,89 @@ function openDefSimple(defText){
   mEl.classList.add("open");
 }
 
+// Returns every index in c[] where c[i] === canon (handles homographs like CHOPPER x2).
+function _findAllIdxs(canon){
+  const C=window.SEQODS_DATA?.c; if(!C) return [];
+  const out=[];
+  for(let i=0;i<C.length;i++) if(C[i]===canon) out.push(i);
+  return out;
+}
+
+// If w is also a conjugated form of a *different* verb in c[], return that verb.
+// Handles cases like BRASQUE (noun) also being je/il brasque → BRASQUER.
+function _findConjLemma(w){
+  const cm=_getCMap();
+  if(w.endsWith('E')&&w.length>3){
+    const st=w.slice(0,-1);
+    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
+    if(cm.has(st+'RE')&&st+'RE'!==w) return st+'RE';
+  }
+  if(w.endsWith('ES')&&w.length>4){
+    const st=w.slice(0,-2);
+    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
+  }
+  return null;
+}
+
 function openDef(canon, displayWord, defText, flechie){
   const DATA = window.SEQODS_DATA;
   if(!DATA) return;
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
-  const idx = C.indexOf(canon);
-  if(idx < 0 && defText === undefined){
+  let allIdxs = _findAllIdxs(canon);
+  if(allIdxs.length === 0 && defText === undefined){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
   }
+  // Redirect pure conjugation-form entries to their infinitive
+  {
+    const conjM=_getConjMap();
+    if(conjM.has(canon) && defText===undefined){
+      const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+      const _CONJ=/-->\s+\S+\s+\d{2,}\./;
+      const real=allIdxs.filter(i=>{const f=F[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      if(real.length>0) allIdxs=real;
+      else{ openDef(conjM.get(canon)); return; }
+    }
+  }
+  const idx = allIdxs[0] ?? -1;
   const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
-  const def = (defText !== undefined) ? defText : (idx>=0 ? (F[idx]||"") : "");
 
-  $("#def-title").textContent = title;
-  $("#def-body").textContent = def || "(définition absente)";
+  // Build list of {label, text} for each definition to display.
+  // label is non-null only for a related verb (e.g. BRASQUER for BRASQUE).
+  const defs = defText !== undefined
+    ? [{label:null, text:defText}]
+    : allIdxs.map(i=>({label:null, text:F?.[i]||""}));
+  if(allIdxs.length>0 && defText===undefined){
+    const cl=_findConjLemma(canon);
+    if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
+  }
+
+  const wSlash=_wantsSlash(canon)&&!title.includes('/');
+  $("#def-title").textContent = wSlash ? title+' /' : title;
+  const bodyEl=$("#def-body");
+  if(defs.length<=1){
+    bodyEl.textContent = defs[0]?.text||"(définition absente)";
+  } else {
+    bodyEl.innerHTML="";
+    defs.forEach((d,i)=>{
+      if(i>0){
+        const hr=document.createElement("hr");
+        hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:8px 0 4px";
+        bodyEl.appendChild(hr);
+      }
+      if(d.label){
+        const lnk=document.createElement("a"); lnk.href="#"; lnk.className="def-link";
+        lnk.textContent=d.label;
+        lnk.addEventListener("click",ev=>{ev.preventDefault();openDef(d.label,d.label);});
+        bodyEl.appendChild(lnk);
+        bodyEl.appendChild(document.createTextNode(" "));
+      }
+      const p=document.createElement("p"); p.style.margin="0";
+      p.textContent=d.text||(d.label?"":"(définition absente)");
+      bodyEl.appendChild(p);
+    });
+  }
 
   const raw = title.split(",")[0].trim().toLowerCase();
   $("#def-wikt").href = "https://fr.wiktionary.org/wiki/" + encodeURIComponent(raw);
@@ -684,9 +813,15 @@ function openDef(canon, displayWord, defText, flechie){
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
-  if(flechieToShow && flechieToShow !== canon && A && flechieEl){
-    const ftir = flechieToShow.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
-    const fAna = (A[ftir]||[]).filter(x=>norm(x)!==flechieToShow).slice(0,60);
+  if(flechieToShow && flechieToShow !== canon && flechieEl){
+    // Cherche dans toutes les formes (d[]), pas seulement les lemmes (A),
+    // car l'anagramme d'une forme fléchie peut être une autre forme fléchie.
+    const ftir = flechieToShow.split("").sort().join("");
+    const normToE = getNormToE();
+    const fAna = getDictArr()
+      .filter(w => w !== flechieToShow && w.split("").sort().join("") === ftir)
+      .slice(0, 60)
+      .map(w => normToE[w] || w);
     const fRal = R ? (R[flechieToShow]||[]) : [];
     if(fAna.length || fRal.length){
       const sep = document.createElement("hr");
@@ -796,6 +931,23 @@ function _getCMap(){
   return _cMap;
 }
 
+// Returns true when canon is purely invariable (interj./loc./adv. not ending in -MENT)
+// and has no variable nature (n., adj., v., etc.) across all c[] entries.
+function _wantsSlash(canon){
+  const DATA=window.SEQODS_DATA; if(!DATA) return false;
+  const {e:E,f:F}=DATA;
+  const idxs=_findAllIdxs(canon);
+  if(!idxs.length) return false;
+  if(idxs.some(i=>(E[i]||'').includes('/'))) return false; // already has /
+  let hasInvar=false, hasVar=false;
+  for(const i of idxs){
+    const f=F[i]||'';
+    if(/\binterj\b|\bloc\b|\badv\b/.test(f)) hasInvar=true;
+    if(/\bn\.[mf]\b|\bn\.\s|\bn\.\)|\badj\b|\bv\.|\bpron\b|\bnum\b/.test(f)) hasVar=true;
+  }
+  return hasInvar && !hasVar && !canon.endsWith('MENT');
+}
+
 function dictUpdateLinks(displayWord){
   const raw=(displayWord||"").split(",")[0].trim().toLowerCase().replace(/\s+.*/,"");
   const w=document.getElementById("dict-wikt");
@@ -811,13 +963,51 @@ function dictSelectWord(w, idx){
   if(inp){ inp.value=w; }
   document.getElementById("dict-sugg").innerHTML="";
 
-  const cIdx=(idx!==undefined)?idx:_getCMap().get(w);
-  if(cIdx!==undefined){
-    // Entrée complète : forme fléchie, définition, rallonges
-    const display=DATA.e[cIdx]||w;
-    document.getElementById("dict-word").textContent=display;
-    document.getElementById("dict-def").textContent=
-      (DATA.f[cIdx]||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim()||"(définition absente)";
+  let allIdxs=_findAllIdxs(w);
+  // If a specific idx was passed (suggestion click), put it first
+  if(idx!==undefined && allIdxs.length>1 && allIdxs[0]!==idx){
+    allIdxs=[idx,...allIdxs.filter(i=>i!==idx)];
+  }
+  // Filter/redirect pure conjugation-form entries
+  {
+    const conjM=_getConjMap();
+    if(conjM.has(w)){
+      const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+      const _CONJ=/-->\s+\S+\s+\d{2,}\./;
+      const real=allIdxs.filter(i=>{const f=DATA.f[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      if(real.length>0) allIdxs=real;
+      else{ dictSelectWord(conjM.get(w)); return; }
+    }
+  }
+
+  if(allIdxs.length>0){
+    const cIdx0=allIdxs[0];
+    const display=DATA.e[cIdx0]||w;
+    const slash=_wantsSlash(w)&&!display.includes('/');
+    document.getElementById("dict-word").textContent=display+(slash?' /':'');
+
+    const defEl=document.getElementById("dict-def");
+    if(allIdxs.length===1){
+      defEl.textContent=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim()||"(définition absente)";
+    } else {
+      defEl.innerHTML="";
+      allIdxs.forEach((i,n)=>{
+        if(n>0){
+          const hr=document.createElement("hr");
+          hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
+          defEl.appendChild(hr);
+          const dispI=DATA.e[i]||w;
+          if(dispI!==display){
+            const lbl=document.createElement("small");
+            lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
+            lbl.textContent=dispI; defEl.appendChild(lbl);
+          }
+        }
+        const raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        const p=document.createElement("p"); p.style.margin="0";
+        p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
+      });
+    }
     // Anagrammes
     const anaEl=document.getElementById("dict-ana");
     if(anaEl && DATA.a){
@@ -827,8 +1017,8 @@ function dictSelectWord(w, idx){
       if(anaLst.length){
         const lbl=document.createElement("strong"); lbl.textContent="Anagrammes"; anaEl.appendChild(lbl);
         const sp=document.createElement("span");
-        anaLst.forEach((aw,i)=>{
-          if(i) sp.appendChild(document.createTextNode(" • "));
+        anaLst.forEach((aw,ai)=>{
+          if(ai) sp.appendChild(document.createTextNode(" • "));
           const a=document.createElement("a"); a.href="#"; a.className="def-link";
           a.textContent=aw;
           a.addEventListener("click",e=>{ e.preventDefault(); dictSelectWord(norm(aw)); });
@@ -845,8 +1035,8 @@ function dictSelectWord(w, idx){
       if(lst.length){
         const lbl=document.createElement("strong"); lbl.textContent="Rallonges"; rallEl.appendChild(lbl);
         const sp=document.createElement("span");
-        lst.forEach((rw,i)=>{
-          if(i) sp.appendChild(document.createTextNode(" • "));
+        lst.forEach((rw,ri)=>{
+          if(ri) sp.appendChild(document.createTextNode(" • "));
           const a=document.createElement("a"); a.href="#"; a.className="def-link";
           a.textContent=rw;
           a.addEventListener("click",e=>{ e.preventDefault(); dictSelectWord(norm(rw)); });
@@ -857,12 +1047,22 @@ function dictSelectWord(w, idx){
     }
     dictUpdateLinks(display);
   } else {
-    // Forme variable : tenter de naviguer vers le lemme
-    const lemma = findLemma(w);
-    if(lemma && lemma !== w){ dictSelectWord(lemma); return; }
+    // Not a canonical entry
+    const lemma=findLemma(w);
     document.getElementById("dict-word").textContent=w;
-    document.getElementById("dict-def").textContent="Forme variable · Mot valide ODS9";
+    document.getElementById("dict-ana").innerHTML="";
     document.getElementById("dict-rall").innerHTML="";
+    const defEl=document.getElementById("dict-def");
+    if(lemma && lemma!==w){
+      defEl.innerHTML="";
+      defEl.appendChild(document.createTextNode("→ "));
+      const lnk=document.createElement("a"); lnk.href="#"; lnk.className="def-link";
+      lnk.textContent=lemma;
+      lnk.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
+      defEl.appendChild(lnk);
+    } else {
+      defEl.textContent=_getDSet().has(w)?"Forme variable · Mot valide ODS9":"Mot inconnu.";
+    }
     dictUpdateLinks(w);
   }
   document.getElementById("dict-result").style.display="";
@@ -875,39 +1075,87 @@ function _dictRenderSugg(prefix){
   const DATA=window.SEQODS_DATA; if(!DATA?.c) return;
   const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
-  // Collecter les candidats avec leur index
   const candidates=[];
+  const _conjM=_getConjMap();
+  const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
+  const _CONJ=/-->\s+\S+\s+\d{2,}\./;
   for(let i=start; i<C.length && candidates.length<14; i++){
     if(!C[i].startsWith(prefix)) break;
+    if(_conjM.has(C[i])){
+      const f=F[i]||'';
+      if(!_POS.test(f) && _CONJ.test(f)) continue;
+    }
     candidates.push(i);
   }
-  // Détecter les formes canoniques en double pour afficher la nature
-  const canon2count=new Map();
-  candidates.forEach(i=>canon2count.set(C[i],(canon2count.get(C[i])||0)+1));
   const frag=document.createDocumentFragment();
+  // Show "→ LEMMA" if prefix is: (a) a valid form not in c[], or (b) a pure conjugation entry.
+  // (b) is detected when conjMap has it and no non-filtered candidate has it as exact canon.
+  const _prefixIsConj=_conjM.has(prefix)&&!candidates.some(i=>C[i]===prefix);
+  if((!_getCMap().has(prefix)||_prefixIsConj)&&(_getDSet().has(prefix)||_prefixIsConj)){
+    // For conj entries use conjMap directly (findLemma short-circuits for words still in c[]).
+    const lemma=_prefixIsConj ? _conjM.get(prefix) : findLemma(prefix);
+    if(lemma && lemma!==prefix){
+      const li=document.createElement("li");
+      li.appendChild(document.createTextNode("→ "));
+      const a=document.createElement("a"); a.href="#"; a.className="def-link";
+      a.textContent=lemma;
+      a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
+      li.appendChild(a);
+      frag.appendChild(li);
+    }
+  }
   candidates.forEach(i=>{
     const li=document.createElement("li");
     let label=E[i]||C[i];
-    if(canon2count.get(C[i])>1){
-      const pos=_posLabel(F[i]);
-      if(pos) label+=" "+pos;
-    }
+    if(_wantsSlash(C[i]) && !label.includes('/')) label+=' /';
+    const pos=_posLabel(F[i]);
+    if(pos) label+="  "+pos;
     li.textContent=label;
     li.addEventListener("click",()=>dictSelectWord(C[i],i));
     frag.appendChild(li);
   });
-  if(!candidates.length){
-    const li=document.createElement("li"); li.className="dict-no-result";
-    li.textContent="Mot inconnu."; frag.appendChild(li);
+  if(!candidates.length && !frag.firstChild){
+    const li=document.createElement("li");
+    li.className="dict-no-result";
+    li.textContent="Mot inconnu.";
+    frag.appendChild(li);
   }
   sugg.appendChild(frag);
+}
+
+let _dictGameKbH=0, _dictKbEl=null, _dictKbHandler=null;
+
+// Intercept the active game keyboard (.kk buttons) to type into dict-input.
+// Uses capture phase so it fires before wireKeyboard's bubble listener.
+function _startDictKbIntercept(kb, inp){
+  _dictKbHandler=e=>{
+    const kk=e.target.closest(".kk"); if(!kk) return;
+    e.preventDefault(); e.stopPropagation();
+    const k=kk.dataset.k;
+    if(k==="CLR") inp.value="";
+    else if(k==="DEL") inp.value=inp.value.slice(0,-1);
+    else if(k==="OK"){
+      inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}));
+      return;
+    } else inp.value+=k;
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+  };
+  kb.addEventListener("mousedown",_dictKbHandler,{capture:true});
+  kb.addEventListener("touchstart",_dictKbHandler,{capture:true,passive:false});
+}
+function _stopDictKbIntercept(){
+  if(_dictKbEl && _dictKbHandler){
+    _dictKbEl.removeEventListener("mousedown",_dictKbHandler,{capture:true});
+    _dictKbEl.removeEventListener("touchstart",_dictKbHandler,{capture:true});
+  }
+  _dictKbEl=null; _dictKbHandler=null;
 }
 
 function _dictBdResize(){
   const bd=document.getElementById("dict-bd"); if(!bd) return;
   const vv=window.visualViewport;
-  const kbH=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-  bd.style.bottom=kbH+"px";
+  const sysKbH=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  bd.style.bottom=(sysKbH+_dictGameKbH)+"px";
 }
 
 function openDictModal(){
@@ -918,17 +1166,30 @@ function openDictModal(){
   document.getElementById("dict-sugg").innerHTML="";
   document.getElementById("dict-result").style.display="none";
   dictUpdateLinks("");
+  // Intercept the active game keyboard (em-kb / tm-kb) if visible on mobile
+  const kb=document.querySelector(".view.active .keyboard");
+  const kbVisible=kb&&window.getComputedStyle(kb).display!=="none";
+  if(kbVisible){
+    _dictKbEl=kb;
+    _dictGameKbH=kb.offsetHeight;
+    // Shrink modal so the panel doesn't overlap the keyboard at the top
+    m.style.paddingBottom=_dictGameKbH+"px";
+    inp?.setAttribute("readonly","");
+    _startDictKbIntercept(kb,inp);
+  }
   _dictBdResize();
-  window.visualViewport?.addEventListener("resize", _dictBdResize);
-  // Force reflow so the modal is rendered before focus() — required on iOS PWA
-  // eslint-disable-next-line no-unused-expressions
-  inp && (inp.offsetHeight, inp.focus());
+  window.visualViewport?.addEventListener("resize",_dictBdResize);
+  inp&&(inp.offsetHeight,inp.focus());
 }
 
 function closeDictModal(){
   document.getElementById("dict-modal")?.classList.remove("open");
-  window.visualViewport?.removeEventListener("resize", _dictBdResize);
+  window.visualViewport?.removeEventListener("resize",_dictBdResize);
   const bd=document.getElementById("dict-bd"); if(bd) bd.style.bottom="";
+  _stopDictKbIntercept();
+  _dictGameKbH=0;
+  document.getElementById("dict-modal").style.paddingBottom="";
+  document.getElementById("dict-input")?.removeAttribute("readonly");
 }
 
 function _wireDictBtn(el){
@@ -956,7 +1217,9 @@ function wireDictModal(){
         // Correspondance exacte dans c[]
         const start=_dictBisect(C,v);
         if(start<C.length && C[start]===v){ dictSelectWord(v); return; }
-        // Première suggestion
+        // Forme fléchie valide (dans d[]) → traiter directement (évite de cliquer SERAC pour SERA)
+        if(_getDSet().has(v)){ dictSelectWord(v); return; }
+        // Première suggestion canonique
         const first=document.querySelector("#dict-sugg li:not(.dict-no-result)");
         if(first) first.click();
       }
