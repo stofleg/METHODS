@@ -1032,11 +1032,39 @@ function _dictRenderSugg(prefix){
   sugg.appendChild(frag);
 }
 
+let _dictGameKbH=0, _dictKbEl=null, _dictKbHandler=null;
+
+// Intercept the active game keyboard (.kk buttons) to type into dict-input.
+// Uses capture phase so it fires before wireKeyboard's bubble listener.
+function _startDictKbIntercept(kb, inp){
+  _dictKbHandler=e=>{
+    const kk=e.target.closest(".kk"); if(!kk) return;
+    e.preventDefault(); e.stopPropagation();
+    const k=kk.dataset.k;
+    if(k==="CLR") inp.value="";
+    else if(k==="DEL") inp.value=inp.value.slice(0,-1);
+    else if(k==="OK"){
+      inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}));
+      return;
+    } else inp.value+=k;
+    inp.dispatchEvent(new Event("input",{bubbles:true}));
+  };
+  kb.addEventListener("mousedown",_dictKbHandler,{capture:true});
+  kb.addEventListener("touchstart",_dictKbHandler,{capture:true,passive:false});
+}
+function _stopDictKbIntercept(){
+  if(_dictKbEl && _dictKbHandler){
+    _dictKbEl.removeEventListener("mousedown",_dictKbHandler,{capture:true});
+    _dictKbEl.removeEventListener("touchstart",_dictKbHandler,{capture:true});
+  }
+  _dictKbEl=null; _dictKbHandler=null;
+}
+
 function _dictBdResize(){
   const bd=document.getElementById("dict-bd"); if(!bd) return;
   const vv=window.visualViewport;
-  const kbH=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-  bd.style.bottom=kbH+"px";
+  const sysKbH=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+  bd.style.bottom=(sysKbH+_dictGameKbH)+"px";
 }
 
 function openDictModal(){
@@ -1047,17 +1075,27 @@ function openDictModal(){
   document.getElementById("dict-sugg").innerHTML="";
   document.getElementById("dict-result").style.display="none";
   dictUpdateLinks("");
+  // Intercept the active game keyboard (em-kb / tm-kb) if visible on mobile
+  const kb=document.querySelector(".view.active .keyboard");
+  const kbVisible=kb&&window.getComputedStyle(kb).display!=="none";
+  if(kbVisible){
+    _dictKbEl=kb;
+    _dictGameKbH=kb.offsetHeight;
+    inp?.setAttribute("readonly","");
+    _startDictKbIntercept(kb,inp);
+  }
   _dictBdResize();
-  window.visualViewport?.addEventListener("resize", _dictBdResize);
-  // Force reflow so the modal is rendered before focus() — required on iOS PWA
-  // eslint-disable-next-line no-unused-expressions
-  inp && (inp.offsetHeight, inp.focus());
+  window.visualViewport?.addEventListener("resize",_dictBdResize);
+  inp&&(inp.offsetHeight,inp.focus());
 }
 
 function closeDictModal(){
   document.getElementById("dict-modal")?.classList.remove("open");
-  window.visualViewport?.removeEventListener("resize", _dictBdResize);
+  window.visualViewport?.removeEventListener("resize",_dictBdResize);
   const bd=document.getElementById("dict-bd"); if(bd) bd.style.bottom="";
+  _stopDictKbIntercept();
+  _dictGameKbH=0;
+  document.getElementById("dict-input")?.removeAttribute("readonly");
 }
 
 function _wireDictBtn(el){
@@ -1065,32 +1103,6 @@ function _wireDictBtn(el){
   el.addEventListener("touchend", e=>{ e.preventDefault(); openDictModal(); });
   el.addEventListener("click", openDictModal);
 }
-function wireDictKeyboard(){
-  const kb=document.getElementById("dict-kb"); if(!kb) return;
-  const inp=document.getElementById("dict-input"); if(!inp) return;
-  // On touch devices: prevent system keyboard, use only custom keyboard
-  if(window.matchMedia("(pointer:coarse)").matches){
-    inp.setAttribute("readonly","");
-  }
-  const press=k=>{
-    if(k==="CLR"){ inp.value=""; }
-    else if(k==="DEL"){ inp.value=inp.value.slice(0,-1); }
-    else if(k==="OK"){
-      inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}));
-      return;
-    } else { inp.value+=k; }
-    inp.dispatchEvent(new Event("input",{bubbles:true}));
-  };
-  kb.addEventListener("mousedown",e=>{
-    const k=e.target.closest(".kk")?.dataset.k; if(!k) return;
-    e.preventDefault(); press(k);
-  });
-  kb.addEventListener("touchstart",e=>{
-    const k=e.target.closest(".kk")?.dataset.k; if(!k) return;
-    e.preventDefault(); press(k);
-  },{passive:false});
-}
-
 function wireDictModal(){
   _wireDictBtn(document.getElementById("btn-dict"));
   document.querySelectorAll(".btn-dict-kb").forEach(b=>_wireDictBtn(b));
@@ -1120,7 +1132,6 @@ function wireDictModal(){
   document.addEventListener("keydown", e=>{
     if(e.key==="Escape") closeDictModal();
   });
-  wireDictKeyboard();
 }
 
 /* ── Auth UI ── */
