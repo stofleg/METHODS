@@ -1128,9 +1128,13 @@ let _dictGameKbH=0, _dictKbEl=null, _dictKbHandler=null;
 // Intercept the active game keyboard (.kk buttons) to type into dict-input.
 // Uses capture phase so it fires before wireKeyboard's bubble listener.
 function _startDictKbIntercept(kb, inp){
+  let _lastTouchMs=0;
   _dictKbHandler=e=>{
+    // Prevent synthetic mousedown (fired after touchstart on mobile) from double-inserting.
+    if(e.type==="mousedown" && Date.now()-_lastTouchMs<500) return;
     const kk=e.target.closest(".kk"); if(!kk) return;
     e.preventDefault(); e.stopPropagation();
+    if(e.type==="touchstart") _lastTouchMs=Date.now();
     const k=kk.dataset.k;
     if(k==="CLR") inp.value="";
     else if(k==="DEL") inp.value=inp.value.slice(0,-1);
@@ -1160,6 +1164,7 @@ function _dictBdResize(){
 
 function openDictModal(){
   const m=document.getElementById("dict-modal"); if(!m) return;
+  if(m.classList.contains("open")) return;
   m.classList.add("open");
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=""; }
@@ -1173,7 +1178,7 @@ function openDictModal(){
     _dictKbEl=kb;
     _dictGameKbH=kb.offsetHeight;
     // Shrink modal so the panel doesn't overlap the keyboard at the top
-    m.style.paddingBottom=_dictGameKbH+"px";
+    m.style.bottom=_dictGameKbH+"px";
     inp?.setAttribute("readonly","");
     _startDictKbIntercept(kb,inp);
   }
@@ -1188,7 +1193,7 @@ function closeDictModal(){
   const bd=document.getElementById("dict-bd"); if(bd) bd.style.bottom="";
   _stopDictKbIntercept();
   _dictGameKbH=0;
-  document.getElementById("dict-modal").style.paddingBottom="";
+  document.getElementById("dict-modal").style.bottom="";
   document.getElementById("dict-input")?.removeAttribute("readonly");
 }
 
