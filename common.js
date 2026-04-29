@@ -483,7 +483,7 @@ function _mkHook(ch){ const d=document.createElement("span"); d.className="hook"
 function _mkSup(n){ const s=document.createElement("sup"); s.className="ana"; s.textContent=n; return s; }
 function _mkWt(t){ const s=document.createElement("span"); s.className="wt"; s.textContent=t; return s; }
 
-function setElWord(el, display, canon, suffix=""){
+function setElWord(el, display, canon, suffix="", cousinCanon=null){
   el.textContent = "";
   if(!display || !canon) return;
   const w = document.createElement("span");
@@ -511,7 +511,18 @@ function setElWord(el, display, canon, suffix=""){
     if(inflCanon){ const ni=getAnagramCount(inflCanon); if(ni>0) w.appendChild(_mkSup(ni)); }
   }
   el.appendChild(w);
-  if(suffix) el.appendChild(document.createTextNode(suffix));
+  if(cousinCanon){
+    const cousinDisp=getNormToE()[cousinCanon]||cousinCanon;
+    el.appendChild(document.createTextNode(" ("));
+    const lnk=document.createElement("span");
+    lnk.className="cousin-link";
+    lnk.textContent="→ "+cousinDisp;
+    lnk.addEventListener("click",e=>{e.stopPropagation();openDef(cousinCanon);});
+    el.appendChild(lnk);
+    el.appendChild(document.createTextNode(")"));
+  } else if(suffix){
+    el.appendChild(document.createTextNode(suffix));
+  }
 }
 
 /* ── Sélecteur ── */

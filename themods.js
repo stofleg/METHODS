@@ -465,15 +465,14 @@ function renderTmGame(){
     li.dataset.idx=i; li.className="slot";
     const canon=norm(word);
     const display=getNormToE()[canon]||word;
-    const cousin=sess.cousins?.[canon];
-    const fullDisplay=cousin?display+" (→ "+cousin+")":display;
+    const cousin=sess.cousins?.[canon]||null;
     if(tmFound.has(i)){
       li.classList.add("found","clickable");
-      setElWord(li,display,canon,cousin?" (→ "+cousin+")":"");
+      setElWord(li,display,canon,"",cousin);
       li.addEventListener("click",()=>openDef(canon,display));
     } else if(tmSolutions){
       li.classList.add("revealed","clickable");
-      setElWord(li,display,canon,cousin?" (→ "+cousin+")":"");
+      setElWord(li,display,canon,"",cousin);
       li.addEventListener("click",()=>openDef(canon,display));
     }
     list.appendChild(li);
@@ -512,9 +511,9 @@ function validateTmWord(raw){
       const w=sess.words[i];
       const wc=norm(w);
       const display=getNormToE()[wc]||w;
-      const cousin=sess.cousins?.[wc];
+      const cousin=sess.cousins?.[wc]||null;
       li.className="slot found clickable";
-      setElWord(li,display,wc,cousin?" (→ "+cousin+")":"");
+      setElWord(li,display,wc,"",cousin);
       li.addEventListener("click",()=>openDef(wc,display));
       li.scrollIntoView({behavior:"smooth",block:"nearest"});
     }
@@ -539,9 +538,9 @@ function showTmSolutions(){
       if(li){
         const wc=norm(w);
         const display=getNormToE()[wc]||w;
-        const cousin=sess.cousins?.[wc];
+        const cousin=sess.cousins?.[wc]||null;
         li.className="slot revealed clickable";
-        setElWord(li,display,wc,cousin?" (→ "+cousin+")":"");
+        setElWord(li,display,wc,"",cousin);
         li.addEventListener("click",()=>openDef(wc,display));
       }
     }
