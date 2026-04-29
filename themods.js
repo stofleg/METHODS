@@ -735,8 +735,6 @@ function openGMEditor(){
   if(imgEl) imgEl.src=custom.img||"";
   if(imgWrap) imgWrap.style.display=custom.img?"":"none";
   if(delBtn) delBtn.style.display=custom.img?"":"none";
-  const wiktEl=document.getElementById("gm-ed-wikt");
-  if(wiktEl) wiktEl.href="https://fr.wiktionary.org/wiki/"+encodeURIComponent(entry.forms[0].toLowerCase());
   document.getElementById("gm-editor").style.display="";
   setTimeout(()=>defEl?.focus(),80);
 }
@@ -1136,6 +1134,47 @@ function saveDNEditor(){
   closeDNEditor();
   renderDNGame();
 }
+async function fetchWiktForGM(){
+  const entry=currentEntry(); if(!entry) return;
+  const btn=document.getElementById("gm-ed-wikt");
+  const defEl=document.getElementById("gm-ed-def");
+  if(!btn||!defEl) return;
+  const origLabel=btn.textContent;
+  btn.disabled=true; btn.textContent="⏳ Chargement…";
+  const word=entry.forms[0].toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
+  try{
+    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(word));
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    const data=await resp.json();
+    const frSections=data.fr||[];
+    if(!frSections.length){ btn.textContent="Aucune définition trouvée"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500); return; }
+    const parts=[];
+    frSections.forEach(section=>{
+      const pos=(section.partOfSpeech||"").toLowerCase();
+      let posLabel="";
+      if(/verbe/i.test(pos)) posLabel="v.";
+      else if(/nom.*féminin|féminin.*nom/i.test(pos)) posLabel="n.f.";
+      else if(/nom/i.test(pos)) posLabel="n.m.";
+      else if(/adjectif/i.test(pos)) posLabel="adj.";
+      else if(/adverbe/i.test(pos)) posLabel="adv.";
+      else if(/interjection/i.test(pos)) posLabel="interj.";
+      else if(/pronom/i.test(pos)) posLabel="pron.";
+      const defs=section.definitions||[];
+      if(defs.length){
+        const defObj=defs[0];
+        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
+        if(defText) parts.push((posLabel?posLabel+" ":"")+defText);
+      }
+    });
+    if(!parts.length){ btn.textContent="Définition vide"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500); return; }
+    defEl.value=parts.length===1?parts[0]:parts.map((p,i)=>(i+1)+". "+p).join(" – ");
+    btn.textContent="✅ Importé";
+    setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000);
+  }catch(err){
+    btn.textContent="❌ Erreur de chargement";
+    setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500);
+  }
+}
 async function fetchWiktForDN(){
   const entry=currentDNEntry(); if(!entry) return;
   const res=document.getElementById("dn-ed-wikt-res"); if(!res) return;
@@ -1264,6 +1303,7 @@ function initThemods(){
     document.getElementById("dn-ed-cancel")?.addEventListener("click",()=>closeDNEditor());
     document.getElementById("dn-ed-save")?.addEventListener("click",()=>saveDNEditor());
     document.getElementById("dn-ed-del")?.addEventListener("click",()=>deleteDNEntry());
+    document.getElementById("gm-ed-wikt")?.addEventListener("click",()=>fetchWiktForGM());
     document.getElementById("dn-ed-wikt")?.addEventListener("click",()=>fetchWiktForDN());
     document.getElementById("dn-editor")?.addEventListener("click",e=>{
       if(e.target===document.getElementById("dn-editor")) closeDNEditor();
