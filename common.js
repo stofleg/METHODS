@@ -513,13 +513,12 @@ function setElWord(el, display, canon, suffix="", cousinCanon=null){
   el.appendChild(w);
   if(cousinCanon){
     const cousinDisp=getNormToE()[cousinCanon]||cousinCanon;
-    el.appendChild(document.createTextNode(" ("));
+    el.appendChild(document.createTextNode(" "));
     const lnk=document.createElement("span");
     lnk.className="cousin-link";
-    lnk.textContent="→ "+cousinDisp;
+    lnk.textContent="(→ "+cousinDisp+")";
     lnk.addEventListener("click",e=>{e.stopPropagation();openDef(cousinCanon);});
     el.appendChild(lnk);
-    el.appendChild(document.createTextNode(")"));
   } else if(suffix){
     el.appendChild(document.createTextNode(suffix));
   }
