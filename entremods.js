@@ -324,13 +324,53 @@ function emOpenEditor(){
     const custom=(emState._customDefs||{})[canon]||"";
     const rawDef=(F[tIdx]||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim();
     const div=document.createElement("div"); div.style.cssText="display:flex;flex-direction:column;gap:4px;";
+    const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:8px;";
     const lbl=document.createElement("div"); lbl.style.cssText="font-size:13px;font-weight:800;letter-spacing:.05em;color:var(--accent);";
     lbl.textContent=word;
+    const wiktBtn=document.createElement("button"); wiktBtn.className="btn"; wiktBtn.style.cssText="font-size:11px;padding:2px 7px;";
+    wiktBtn.textContent="📖 Wiktionnaire";
     const ta=document.createElement("textarea"); ta.className="gm-ed-textarea"; ta.rows=2;
     ta.dataset.canon=canon; ta.value=custom||rawDef;
-    div.appendChild(lbl); div.appendChild(ta); container.appendChild(div);
+    wiktBtn.addEventListener("click",()=>emFetchWikt(word,ta,wiktBtn));
+    hdr.appendChild(lbl); hdr.appendChild(wiktBtn);
+    div.appendChild(hdr); div.appendChild(ta); container.appendChild(div);
   });
   document.getElementById("em-editor").style.display="flex";
+}
+async function emFetchWikt(word,ta,btn){
+  const origLabel=btn.textContent;
+  btn.disabled=true; btn.textContent="⏳";
+  const w=word.toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
+  try{
+    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(w));
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    const data=await resp.json();
+    const frSections=data.fr||[];
+    if(!frSections.length){ btn.textContent="Aucune def"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
+    const parts=[];
+    frSections.forEach(section=>{
+      const pos=(section.partOfSpeech||"").toLowerCase();
+      let posLabel="";
+      if(/verbe/i.test(pos)) posLabel="v.";
+      else if(/nom.*féminin|féminin.*nom/i.test(pos)) posLabel="n.f.";
+      else if(/nom/i.test(pos)) posLabel="n.m.";
+      else if(/adjectif/i.test(pos)) posLabel="adj.";
+      else if(/adverbe/i.test(pos)) posLabel="adv.";
+      else if(/interjection/i.test(pos)) posLabel="interj.";
+      else if(/pronom/i.test(pos)) posLabel="pron.";
+      const defs=section.definitions||[];
+      if(defs.length){
+        const defObj=defs[0];
+        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
+        if(defText) parts.push((posLabel?posLabel+" ":"")+defText);
+      }
+    });
+    if(!parts.length){ btn.textContent="Def vide"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
+    ta.value=parts.length===1?parts[0]:parts.map((p,i)=>(i+1)+". "+p).join(" – ");
+    btn.textContent="✅"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},1800);
+  }catch(err){
+    btn.textContent="❌"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000);
+  }
 }
 function emCloseEditor(){ document.getElementById("em-editor").style.display="none"; }
 function emSaveEditor(){
