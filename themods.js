@@ -88,6 +88,7 @@ let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmEntryIdx=0, gmFound=new Set();
 let odsEntryIdx=0, odsFnd=new Set();
 let tmBrowse=false, tmBrowseIdx=0;
+let tmEdWord=null; // canon du mot en cours d'édition dans les finales
 
 /* ── Navigation sous-vues ── */
 function showTmView(id){
@@ -286,7 +287,7 @@ function startSession(theme, session){
         session={...session,cousins:{...(session.cousins||{}),...extra}};
     }
   }
-  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false;
+  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false; tmEdWord=null;
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="none";
   const delBtn=document.getElementById("dn-del-btn"); if(delBtn) delBtn.style.display="none";
   getSt(theme, session.label).seen=true;
@@ -466,6 +467,7 @@ function renderTmGame(){
     const canon=norm(word);
     const display=getNormToE()[canon]||word;
     const cousin=sess.cousins?.[canon]||null;
+    const revealed=tmFound.has(i)||tmSolutions;
     if(tmFound.has(i)){
       li.classList.add("found","clickable");
       setElWord(li,display,canon,"",cousin);
@@ -474,6 +476,23 @@ function renderTmGame(){
       li.classList.add("revealed","clickable");
       setElWord(li,display,canon,"",cousin);
       li.addEventListener("click",()=>openDef(canon,display));
+    }
+    if(revealed){
+      const customDef=getEntryCustom({forms:[display]}).def;
+      if(customDef){
+        const defSpan=document.createElement("span");
+        defSpan.className="slot-custom-def";
+        defSpan.textContent=" — "+customDef;
+        li.appendChild(defSpan);
+      }
+      if(isEditor()){
+        const edBtn=document.createElement("span");
+        edBtn.className="slot-ed-icon";
+        edBtn.textContent="✏";
+        edBtn.title="Modifier la définition";
+        edBtn.addEventListener("click",e=>{e.stopPropagation();tmEdWord=canon;openGMEditor();});
+        li.appendChild(edBtn);
+      }
     }
     list.appendChild(li);
   });
@@ -531,22 +550,11 @@ function showTmSolutions(){
   if(tmTheme==="dn"){ tmSolutions=true; renderDNGame(); updateTmBtn(); return; }
   if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
   const sess=tmSession; if(!sess) return;
-  sess.words.forEach((w,i)=>{
-    if(!tmFound.has(i)){
-      tmFound.add(i);
-      const li=document.querySelector("#tm-wlist li[data-idx='"+i+"']");
-      if(li){
-        const wc=norm(w);
-        const display=getNormToE()[wc]||w;
-        const cousin=sess.cousins?.[wc]||null;
-        li.className="slot revealed clickable";
-        setElWord(li,display,wc,"",cousin);
-        li.addEventListener("click",()=>openDef(wc,display));
-      }
-    }
-  });
+  tmSolutions=true;
+  sess.words.forEach((_,i)=>tmFound.add(i));
+  renderTmSession();
   const ctr=document.getElementById("tm-counter");
-  if(ctr) ctr.textContent=tmFound.size+" / "+sess.words.length;
+  if(ctr) ctr.textContent=sess.words.length+" / "+sess.words.length;
   finalizeTm(false);
 }
 
@@ -720,6 +728,7 @@ function gmSetCustom(entry, data){ setEntryCustom(entry, data); }
 function currentEntry(){
   if(tmTheme==="gm") return currentGMEntry();
   if(isOds(tmTheme)) return currentOdsEntry(tmTheme);
+  if(tmEdWord) return {forms:[getNormToE()[tmEdWord]||tmEdWord]};
   return null;
 }
 
@@ -757,7 +766,9 @@ function saveGMEditor(){
   }
   setEntryCustom(entry, data);
   closeGMEditor();
-  if(tmTheme==="gm") renderGMGame(); else renderOdsGame();
+  if(tmTheme==="gm") renderGMGame();
+  else if(isOds(tmTheme)) renderOdsGame();
+  else renderTmSession();
 }
 async function pasteGMImage(){
   try{
