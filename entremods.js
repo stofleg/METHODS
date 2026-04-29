@@ -132,7 +132,7 @@ let emBrowseIdx=0;
 let emBrowseSave=null;
 
 function emCurrentSession(){ return emCurrentSessions[emSessionIdx]||null; }
-function emIsEditor(){ return currentUser?.pseudo==='stof2'; }
+function emIsEditor(){ return currentUser?.pseudo?.toLowerCase()==='stof2'; }
 
 /* ── Chrono ── */
 let emChronoInterval=null;

@@ -552,7 +552,7 @@ function showTmSolutions(){
   const sess=tmSession; if(!sess) return;
   tmSolutions=true;
   sess.words.forEach((_,i)=>tmFound.add(i));
-  renderTmSession();
+  renderTmGame();
   const ctr=document.getElementById("tm-counter");
   if(ctr) ctr.textContent=sess.words.length+" / "+sess.words.length;
   finalizeTm(false);
@@ -668,7 +668,7 @@ function updateTmBtn(){
   // ✏️ et 🗑️ : masqués pendant le feuilletage, restaurés ensuite
   const edBtnU=document.getElementById("gm-ed-btn");
   const delBtnU=document.getElementById("dn-del-btn");
-  if(edBtnU) edBtnU.style.display=(!tmBrowse&&isEditor()&&(tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme)))?"":"none";
+  if(edBtnU) edBtnU.style.display=(!tmBrowse&&isEditor())?"":"none";
   if(delBtnU) delBtnU.style.display=(!tmBrowse&&isEditor()&&tmTheme==="dn")?"":"none";
   const gmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
 
@@ -732,7 +732,78 @@ function currentEntry(){
   return null;
 }
 
+function openTmMultiEditor(){
+  const sess=tmSession; if(!sess) return;
+  const container=document.getElementById("tm-med-defs"); if(!container) return;
+  container.innerHTML="";
+  sess.words.forEach(word=>{
+    const canon=norm(word);
+    const display=getNormToE()[canon]||word;
+    const custom=getEntryCustom({forms:[display]}).def||"";
+    const div=document.createElement("div"); div.style.cssText="display:flex;flex-direction:column;gap:4px;";
+    const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:8px;";
+    const lbl=document.createElement("div"); lbl.style.cssText="font-size:13px;font-weight:800;letter-spacing:.05em;color:var(--accent);";
+    lbl.textContent=display;
+    const wiktBtn=document.createElement("button"); wiktBtn.className="btn"; wiktBtn.style.cssText="font-size:11px;padding:2px 7px;";
+    wiktBtn.textContent="📖 Wiktionnaire";
+    const ta=document.createElement("textarea"); ta.className="gm-ed-textarea"; ta.rows=2;
+    ta.dataset.canon=canon; ta.value=custom;
+    wiktBtn.addEventListener("click",()=>fetchWiktForWord(display,ta,wiktBtn));
+    hdr.appendChild(lbl); hdr.appendChild(wiktBtn);
+    div.appendChild(hdr); div.appendChild(ta); container.appendChild(div);
+  });
+  document.getElementById("tm-multi-editor").style.display="";
+}
+function closeTmMultiEditor(){ document.getElementById("tm-multi-editor").style.display="none"; }
+function saveTmMultiEditor(){
+  const sess=tmSession; if(!sess) return;
+  document.querySelectorAll("#tm-med-defs textarea[data-canon]").forEach(ta=>{
+    const canon=ta.dataset.canon;
+    const display=getNormToE()[canon]||canon;
+    setEntryCustom({forms:[display]},{def:ta.value.trim()});
+  });
+  closeTmMultiEditor();
+  renderTmGame();
+}
+async function fetchWiktForWord(word,ta,btn){
+  const origLabel=btn.textContent;
+  btn.disabled=true; btn.textContent="⏳";
+  const w=word.toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
+  try{
+    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(w));
+    if(!resp.ok) throw new Error("HTTP "+resp.status);
+    const data=await resp.json();
+    const frSections=data.fr||[];
+    if(!frSections.length){ btn.textContent="Aucune def"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
+    const parts=[];
+    frSections.forEach(section=>{
+      const pos=(section.partOfSpeech||"").toLowerCase();
+      let posLabel="";
+      if(/verbe/i.test(pos)) posLabel="v.";
+      else if(/nom.*féminin|féminin.*nom/i.test(pos)) posLabel="n.f.";
+      else if(/nom/i.test(pos)) posLabel="n.m.";
+      else if(/adjectif/i.test(pos)) posLabel="adj.";
+      else if(/adverbe/i.test(pos)) posLabel="adv.";
+      else if(/interjection/i.test(pos)) posLabel="interj.";
+      else if(/pronom/i.test(pos)) posLabel="pron.";
+      const defs=section.definitions||[];
+      if(defs.length){
+        const defObj=defs[0];
+        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
+        if(defText) parts.push((posLabel?posLabel+" ":"")+defText);
+      }
+    });
+    if(!parts.length){ btn.textContent="Def vide"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
+    ta.value=parts.length===1?parts[0]:parts.map((p,i)=>(i+1)+". "+p).join(" – ");
+    btn.textContent="✅"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},1800);
+  }catch(err){
+    btn.textContent="❌"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000);
+  }
+}
 function openGMEditor(){
+  if(tmTheme&&tmTheme!=="gm"&&tmTheme!=="dn"&&!isOds(tmTheme)){
+    if(!tmEdWord){ openTmMultiEditor(); return; }
+  }
   const entry=currentEntry(); if(!entry) return;
   const custom=getEntryCustom(entry);
   gmEdPendingImg=undefined;
@@ -768,7 +839,7 @@ function saveGMEditor(){
   closeGMEditor();
   if(tmTheme==="gm") renderGMGame();
   else if(isOds(tmTheme)) renderOdsGame();
-  else renderTmSession();
+  else renderTmGame();
 }
 async function pasteGMImage(){
   try{
@@ -1301,13 +1372,16 @@ function initThemods(){
       else renderTmHome();
     });
 
-    // GM / DN éditeur
+    // GM / DN / finales éditeur
     document.getElementById("gm-ed-btn")?.addEventListener("click",()=>{
       if(tmTheme==="dn") openDNEditor(); else openGMEditor();
     });
     document.getElementById("gm-ed-close")?.addEventListener("click",()=>closeGMEditor());
     document.getElementById("gm-ed-cancel")?.addEventListener("click",()=>closeGMEditor());
     document.getElementById("gm-ed-save")?.addEventListener("click",()=>saveGMEditor());
+    document.getElementById("tm-med-close")?.addEventListener("click",()=>closeTmMultiEditor());
+    document.getElementById("tm-med-cancel")?.addEventListener("click",()=>closeTmMultiEditor());
+    document.getElementById("tm-med-save")?.addEventListener("click",()=>saveTmMultiEditor());
     // DN éditeur
     document.getElementById("dn-del-btn")?.addEventListener("click",()=>deleteDNEntry());
     document.getElementById("dn-ed-close")?.addEventListener("click",()=>closeDNEditor());

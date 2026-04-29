@@ -874,6 +874,20 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
           </div>
         </div>
       </div>
+      <!-- Éditeur finales (stof2) -->
+      <div id="tm-multi-editor" style="display:none;" role="dialog" aria-modal="true">
+        <div class="gm-ed-panel">
+          <div class="gm-ed-hdr">
+            <span class="gm-ed-title">Modifier les définitions</span>
+            <button id="tm-med-close" class="btn" style="padding:4px 10px;font-size:17px;line-height:1;">×</button>
+          </div>
+          <div id="tm-med-defs" style="display:flex;flex-direction:column;gap:10px;padding:10px 0;max-height:60vh;overflow-y:auto;"></div>
+          <div class="gm-ed-footer">
+            <button id="tm-med-cancel" class="btn" style="flex:1;padding:10px;">Annuler</button>
+            <button id="tm-med-save" class="btn btn-primary" style="flex:1;padding:10px;font-weight:800;">Sauvegarder</button>
+          </div>
+        </div>
+      </div>
       <!-- Éditeur Double Nature -->
       <div id="dn-editor" style="display:none;" role="dialog" aria-modal="true">
         <div class="gm-ed-panel">
@@ -984,7 +998,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.66</div>
+  pointer-events:none;user-select:none;">v3.67</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
