@@ -267,6 +267,17 @@ function playTheme(theme){
 
 function startSession(theme, session){
   if(tmSolTimeout){ clearTimeout(tmSolTimeout); tmSolTimeout=null; }
+  // Pour le thème -OT : injecter les verbes correspondants dans cousins
+  if(theme==="ot"){
+    const cm=_getCMap();
+    const extra={};
+    (session.words||[]).forEach(w=>{
+      const wc=norm(w);
+      if(!session.cousins?.[wc] && cm.has(wc+"ER")) extra[wc]=wc+"ER";
+    });
+    if(Object.keys(extra).length)
+      session={...session,cousins:{...(session.cousins||{}),...extra}};
+  }
   tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false;
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="none";
   const delBtn=document.getElementById("dn-del-btn"); if(delBtn) delBtn.style.display="none";
