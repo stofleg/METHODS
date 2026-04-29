@@ -267,16 +267,24 @@ function playTheme(theme){
 
 function startSession(theme, session){
   if(tmSolTimeout){ clearTimeout(tmSolTimeout); tmSolTimeout=null; }
-  // Pour le thème -OT : injecter les verbes correspondants dans cousins
-  if(theme==="ot"){
-    const cm=_getCMap();
-    const extra={};
-    (session.words||[]).forEach(w=>{
-      const wc=norm(w);
-      if(!session.cousins?.[wc] && cm.has(wc+"ER")) extra[wc]=wc+"ER";
-    });
-    if(Object.keys(extra).length)
-      session={...session,cousins:{...(session.cousins||{}),...extra}};
+  // Verbes associés : injecter les cousins pour les thèmes qui le supportent
+  {
+    const _verbOf={
+      ot:w=>w+"ER",ais:w=>w+"ER",al:w=>w+"ER",ant:w=>w+"ER",ard:w=>w+"ER",
+      et:w=>w+"ER",ier:w=>w+"ER",if:w=>w.slice(0,-1)+"VER",in:w=>w+"ER",ois:w=>w+"ER"
+    };
+    const verbOf=_verbOf[theme];
+    if(verbOf){
+      const cm=_getCMap();
+      const extra={};
+      (session.words||[]).forEach(w=>{
+        const wc=norm(w);
+        const vb=verbOf(wc);
+        if(!session.cousins?.[wc] && cm.has(vb)) extra[wc]=vb;
+      });
+      if(Object.keys(extra).length)
+        session={...session,cousins:{...(session.cousins||{}),...extra}};
+    }
   }
   tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false;
   const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="none";
