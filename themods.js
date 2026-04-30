@@ -551,7 +551,6 @@ function showTmSolutions(){
   if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
   const sess=tmSession; if(!sess) return;
   tmSolutions=true;
-  sess.words.forEach((_,i)=>tmFound.add(i));
   renderTmGame();
   const ctr=document.getElementById("tm-counter");
   if(ctr) ctr.textContent=sess.words.length+" / "+sess.words.length;
@@ -613,7 +612,7 @@ function browseShowCurrent(){
   else {
     const data=window.THEMODS_DATA?.[tmTheme]; if(!data) return;
     tmSession=data[tmBrowseIdx%data.length];
-    tmFound=new Set(); renderTmGame();
+    tmFound=new Set(); tmEdWord=null; renderTmGame();
   }
   setTmMsg(""); updateTmBtn();
 }
@@ -668,7 +667,8 @@ function updateTmBtn(){
   // ✏️ et 🗑️ : masqués pendant le feuilletage, restaurés ensuite
   const edBtnU=document.getElementById("gm-ed-btn");
   const delBtnU=document.getElementById("dn-del-btn");
-  if(edBtnU) edBtnU.style.display=(!tmBrowse&&isEditor())?"":"none";
+  const isGmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
+  if(edBtnU) edBtnU.style.display=(isEditor()&&(isGmLike?!tmBrowse:tmBrowse))?"":"none";
   if(delBtnU) delBtnU.style.display=(!tmBrowse&&isEditor()&&tmTheme==="dn")?"":"none";
   const gmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
 

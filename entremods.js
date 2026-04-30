@@ -268,7 +268,7 @@ function emUpdateGameBtn(){
   const browseBtn=document.getElementById("em-btn-browse");
   const prevBtn=document.getElementById("em-btn-prev");
   const nextBtn=document.getElementById("em-btn-next");
-  if(edBtn) edBtn.style.display=(!emBrowse&&emIsEditor()&&hasSess)?"":"none";
+  if(edBtn) edBtn.style.display=(emBrowse&&emIsEditor()&&hasSess)?"":"none";
   if(browseBtn){
     browseBtn.style.display=hasSess?"":"none";
     browseBtn.textContent=emBrowse?"Arrêter":"Feuilleter";
