@@ -15,7 +15,7 @@
 - Auth : Firestore REST API (pas de SDK Firebase)
 
 ## Versionnage
-- Version courante : **v3.74**
+- Version courante : **v3.75**
 - Badge version : `#version-badge` dans index.html
 - À chaque release : bumper `CACHE_NAME` dans `sw.js` + `CURRENT_CACHE` + `#version-badge` dans `index.html`
 
