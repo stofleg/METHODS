@@ -1,0 +1,191 @@
+"use strict";
+/* ══ RECHERCHE.JS — panneau admin stof2 ══ */
+
+const FINALE_THEMES = ["able","age","ail","ais","al","ant","ard","ase","eau","erie",
+  "et","ette","eur","eux","ide","ien","ier","if","in","ique","isme","iste","ite",
+  "oir","ois","ose","ot","um","ure"];
+
+let _rechCurrentCanon = null;
+const _rechCache = {}; // canon → {custom:{def?}, excl:[], loaded:bool}
+
+function _isAdm(){ return currentUser?.pseudo?.toLowerCase()==="stof2"; }
+
+async function _rechLoad(canon){
+  if(_rechCache[canon]?.loaded) return;
+  const [r1,r2] = await Promise.all([
+    fbGet("rech_custom", canon),
+    fbGet("rech_excl",   canon)
+  ]);
+  _rechCache[canon] = {
+    custom: r1.ok && r1.data ? r1.data : {},
+    excl:   r2.ok && r2.data?.modules ? r2.data.modules : [],
+    loaded: true
+  };
+}
+
+/* ── Détection des modules contenant ce mot ── */
+function rechFindModules(canon){
+  const out = [];
+  const D = window.THEMODS_DATA; if(!D) return out;
+
+  for(const th of FINALE_THEMES){
+    for(const s of D[th]||[]){
+      if(s.words?.some(w=>norm(w)===canon)){ out.push({id:th,label:"-"+th.toUpperCase()}); break; }
+    }
+  }
+  for(const s of D.gm||[]){
+    if(s.entries?.some(e=>e.forms?.some(f=>norm(f)===canon))){ out.push({id:"gm",label:"Graphies multiples"}); break; }
+  }
+  if((D.dn||[]).some(e=>norm(e.canon)===canon)) out.push({id:"dn",label:"Double nature"});
+  for(const [th,lbl] of [["vi","Intransitifs"],["vt","Transitifs"],["vd","Défectifs"]]){
+    for(const s of D[th]||[]){
+      if(s.words?.some(w=>norm(w)===canon)){ out.push({id:th,label:"V. "+lbl.toLowerCase()}); break; }
+    }
+  }
+  for(let v=1;v<=9;v++){
+    for(const s of D["ods"+v]||[]){
+      if(s.entries?.some(e=>e.forms?.some(f=>norm(f)===canon))){ out.push({id:"ods"+v,label:"ODS "+v}); break; }
+    }
+  }
+  return out;
+}
+
+/* ── Afficher / masquer le panneau ── */
+async function rechShowAdmin(canon){
+  const panel = document.getElementById("rech-admin"); if(!panel) return;
+  if(!_isAdm()){ panel.style.display="none"; return; }
+
+  _rechCurrentCanon = canon;
+  panel.style.display = "";
+
+  const modEl = document.getElementById("rech-modules");
+  const defEl = document.getElementById("rech-edit-def");
+  if(modEl) modEl.innerHTML = "<span class='rech-loading'>Chargement…</span>";
+  if(defEl) defEl.value = "";
+
+  await _rechLoad(canon);
+  const cache = _rechCache[canon];
+
+  // Modules
+  if(modEl){
+    modEl.innerHTML = "";
+    const mods = rechFindModules(canon);
+    if(!mods.length){
+      const p = document.createElement("span");
+      p.style.cssText = "font-size:12px;color:var(--muted);";
+      p.textContent = "Absent de tous les modules THEMODS";
+      modEl.appendChild(p);
+    } else {
+      mods.forEach(({id,label})=>{
+        const excl = cache.excl.includes(id);
+        const btn = document.createElement("button");
+        btn.className = "btn rech-mod-btn "+(excl?"btn-danger":"btn-ok");
+        btn.textContent = (excl?"✕ ":"✓ ")+label;
+        btn.dataset.mod = id; btn.dataset.label = label;
+        modEl.appendChild(btn);
+      });
+    }
+  }
+
+  // Définition
+  if(defEl){
+    if(cache.custom.def !== undefined){
+      defEl.value = cache.custom.def;
+    } else {
+      const idx = _getCMap().get(canon);
+      defEl.value = (idx!==undefined ? (window.SEQODS_DATA?.f?.[idx]||"") : "");
+    }
+  }
+
+  const saveBtn = document.getElementById("rech-save-def");
+  if(saveBtn) saveBtn.textContent = cache.custom.def!==undefined ? "Mettre à jour" : "Sauvegarder";
+}
+
+/* ── Toggle exclusion module ── */
+async function rechToggleExclusion(canon, moduleId, label, btn){
+  const c = _rechCache[canon]; if(!c) return;
+  const wasExcl = c.excl.includes(moduleId);
+  c.excl = wasExcl ? c.excl.filter(x=>x!==moduleId) : [...c.excl, moduleId];
+  const excl = c.excl.includes(moduleId);
+  btn.className = "btn rech-mod-btn "+(excl?"btn-danger":"btn-ok");
+  btn.textContent = (excl?"✕ ":"✓ ")+label;
+  btn.disabled = true;
+  await fbSet("rech_excl", canon, {modules:c.excl}).catch(()=>{});
+  btn.disabled = false;
+}
+
+/* ── Sauvegarder définition ── */
+async function rechSaveDef(){
+  const canon = _rechCurrentCanon; if(!canon) return;
+  const defEl  = document.getElementById("rech-edit-def");
+  const saveBtn = document.getElementById("rech-save-def");
+  const newDef = defEl?.value?.trim()||"";
+  if(!_rechCache[canon]) _rechCache[canon]={custom:{},excl:[],loaded:true};
+  _rechCache[canon].custom.def = newDef;
+  if(saveBtn){ saveBtn.textContent="…"; saveBtn.disabled=true; }
+  await fbSet("rech_custom", canon, _rechCache[canon].custom).catch(()=>{});
+  if(saveBtn){ saveBtn.textContent="Sauvegardé ✓"; saveBtn.disabled=false; setTimeout(()=>{ saveBtn.textContent="Mettre à jour"; },2000); }
+}
+
+/* ── Générer depuis Wiktionnaire ── */
+async function rechFetchWikt(){
+  const canon = _rechCurrentCanon; if(!canon) return;
+  const btn = document.getElementById("rech-wikt-btn");
+  if(btn){ btn.textContent="Chargement…"; btn.disabled=true; }
+
+  // Utiliser la forme de base (non fléchie) avec accents pour Wiktionnaire
+  const normToE = getNormToE();
+  const lemma = findLemma(canon);
+  const base = (lemma && lemma!==canon) ? lemma : canon;
+  const display = (normToE[base]||base).split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+
+  try{
+    const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
+    const resp = await fetch(url);
+    const data = await resp.json();
+    const page = Object.values(data.query?.pages||{})[0];
+    const wikitext = page?.revisions?.[0]?.slots?.main?.["*"]
+                  || page?.revisions?.[0]?.["*"] || "";
+    const defEl = document.getElementById("rech-edit-def");
+    if(defEl) defEl.value = _rechParseWikt(wikitext) || "(Aucune définition trouvée sur Wiktionnaire)";
+  }catch{
+    const defEl = document.getElementById("rech-edit-def");
+    if(defEl) defEl.value = "(Erreur réseau)";
+  }
+  if(btn){ btn.textContent="Générer depuis Wiktionnaire"; btn.disabled=false; }
+}
+
+function _rechParseWikt(wikitext){
+  if(!wikitext) return null;
+  const frIdx = wikitext.indexOf("{{langue|fr}}");
+  if(frIdx<0) return null;
+  const after = wikitext.slice(frIdx);
+  const nextLang = after.slice(15).search(/\n==\s*\{\{langue\|(?!fr)/);
+  const fr = nextLang>0 ? after.slice(0, nextLang+15) : after;
+
+  const defs = [];
+  for(const line of fr.split("\n")){
+    if(!line.startsWith("# ")||line.startsWith("## ")) continue;
+    const d = line.slice(2)
+      .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,"$1")
+      .replace(/\{\{[^}]+\}\}/g,"")
+      .replace(/'''([^']+)'''/g,"$1")
+      .replace(/''([^']+)''/g,"$1")
+      .replace(/\s+/g," ").trim();
+    if(d) defs.push(d);
+    if(defs.length>=5) break;
+  }
+  return defs.join(" ⸱ ")||null;
+}
+
+/* ── Wiring ── */
+function wireRechercheAdmin(){
+  document.getElementById("rech-modules")?.addEventListener("click", e=>{
+    const btn = e.target.closest(".rech-mod-btn"); if(!btn) return;
+    rechToggleExclusion(_rechCurrentCanon, btn.dataset.mod, btn.dataset.label, btn);
+  });
+  document.getElementById("rech-save-def")?.addEventListener("click", rechSaveDef);
+  document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
+}
+
+window._onDictSelect = rechShowAdmin;

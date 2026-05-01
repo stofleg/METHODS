@@ -1076,6 +1076,7 @@ function dictSelectWord(w, idx){
     dictUpdateLinks(w);
   }
   document.getElementById("dict-result").style.display="";
+  window._onDictSelect?.(w);
 }
 
 function _dictRenderSugg(prefix){
@@ -1186,6 +1187,7 @@ function wireDictModal(){
   document.addEventListener("keydown", e=>{
     if(e.key==="Escape" && document.querySelector("#v-recherche.active")) closeDictModal();
   });
+  if(typeof wireRechercheAdmin==="function") wireRechercheAdmin();
 }
 
 /* ── Auth UI ── */
