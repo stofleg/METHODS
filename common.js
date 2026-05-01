@@ -684,6 +684,7 @@ function showView(id){
 }
 
 /* ── Modale définition ── */
+let _openDefCanon = null; // canon affiché dans la modale (pour mise à jour async)
 
 /* ── Modale définition simple (indice 📖) ── */
 function _renderWordLinks(container, list, label){
@@ -865,7 +866,26 @@ function openDef(canon, displayWord, defText, flechie){
     }
   }
 
+  _openDefCanon = canon;
   $("#def-modal").classList.add("open");
+
+  // Chargement lazy de la déf custom si pas encore en cache
+  if(defText===undefined && allIdxs.length>0 && !window._rechCache?.[canon]?.loaded){
+    const targetCanon = canon;
+    fbGet("rech_custom", canon).then(r=>{
+      if(_openDefCanon !== targetCanon) return;
+      if(!window._rechCache) window._rechCache={};
+      if(!window._rechCache[canon]) window._rechCache[canon]={custom:{},excl:[],loaded:false};
+      window._rechCache[canon].custom = r.ok && r.data ? r.data : {};
+      window._rechCache[canon].loaded = true;
+      const cd = window._rechCache[canon].custom?.def;
+      if(cd===undefined) return;
+      const bodyEl=$("#def-body"); if(!bodyEl) return;
+      if(!$("#def-modal")?.classList.contains("open")) return;
+      if(defs.length<=1) bodyEl.textContent = cd || "(définition absente)";
+      else { const p=bodyEl.querySelector("p"); if(p) p.textContent=cd||"(définition absente)"; }
+    }).catch(()=>{});
+  }
 }
 
 function closeDef(){

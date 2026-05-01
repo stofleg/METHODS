@@ -3,6 +3,23 @@
    THEMODS.JS
 ══════════════════════════════════════════ */
 
+/* ── Définitions personnalisées : chargement lazy pour les jeux THEMODS ── */
+const _customDefPending = new Set();
+
+function _loadCustomDefIfNeeded(canon, onLoaded){
+  if(window._rechCache?.[canon]?.loaded) return;
+  if(_customDefPending.has(canon)) return;
+  _customDefPending.add(canon);
+  fbGet("rech_custom", canon).then(r=>{
+    _customDefPending.delete(canon);
+    if(!window._rechCache) window._rechCache={};
+    if(!window._rechCache[canon]) window._rechCache[canon]={custom:{},excl:[],loaded:false};
+    window._rechCache[canon].custom = r.ok && r.data ? r.data : {};
+    window._rechCache[canon].loaded = true;
+    if(window._rechCache[canon].custom.def !== undefined) onLoaded();
+  }).catch(()=>{ _customDefPending.delete(canon); });
+}
+
 /* ── Exclusions par module (chargées depuis rech_modexcl/{theme}) ── */
 const _modExcl = {}; // theme → Set<canon>
 
@@ -399,12 +416,15 @@ function renderOdsGame(){
 
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>odsFnd.has(norm(f)));
+  const _odsCanon=norm(sortedForms[0]);
+  const _cdOds=window._rechCache?.[_odsCanon]?.loaded ? window._rechCache[_odsCanon].custom?.def : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  defText.textContent=cleanDef(entry.def)||"…";
+  defText.textContent=cleanDef(_cdOds!==undefined ? _cdOds : entry.def)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
+  if(_cdOds===undefined) _loadCustomDefIfNeeded(_odsCanon, ()=>renderOdsGame());
 
   const tilesDiv=document.createElement("div"); tilesDiv.className="gm-tiles";
   sortedForms.forEach(form=>{
@@ -647,12 +667,15 @@ function renderGMGame(){
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
+  const primaryCanon=norm(sortedForms[0]);
+  const _cdGM=window._rechCache?.[primaryCanon]?.loaded ? window._rechCache[primaryCanon].custom?.def : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  defText.textContent=cleanDef(entry.def)||"…";
+  defText.textContent=cleanDef(_cdGM!==undefined ? _cdGM : entry.def)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
+  if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
 
   const tilesDiv=document.createElement("div");
   tilesDiv.className="gm-tiles";
