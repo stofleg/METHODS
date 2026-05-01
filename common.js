@@ -417,6 +417,9 @@ function findLemma(w){
     }
   }
 
+  // Pluriel simple en -S : ARAS→ARA avant de tomber dans les strips
+  if(w.endsWith('S') && w.length>2){ const bare=w.slice(0,-1); if(cm.has(bare)) return bare; }
+
   // Strips
   const ER_FUTURE = new Set(['ERAI','ERAS','ERA','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERENT']);
   const strips = [
@@ -1055,6 +1058,27 @@ function dictSelectWord(w, idx){
         rallEl.appendChild(sp);
       }
     }
+    // Conjugaison : si ce mot est aussi une forme irrégulière, afficher lien vers l'infinitif
+    const conjEl=document.getElementById("dict-conj");
+    if(conjEl){
+      conjEl.innerHTML="";
+      const irr=_getIrregMap();
+      if(irr.has(w)){
+        const inf=irr.get(w);
+        if(inf && inf!==w && _getCMap().has(inf)){
+          const infIdx=_getCMap().get(inf);
+          const infDisp=(infIdx!==undefined ? DATA.e[infIdx] : null)||inf;
+          const lbl=document.createElement("strong"); lbl.textContent="Conjugaison";
+          conjEl.appendChild(lbl);
+          const sp=document.createElement("span");
+          sp.appendChild(document.createTextNode(" → "));
+          const a=document.createElement("a"); a.href="#"; a.className="def-link";
+          a.textContent=infDisp;
+          a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(inf);});
+          sp.appendChild(a); conjEl.appendChild(sp);
+        }
+      }
+    }
     dictUpdateLinks(display);
   } else {
     // Not a canonical entry
@@ -1062,6 +1086,7 @@ function dictSelectWord(w, idx){
     document.getElementById("dict-word").textContent=w;
     document.getElementById("dict-ana").innerHTML="";
     document.getElementById("dict-rall").innerHTML="";
+    document.getElementById("dict-conj").innerHTML="";
     const defEl=document.getElementById("dict-def");
     if(lemma && lemma!==w){
       defEl.innerHTML="";
