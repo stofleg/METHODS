@@ -1133,78 +1133,22 @@ function _dictRenderSugg(prefix){
   sugg.appendChild(frag);
 }
 
-let _dictGameKbH=0, _dictKbEl=null, _dictKbHandler=null;
-
-// Intercept the active game keyboard (.kk buttons) to type into dict-input.
-// Uses capture phase so it fires before wireKeyboard's bubble listener.
-function _startDictKbIntercept(kb, inp){
-  let _lastTouchMs=0;
-  _dictKbHandler=e=>{
-    // Prevent synthetic mousedown (fired after touchstart on mobile) from double-inserting.
-    if(e.type==="mousedown" && Date.now()-_lastTouchMs<500) return;
-    const kk=e.target.closest(".kk"); if(!kk) return;
-    e.preventDefault(); e.stopPropagation();
-    if(e.type==="touchstart") _lastTouchMs=Date.now();
-    const k=kk.dataset.k;
-    if(k==="CLR") inp.value="";
-    else if(k==="DEL") inp.value=inp.value.slice(0,-1);
-    else if(k==="OK"){
-      inp.dispatchEvent(new KeyboardEvent("keydown",{key:"Enter",bubbles:true,cancelable:true}));
-      return;
-    } else inp.value+=k;
-    inp.dispatchEvent(new Event("input",{bubbles:true}));
-  };
-  kb.addEventListener("mousedown",_dictKbHandler,{capture:true});
-  kb.addEventListener("touchstart",_dictKbHandler,{capture:true,passive:false});
-}
-function _stopDictKbIntercept(){
-  if(_dictKbEl && _dictKbHandler){
-    _dictKbEl.removeEventListener("mousedown",_dictKbHandler,{capture:true});
-    _dictKbEl.removeEventListener("touchstart",_dictKbHandler,{capture:true});
-  }
-  _dictKbEl=null; _dictKbHandler=null;
-}
-
-function _dictBdResize(){
-  const bd=document.getElementById("dict-bd"); if(!bd) return;
-  const vv=window.visualViewport;
-  const sysKbH=vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
-  bd.style.bottom=(sysKbH+_dictGameKbH)+"px";
-}
+let _rechFromView = null;
 
 function openDictModal(){
-  const m=document.getElementById("dict-modal"); if(!m) return;
-  if(m.classList.contains("open")) return;
-  m.classList.add("open");
+  _rechFromView = document.querySelector(".view.active")?.id || "v-select";
+  showView("v-recherche");
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=""; }
   document.getElementById("dict-sugg").innerHTML="";
   document.getElementById("dict-result").style.display="none";
   dictUpdateLinks("");
-  // Intercept the active game keyboard (em-kb / tm-kb) if visible on mobile
-  const kb=document.querySelector(".view.active .keyboard");
-  const kbVisible=kb&&window.getComputedStyle(kb).display!=="none";
-  if(kbVisible){
-    _dictKbEl=kb;
-    _dictGameKbH=kb.offsetHeight;
-    // Shrink modal so the panel doesn't overlap the keyboard at the top
-    m.style.bottom=_dictGameKbH+"px";
-    inp?.setAttribute("readonly","");
-    _startDictKbIntercept(kb,inp);
-  }
-  _dictBdResize();
-  window.visualViewport?.addEventListener("resize",_dictBdResize);
-  inp&&(inp.offsetHeight,inp.focus());
+  setTimeout(()=>inp?.focus(), 80);
 }
 
 function closeDictModal(){
-  document.getElementById("dict-modal")?.classList.remove("open");
-  window.visualViewport?.removeEventListener("resize",_dictBdResize);
-  const bd=document.getElementById("dict-bd"); if(bd) bd.style.bottom="";
-  _stopDictKbIntercept();
-  _dictGameKbH=0;
-  document.getElementById("dict-modal").style.bottom="";
-  document.getElementById("dict-input")?.removeAttribute("readonly");
+  showView(_rechFromView || "v-select");
+  _rechFromView = null;
 }
 
 function _wireDictBtn(el){
@@ -1215,7 +1159,9 @@ function _wireDictBtn(el){
 function wireDictModal(){
   _wireDictBtn(document.getElementById("btn-dict"));
   document.querySelectorAll(".btn-dict-kb").forEach(b=>_wireDictBtn(b));
-  document.getElementById("dict-close")?.addEventListener("click", closeDictModal);
+  document.getElementById("rech-btn-back")?.addEventListener("click", closeDictModal);
+  document.getElementById("em-btn-recherche")?.addEventListener("click", openDictModal);
+  document.getElementById("btn-tm-recherche")?.addEventListener("click", openDictModal);
 
   const inp=document.getElementById("dict-input");
   if(inp){
@@ -1229,19 +1175,16 @@ function wireDictModal(){
       if(e.key==="Enter"){
         const v=norm(inp.value); if(!v) return;
         const C=window.SEQODS_DATA?.c; if(!C) return;
-        // Correspondance exacte dans c[]
         const start=_dictBisect(C,v);
         if(start<C.length && C[start]===v){ dictSelectWord(v); return; }
-        // Forme fléchie valide (dans d[]) → traiter directement (évite de cliquer SERAC pour SERA)
         if(_getDSet().has(v)){ dictSelectWord(v); return; }
-        // Première suggestion canonique
         const first=document.querySelector("#dict-sugg li:not(.dict-no-result)");
         if(first) first.click();
       }
     });
   }
   document.addEventListener("keydown", e=>{
-    if(e.key==="Escape") closeDictModal();
+    if(e.key==="Escape" && document.querySelector("#v-recherche.active")) closeDictModal();
   });
 }
 
