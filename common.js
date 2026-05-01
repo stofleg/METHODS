@@ -768,6 +768,11 @@ function openDef(canon, displayWord, defText, flechie){
   const defs = defText !== undefined
     ? [{label:null, text:defText}]
     : allIdxs.map(i=>({label:null, text:F?.[i]||""}));
+  // Utiliser la définition personnalisée admin si disponible en cache
+  if(defs.length>0 && defText===undefined){
+    const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
+    if(cd !== undefined) defs[0] = {label:null, text:cd};
+  }
   if(allIdxs.length>0 && defText===undefined){
     const cl=_findConjLemma(canon);
     if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
@@ -1000,8 +1005,10 @@ function dictSelectWord(w, idx){
     document.getElementById("dict-word").textContent=display+(slash?' /':'');
 
     const defEl=document.getElementById("dict-def");
+    const _customDef = window._rechCache?.[w]?.loaded ? window._rechCache[w].custom?.def : undefined;
     if(allIdxs.length===1){
-      defEl.textContent=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim()||"(définition absente)";
+      const raw=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+      defEl.textContent=(_customDef!==undefined ? _customDef : raw)||"(définition absente)";
     } else {
       defEl.innerHTML="";
       allIdxs.forEach((i,n)=>{
@@ -1016,7 +1023,8 @@ function dictSelectWord(w, idx){
             lbl.textContent=dispI; defEl.appendChild(lbl);
           }
         }
-        const raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        let raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        if(n===0 && _customDef!==undefined) raw=_customDef;
         const p=document.createElement("p"); p.style.margin="0";
         p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
       });

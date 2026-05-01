@@ -3,6 +3,16 @@
    THEMODS.JS
 ══════════════════════════════════════════ */
 
+/* ── Exclusions par module (chargées depuis rech_modexcl/{theme}) ── */
+const _modExcl = {}; // theme → Set<canon>
+
+async function _loadModExcl(theme){
+  if(_modExcl.hasOwnProperty(theme)) return _modExcl[theme];
+  const r = await fbGet("rech_modexcl", theme);
+  _modExcl[theme] = new Set(r.ok && r.data?.words ? r.data.words : []);
+  return _modExcl[theme];
+}
+
 /* ── État ── */
 const LS_THEMODS = () => "THEMODS_STATE_" + (currentUser?.pseudo||"guest");
 let tmState = null;
@@ -238,7 +248,7 @@ function showSrsPrompt(theme, srsPool){
   prompt.style.display="";
 }
 
-function playTheme(theme){
+async function playTheme(theme){
   tmTheme=theme;
   if(theme==="gm"){ startGM(); return; }
   if(theme==="dn"){ startDN(); return; }
@@ -247,9 +257,16 @@ function playTheme(theme){
   const today=todayStr();
   const msg=document.getElementById("tm-home-msg"); if(msg){msg.textContent="";msg.className="tm-msg";}
 
-  const unseenPool=data.filter(({label})=>!getSt(theme,label).seen);
-  const srsPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; });
-  const lockedPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due>today; });
+  const excl = await _loadModExcl(theme);
+  const filterWords = sess => {
+    if(!excl.size) return sess;
+    const words = (sess.words||[]).filter(w=>!excl.has(norm(w)));
+    return words.length ? {...sess, words} : null;
+  };
+
+  const unseenPool=data.filter(({label})=>!getSt(theme,label).seen).map(filterWords).filter(Boolean);
+  const srsPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due<=today; }).map(filterWords).filter(Boolean);
+  const lockedPool=data.filter(({label})=>{ const s=getSt(theme,label); return s.seen&&!s.validated&&s.due>today; }).map(filterWords).filter(Boolean);
 
   const playPool = unseenPool.length ? unseenPool : srsPool.length ? srsPool : lockedPool;
   if(playPool.length){ startSession(theme, playPool[Math.floor(Math.random()*playPool.length)]); return; }

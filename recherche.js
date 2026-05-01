@@ -7,6 +7,9 @@ const FINALE_THEMES = ["able","age","ail","ais","al","ant","ard","ase","eau","er
 
 let _rechCurrentCanon = null;
 const _rechCache = {}; // canon → {custom:{def?}, excl:[], loaded:bool}
+window._rechCache = _rechCache; // exposé pour openDef() / dictSelectWord()
+
+const _rechModExclCache = {}; // moduleId → {loaded:bool, words:Set<canon>}
 
 function _isAdm(){ return currentUser?.pseudo?.toLowerCase()==="stof2"; }
 
@@ -21,6 +24,16 @@ async function _rechLoad(canon){
     excl:   r2.ok && r2.data?.modules ? r2.data.modules : [],
     loaded: true
   };
+}
+
+async function _rechLoadModExcl(moduleId){
+  if(_rechModExclCache[moduleId]?.loaded) return _rechModExclCache[moduleId].words;
+  const r = await fbGet("rech_modexcl", moduleId);
+  _rechModExclCache[moduleId] = {
+    loaded: true,
+    words: new Set(r.ok && r.data?.words ? r.data.words : [])
+  };
+  return _rechModExclCache[moduleId].words;
 }
 
 /* ── Détection des modules contenant ce mot ── */
@@ -97,6 +110,12 @@ async function rechShowAdmin(canon){
     }
   }
 
+  // Mettre à jour le bloc dict-def avec la définition personnalisée si elle existe
+  if(cache.custom.def !== undefined){
+    const dictDefEl = document.getElementById("dict-def");
+    if(dictDefEl) dictDefEl.textContent = cache.custom.def || "(définition absente)";
+  }
+
   const saveBtn = document.getElementById("rech-save-def");
   if(saveBtn) saveBtn.textContent = cache.custom.def!==undefined ? "Mettre à jour" : "Sauvegarder";
 }
@@ -110,7 +129,16 @@ async function rechToggleExclusion(canon, moduleId, label, btn){
   btn.className = "btn rech-mod-btn "+(excl?"btn-danger":"btn-ok");
   btn.textContent = (excl?"✕ ":"✓ ")+label;
   btn.disabled = true;
-  await fbSet("rech_excl", canon, {modules:c.excl}).catch(()=>{});
+
+  // Écriture parallèle : rech_excl/{canon} ET rech_modexcl/{moduleId}
+  const modWords = await _rechLoadModExcl(moduleId);
+  if(excl) modWords.add(canon); else modWords.delete(canon);
+
+  await Promise.all([
+    fbSet("rech_excl", canon, {modules:c.excl}),
+    fbSet("rech_modexcl", moduleId, {words:[...modWords]})
+  ]).catch(()=>{});
+
   btn.disabled = false;
 }
 
@@ -124,6 +152,11 @@ async function rechSaveDef(){
   _rechCache[canon].custom.def = newDef;
   if(saveBtn){ saveBtn.textContent="…"; saveBtn.disabled=true; }
   await fbSet("rech_custom", canon, _rechCache[canon].custom).catch(()=>{});
+
+  // Mettre à jour le bloc dict-def visible
+  const dictDefEl = document.getElementById("dict-def");
+  if(dictDefEl) dictDefEl.textContent = newDef || "(définition absente)";
+
   if(saveBtn){ saveBtn.textContent="Sauvegardé ✓"; saveBtn.disabled=false; setTimeout(()=>{ saveBtn.textContent="Mettre à jour"; },2000); }
 }
 
@@ -133,7 +166,6 @@ async function rechFetchWikt(){
   const btn = document.getElementById("rech-wikt-btn");
   if(btn){ btn.textContent="Chargement…"; btn.disabled=true; }
 
-  // Utiliser la forme de base (non fléchie) avec accents pour Wiktionnaire
   const normToE = getNormToE();
   const lemma = findLemma(canon);
   const base = (lemma && lemma!==canon) ? lemma : canon;
@@ -147,10 +179,15 @@ async function rechFetchWikt(){
     const wikitext = page?.revisions?.[0]?.slots?.main?.["*"]
                   || page?.revisions?.[0]?.["*"] || "";
     const defEl = document.getElementById("rech-edit-def");
-    if(defEl) defEl.value = _rechParseWikt(wikitext) || "(Aucune définition trouvée sur Wiktionnaire)";
+    if(defEl){
+      const wiktDef = _rechParseWikt(wikitext);
+      if(wiktDef){
+        const existing = defEl.value.trim();
+        defEl.value = existing ? existing + " " + wiktDef : wiktDef;
+      }
+    }
   }catch{
-    const defEl = document.getElementById("rech-edit-def");
-    if(defEl) defEl.value = "(Erreur réseau)";
+    // Erreur réseau silencieuse — le texte en cours reste intact
   }
   if(btn){ btn.textContent="Générer depuis Wiktionnaire"; btn.disabled=false; }
 }
@@ -163,7 +200,6 @@ function _rechParseWikt(wikitext){
   const nextLang = after.slice(15).search(/\n==\s*\{\{langue\|(?!fr)/);
   const fr = nextLang>0 ? after.slice(0, nextLang+15) : after;
 
-  const defs = [];
   for(const line of fr.split("\n")){
     if(!line.startsWith("# ")||line.startsWith("## ")) continue;
     const d = line.slice(2)
@@ -172,10 +208,9 @@ function _rechParseWikt(wikitext){
       .replace(/'''([^']+)'''/g,"$1")
       .replace(/''([^']+)''/g,"$1")
       .replace(/\s+/g," ").trim();
-    if(d) defs.push(d);
-    if(defs.length>=5) break;
+    if(d) return d;
   }
-  return defs.join(" ⸱ ")||null;
+  return null;
 }
 
 /* ── Wiring ── */
