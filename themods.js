@@ -37,9 +37,6 @@ function getSt(theme, label){
   return s;
 }
 
-/* ── Droits éditeur ── */
-function isEditor(){ return currentUser?.pseudo?.toLowerCase()==="stof2"; }
-
 /* ── Dict ODS ── */
 let TM_DICT = null;
 function getTmDict(){
@@ -87,8 +84,6 @@ let tmTheme=null, tmSession=null;
 let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmEntryIdx=0, gmFound=new Set();
 let odsEntryIdx=0, odsFnd=new Set();
-let tmBrowse=false, tmBrowseIdx=0;
-let tmEdWord=null; // canon du mot en cours d'édition dans les finales
 
 /* ── Navigation sous-vues ── */
 function showTmView(id){
@@ -287,9 +282,7 @@ function startSession(theme, session){
         session={...session,cousins:{...(session.cousins||{}),...extra}};
     }
   }
-  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true; tmBrowse=false; tmEdWord=null;
-  const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display="none";
-  const delBtn=document.getElementById("dn-del-btn"); if(delBtn) delBtn.style.display="none";
+  tmSession=session; tmFound=new Set(); tmSolutions=false; tmNoHelp=true;
   getSt(theme, session.label).seen=true;
   getSt(theme, session.label).lastSeen=todayStr();
   persistThemods().catch(()=>{});
@@ -350,8 +343,6 @@ function startOds(theme){
   if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
   odsEntryIdx=prog.idx; odsFnd=new Set(); tmSolutions=false; tmNoHelp=true;
   showTmView("tv-game");
-  const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display=isEditor()?"":"none";
-  const delBtnGm=document.getElementById("dn-del-btn"); if(delBtnGm) delBtnGm.style.display="none";
   document.getElementById("tm-gtitle").textContent=THEME_NAMES[theme]||theme;
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderOdsGame();
@@ -391,21 +382,10 @@ function renderOdsGame(){
 
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>odsFnd.has(norm(f)));
-  const custom=getEntryCustom(entry);
-
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
-  if(custom.img){
-    const img=document.createElement("img"); img.src=custom.img; img.alt="";
-    img.style.cssText="max-width:100%;max-height:180px;border-radius:8px;display:block;margin:0 auto 10px;object-fit:contain;";
-    defDiv.appendChild(img);
-  }
   const defText=document.createElement("span");
-  defText.textContent=(custom.def!==undefined?custom.def:cleanDef(entry.def))||"…";
-  if(custom.def!==undefined||custom.img){
-    const mark=document.createElement("span"); mark.textContent=" ✎"; mark.style.cssText="font-size:10px;opacity:.45;";
-    defText.appendChild(mark);
-  }
+  defText.textContent=cleanDef(entry.def)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
 
@@ -467,7 +447,6 @@ function renderTmGame(){
     const canon=norm(word);
     const display=getNormToE()[canon]||word;
     const cousin=sess.cousins?.[canon]||null;
-    const revealed=tmFound.has(i)||tmSolutions;
     if(tmFound.has(i)){
       li.classList.add("found","clickable");
       setElWord(li,display,canon,"",cousin);
@@ -476,23 +455,6 @@ function renderTmGame(){
       li.classList.add("revealed","clickable");
       setElWord(li,display,canon,"",cousin);
       li.addEventListener("click",()=>openDef(canon,display));
-    }
-    if(revealed){
-      const customDef=getEntryCustom({forms:[display]}).def;
-      if(customDef){
-        const defSpan=document.createElement("span");
-        defSpan.className="slot-custom-def";
-        defSpan.textContent=" — "+customDef;
-        li.appendChild(defSpan);
-      }
-      if(isEditor()){
-        const edBtn=document.createElement("span");
-        edBtn.className="slot-ed-icon";
-        edBtn.textContent="✏";
-        edBtn.title="Modifier la définition";
-        edBtn.addEventListener("click",e=>{e.stopPropagation();tmEdWord=canon;openGMEditor();});
-        li.appendChild(edBtn);
-      }
     }
     list.appendChild(li);
   });
@@ -580,115 +542,20 @@ function isGMResolved(){
   return tmSolutions||entry.forms.every(f=>gmFound.has(norm(f)));
 }
 
-/* ── Feuilletage (stof2 uniquement) ── */
-function stopBrowse(){
-  tmBrowse=false;
-  tmSolutions=false; tmFound=new Set();
-  if(tmTheme==="gm"){ gmFound=new Set(); renderGMGame(); }
-  else if(isOds(tmTheme)){ odsFnd=new Set(); renderOdsGame(); }
-  else if(tmTheme==="dn"){ dnFound=false; renderDNGame(); }
-  else renderTmGame();
-  updateTmBtn(); setTmMsg("");
-}
-function toggleBrowse(){ tmBrowse ? stopBrowse() : startBrowse(); }
-function startBrowse(){
-  if(!isEditor()) return;
-  tmBrowse=true;
-  if(tmTheme==="gm" || isOds(tmTheme) || tmTheme==="dn"){
-    // position déjà gérée par gmEntryIdx / odsEntryIdx / dnEntryIdx
-  } else {
-    const data=window.THEMODS_DATA?.[tmTheme]; if(!data) return;
-    const idx=data.findIndex(s=>s.label===tmSession?.label);
-    tmBrowseIdx=idx>=0?idx:0;
-  }
-  tmNoHelp=false;
-  browseShowCurrent();
-}
-function browseShowCurrent(){
-  tmSolutions=true;
-  if(tmTheme==="gm"){ gmFound=new Set(); renderGMGame(); }
-  else if(isOds(tmTheme)){ odsFnd=new Set(); renderOdsGame(); }
-  else if(tmTheme==="dn"){ dnFound=false; renderDNGame(); }
-  else {
-    const data=window.THEMODS_DATA?.[tmTheme]; if(!data) return;
-    tmSession=data[tmBrowseIdx%data.length];
-    tmFound=new Set(); tmEdWord=null; renderTmGame();
-  }
-  setTmMsg(""); updateTmBtn();
-}
-function browseNext(){
-  if(!tmBrowse) return;
-  if(tmTheme==="gm"){
-    const all=getAllGMEntries();
-    gmEntryIdx=(gmEntryIdx+1)%all.length; gmFound=new Set();
-  } else if(isOds(tmTheme)){
-    const all=getAllOdsEntries(tmTheme);
-    odsEntryIdx=(odsEntryIdx+1)%all.length; odsFnd=new Set();
-  } else if(tmTheme==="dn"){
-    const prog=getDNProgress(); const len=prog.order?.length||getAllDNEntries().length;
-    dnEntryIdx=(dnEntryIdx+1)%len; prog.idx=dnEntryIdx; dnFound=false;
-  } else {
-    const data=window.THEMODS_DATA?.[tmTheme]; if(!data) return;
-    tmBrowseIdx=(tmBrowseIdx+1)%data.length;
-  }
-  browseShowCurrent();
-}
-function browsePrev(){
-  if(!tmBrowse) return;
-  if(tmTheme==="gm"){
-    const all=getAllGMEntries();
-    gmEntryIdx=(gmEntryIdx-1+all.length)%all.length; gmFound=new Set();
-  } else if(isOds(tmTheme)){
-    const all=getAllOdsEntries(tmTheme);
-    odsEntryIdx=(odsEntryIdx-1+all.length)%all.length; odsFnd=new Set();
-  } else if(tmTheme==="dn"){
-    const prog=getDNProgress(); const len=prog.order?.length||getAllDNEntries().length;
-    dnEntryIdx=(dnEntryIdx-1+len)%len; prog.idx=dnEntryIdx; dnFound=false;
-  } else {
-    const data=window.THEMODS_DATA?.[tmTheme]; if(!data) return;
-    tmBrowseIdx=(tmBrowseIdx-1+data.length)%data.length;
-  }
-  browseShowCurrent();
-}
-
 function updateTmBtn(){
   const sol=document.getElementById("tm-btn-sol");
   const solKb=document.getElementById("tm-btn-sol-kb");
-  const browseBtn=document.getElementById("tm-btn-browse");
-  const nextBtn=document.getElementById("tm-btn-next");
-  if(browseBtn){
-    browseBtn.style.display=isEditor()?"":"none";
-    browseBtn.textContent=tmBrowse?"⏹ Arrêter":"Feuilleter";
-    browseBtn.classList.toggle("btn-danger", tmBrowse);
-  }
-  const prevBtn=document.getElementById("tm-btn-prev");
-  if(prevBtn) prevBtn.style.display=tmBrowse?"":"none";
-  if(nextBtn) nextBtn.style.display=tmBrowse?"":"none";
-  // ✏️ et 🗑️ : masqués pendant le feuilletage, restaurés ensuite
-  const edBtnU=document.getElementById("gm-ed-btn");
-  const delBtnU=document.getElementById("dn-del-btn");
-  const isGmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
-  if(edBtnU) edBtnU.style.display=(isEditor()&&(isGmLike?!tmBrowse:tmBrowse))?"":"none";
-  if(delBtnU) delBtnU.style.display=(!tmBrowse&&isEditor()&&tmTheme==="dn")?"":"none";
   const gmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
-
   [sol,solKb].forEach(b=>{
     if(!b) return;
-    b.style.display=tmBrowse?"none":"";
     if(gmLike){
       const resolved=tmTheme==="gm"?isGMResolved():tmTheme==="dn"?isDNResolved():isOdsResolved();
-      if(resolved){
-        b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
-      } else {
-        b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary");
-      }
+      if(resolved){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
+      else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
       return;
     }
-    if(tmSolutions){
-      b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary");
-    } else {
-      b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary");
-    }
+    if(tmSolutions){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
+    else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
   });
 }
 
@@ -703,198 +570,7 @@ function tmReplay(){
   else renderTmHome();
 }
 
-/* ── Éditeur (GM + ODS) ── */
-let gmEdPendingImg = undefined; // undefined=inchangé, null=effacé, string=nouvelle image
 
-function gmEntryKey(entry){
-  return entry.forms.slice().map(f=>norm(f)).sort().join("|");
-}
-function getEntryCustom(entry){
-  const th=tmTheme||"gm";
-  return tmState.themes?.[th]?._custom?.[gmEntryKey(entry)] || {};
-}
-function setEntryCustom(entry, data){
-  const th=tmTheme||"gm";
-  if(!tmState.themes) tmState.themes={};
-  if(!tmState.themes[th]) tmState.themes[th]={};
-  if(!tmState.themes[th]._custom) tmState.themes[th]._custom={};
-  const k=gmEntryKey(entry);
-  const prev=tmState.themes[th]._custom[k]||{};
-  tmState.themes[th]._custom[k]={...prev,...data};
-  persistThemods().catch(()=>{});
-}
-function gmGetCustom(entry){ return getEntryCustom(entry); }
-function gmSetCustom(entry, data){ setEntryCustom(entry, data); }
-function currentEntry(){
-  if(tmTheme==="gm") return currentGMEntry();
-  if(isOds(tmTheme)) return currentOdsEntry(tmTheme);
-  if(tmEdWord) return {forms:[getNormToE()[tmEdWord]||tmEdWord]};
-  return null;
-}
-
-function openTmMultiEditor(){
-  const sess=tmSession; if(!sess) return;
-  const container=document.getElementById("tm-med-defs"); if(!container) return;
-  container.innerHTML="";
-  sess.words.forEach(word=>{
-    const canon=norm(word);
-    const display=getNormToE()[canon]||word;
-    const custom=getEntryCustom({forms:[display]}).def||"";
-    const div=document.createElement("div"); div.style.cssText="display:flex;flex-direction:column;gap:4px;";
-    const hdr=document.createElement("div"); hdr.style.cssText="display:flex;align-items:center;gap:8px;";
-    const lbl=document.createElement("div"); lbl.style.cssText="font-size:13px;font-weight:800;letter-spacing:.05em;color:var(--accent);";
-    lbl.textContent=display;
-    const wiktBtn=document.createElement("button"); wiktBtn.className="btn"; wiktBtn.style.cssText="font-size:11px;padding:2px 7px;";
-    wiktBtn.textContent="📖 Wiktionnaire";
-    const ta=document.createElement("textarea"); ta.className="gm-ed-textarea"; ta.rows=2;
-    ta.dataset.canon=canon; ta.value=custom;
-    wiktBtn.addEventListener("click",()=>fetchWiktForWord(display,ta,wiktBtn));
-    hdr.appendChild(lbl); hdr.appendChild(wiktBtn);
-    div.appendChild(hdr); div.appendChild(ta); container.appendChild(div);
-  });
-  document.getElementById("tm-multi-editor").style.display="";
-}
-function closeTmMultiEditor(){ document.getElementById("tm-multi-editor").style.display="none"; }
-function saveTmMultiEditor(){
-  const sess=tmSession; if(!sess) return;
-  document.querySelectorAll("#tm-med-defs textarea[data-canon]").forEach(ta=>{
-    const canon=ta.dataset.canon;
-    const display=getNormToE()[canon]||canon;
-    setEntryCustom({forms:[display]},{def:ta.value.trim()});
-  });
-  closeTmMultiEditor();
-  renderTmGame();
-}
-async function fetchWiktForWord(word,ta,btn){
-  const origLabel=btn.textContent;
-  btn.disabled=true; btn.textContent="⏳";
-  const w=word.toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
-  try{
-    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(w));
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const data=await resp.json();
-    const frSections=data.fr||[];
-    if(!frSections.length){ btn.textContent="Aucune def"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
-    const parts=[];
-    frSections.forEach(section=>{
-      const pos=(section.partOfSpeech||"").toLowerCase();
-      let posLabel="";
-      if(/verbe/i.test(pos)) posLabel="v.";
-      else if(/nom.*féminin|féminin.*nom/i.test(pos)) posLabel="n.f.";
-      else if(/nom/i.test(pos)) posLabel="n.m.";
-      else if(/adjectif/i.test(pos)) posLabel="adj.";
-      else if(/adverbe/i.test(pos)) posLabel="adv.";
-      else if(/interjection/i.test(pos)) posLabel="interj.";
-      else if(/pronom/i.test(pos)) posLabel="pron.";
-      const defs=section.definitions||[];
-      if(defs.length){
-        const defObj=defs[0];
-        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
-        if(defText) parts.push((posLabel?posLabel+" ":"")+defText);
-      }
-    });
-    if(!parts.length){ btn.textContent="Def vide"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000); return; }
-    ta.value=parts.length===1?parts[0]:parts.map((p,i)=>(i+1)+". "+p).join(" – ");
-    btn.textContent="✅"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},1800);
-  }catch(err){
-    btn.textContent="❌"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000);
-  }
-}
-function openGMEditor(){
-  if(tmTheme&&tmTheme!=="gm"&&tmTheme!=="dn"&&!isOds(tmTheme)){
-    if(!tmEdWord){ openTmMultiEditor(); return; }
-  }
-  const entry=currentEntry(); if(!entry) return;
-  const custom=getEntryCustom(entry);
-  gmEdPendingImg=undefined;
-  const defEl=document.getElementById("gm-ed-def");
-  const imgEl=document.getElementById("gm-ed-img");
-  const imgWrap=document.getElementById("gm-ed-img-wrap");
-  const delBtn=document.getElementById("gm-ed-del-img");
-  if(defEl) defEl.value=custom.def!==undefined?custom.def:(cleanDef(entry.def)||"");
-  if(imgEl) imgEl.src=custom.img||"";
-  if(imgWrap) imgWrap.style.display=custom.img?"":"none";
-  if(delBtn) delBtn.style.display=custom.img?"":"none";
-  document.getElementById("gm-editor").style.display="";
-  setTimeout(()=>defEl?.focus(),80);
-}
-function closeGMEditor(){
-  document.getElementById("gm-editor").style.display="none";
-  gmEdPendingImg=undefined;
-}
-function saveGMEditor(){
-  const entry=currentEntry(); if(!entry) return;
-  const defEl=document.getElementById("gm-ed-def");
-  const data={};
-  if(defEl) data.def=defEl.value.trim();
-  if(gmEdPendingImg!==undefined){
-    const prev=getEntryCustom(entry).img;
-    if(prev&&prev.includes("firebasestorage")){
-      const pathMatch=prev.match(/\/o\/([^?]+)/);
-      if(pathMatch) fbStorageDelete(decodeURIComponent(pathMatch[1])).catch(()=>{});
-    }
-    data.img=gmEdPendingImg;
-  }
-  setEntryCustom(entry, data);
-  closeGMEditor();
-  if(tmTheme==="gm") renderGMGame();
-  else if(isOds(tmTheme)) renderOdsGame();
-  else renderTmGame();
-}
-async function pasteGMImage(){
-  try{
-    const items=await navigator.clipboard.read();
-    for(const item of items){
-      const imgType=item.types.find(t=>t.startsWith("image/"));
-      if(imgType){
-        const blob=await item.getType(imgType);
-        const jpegBlob=await resizeGMImage(blob,500);
-        // Aperçu immédiat
-        const previewUrl=URL.createObjectURL(jpegBlob);
-        const imgEl=document.getElementById("gm-ed-img");
-        const imgWrap=document.getElementById("gm-ed-img-wrap");
-        const delBtn=document.getElementById("gm-ed-del-img");
-        if(imgEl) imgEl.src=previewUrl;
-        if(imgWrap) imgWrap.style.display="";
-        if(delBtn) delBtn.style.display="";
-        // Upload Firebase Storage
-        setTmMsg("Envoi…","warn");
-        const entry=currentEntry(); if(!entry) return;
-        const folder=isOds(tmTheme)?"odsimages/"+tmTheme:"gmimages";
-        const path=`${folder}/${currentUser?.pseudo||"guest"}/${gmEntryKey(entry)}.jpg`;
-        try{
-          const storageUrl=await fbStorageUpload(path, jpegBlob);
-          gmEdPendingImg=storageUrl;
-          URL.revokeObjectURL(previewUrl);
-          if(imgEl) imgEl.src=storageUrl;
-          setTmMsg("Image ajoutée.","ok");
-        }catch(e){
-          setTmMsg("Erreur upload : "+e.message,"err");
-          gmEdPendingImg=null; // annule
-          if(imgWrap) imgWrap.style.display="none";
-        }
-        return;
-      }
-    }
-    setTmMsg("Aucune image dans le presse-papier.","warn");
-  }catch(e){
-    setTmMsg("Accès presse-papier refusé.","err");
-  }
-}
-function resizeGMImage(blob, maxW){
-  return new Promise(resolve=>{
-    const img=new Image(), url=URL.createObjectURL(blob);
-    img.onload=()=>{
-      URL.revokeObjectURL(url);
-      const scale=Math.min(1,maxW/img.width);
-      const c=document.createElement("canvas");
-      c.width=Math.round(img.width*scale); c.height=Math.round(img.height*scale);
-      c.getContext("2d").drawImage(img,0,0,c.width,c.height);
-      c.toBlob(b=>resolve(b),"image/jpeg",0.75);
-    };
-    img.src=url;
-  });
-}
 
 /* ── Graphies multiples ── */
 function getAllGMEntries(){
@@ -935,7 +611,6 @@ function startGM(){
   gmEntryIdx=prog.idx; gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
   setDictBtnVisible(false);
   showTmView("tv-game");
-  const edBtn=document.getElementById("gm-ed-btn"); if(edBtn) edBtn.style.display=isEditor()?"":"none";
   document.getElementById("tm-gtitle").textContent="Graphies multiples";
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderGMGame();
@@ -955,22 +630,10 @@ function renderGMGame(){
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
-  const custom=gmGetCustom(entry);
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
-  if(custom.img){
-    const img=document.createElement("img");
-    img.src=custom.img; img.alt="";
-    img.style.cssText="max-width:100%;max-height:180px;border-radius:8px;display:block;margin:0 auto 10px;object-fit:contain;";
-    defDiv.appendChild(img);
-  }
   const defText=document.createElement("span");
-  defText.textContent=(custom.def!==undefined?custom.def:cleanDef(entry.def))||"…";
-  if(custom.def!==undefined||custom.img){
-    const mark=document.createElement("span");
-    mark.textContent=" ✎"; mark.style.cssText="font-size:10px;opacity:.45;";
-    defText.appendChild(mark);
-  }
+  defText.textContent=cleanDef(entry.def)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
 
@@ -1047,16 +710,7 @@ function currentDNEntry(){
     dnEntryIdx++; prog.idx=dnEntryIdx;
   }
 }
-function deleteDNEntry(){
-  const entry=currentDNEntry(); if(!entry) return;
-  setDNCustom(entry,{deleted:true});
-  const prog=getDNProgress();
-  dnEntryIdx++; prog.idx=dnEntryIdx; dnFound=false; tmSolutions=false;
-  closeDNEditor();
-  setTmMsg("Carte supprimée.","warn"); updateTmBtn(); renderDNGame();
-  if(tmKb) tmKb.clear();
-  persistThemods().catch(()=>{});
-}
+
 function isDNResolved(){ return dnFound||tmSolutions; }
 
 function findDNVerb(canon){
@@ -1075,13 +729,9 @@ function startDN(){
     prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; prog.done=0;
   }
   if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
-  dnEntryIdx=prog.idx; dnFound=false; tmSolutions=false; tmNoHelp=true; tmBrowse=false;
+  dnEntryIdx=prog.idx; dnFound=false; tmSolutions=false; tmNoHelp=true;
   setDictBtnVisible(false);
   showTmView("tv-game");
-  const edBtn=document.getElementById("gm-ed-btn");
-  if(edBtn) edBtn.style.display=isEditor()?"":"none";
-  const delBtn=document.getElementById("dn-del-btn");
-  if(delBtn) delBtn.style.display=isEditor()?"":"none";
   document.getElementById("tm-gtitle").textContent="Double nature";
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   updateTmBtn(); setTmMsg(""); renderDNGame();
@@ -1098,12 +748,7 @@ function renderDNGame(){
   const canon=entry.canon;
   const revealed=isDNResolved();
 
-  // Defs effectives (custom override or default)
-  const custom=getDNCustom(entry);
-  const defs=entry.defs.map((d,i)=>({
-    d: d.d,
-    f: custom.defs?.[i]!==undefined ? custom.defs[i] : d.f
-  }));
+  const defs=entry.defs;
 
   // Blocs de définitions AU-DESSUS des tuiles
   defs.forEach((def,i)=>{
@@ -1171,141 +816,6 @@ function validateDNWord(n){
   persistThemods().catch(()=>{});
 }
 
-/* ── Éditeur Double Nature ── */
-function getDNCustom(entry){
-  return tmState.themes?.dn?._custom?.[entry.canon] || {};
-}
-function setDNCustom(entry, data){
-  if(!tmState.themes) tmState.themes={};
-  if(!tmState.themes.dn) tmState.themes.dn={};
-  if(!tmState.themes.dn._custom) tmState.themes.dn._custom={};
-  const prev=tmState.themes.dn._custom[entry.canon]||{};
-  tmState.themes.dn._custom[entry.canon]={...prev,...data};
-  persistThemods().catch(()=>{});
-}
-
-function openDNEditor(){
-  const entry=currentDNEntry(); if(!entry) return;
-  const custom=getDNCustom(entry);
-  const container=document.getElementById("dn-ed-defs"); if(!container) return;
-  container.innerHTML="";
-  entry.defs.forEach((def,i)=>{
-    const label=document.createElement("label");
-    label.style.cssText="display:block;font-size:12px;font-weight:700;margin-bottom:4px;color:var(--accent);";
-    label.textContent="Définition "+(i+1)+" ("+def.d+")";
-    const ta=document.createElement("textarea");
-    ta.className="gm-ed-textarea"; ta.rows=3; ta.dataset.defIdx=i;
-    ta.value=custom.defs?.[i]!==undefined ? custom.defs[i] : (def.f||"");
-    container.appendChild(label);
-    container.appendChild(ta);
-  });
-  const res=document.getElementById("dn-ed-wikt-res"); if(res) res.innerHTML="";
-  document.getElementById("dn-editor").style.display="";
-  container.querySelector("textarea")?.focus();
-}
-function closeDNEditor(){
-  document.getElementById("dn-editor").style.display="none";
-  const res=document.getElementById("dn-ed-wikt-res"); if(res) res.innerHTML="";
-}
-function saveDNEditor(){
-  const entry=currentDNEntry(); if(!entry) return;
-  const container=document.getElementById("dn-ed-defs"); if(!container) return;
-  const defs=[];
-  container.querySelectorAll("textarea").forEach((ta,i)=>{ defs[i]=ta.value.trim(); });
-  setDNCustom(entry,{defs});
-  closeDNEditor();
-  renderDNGame();
-}
-async function fetchWiktForGM(){
-  const entry=currentEntry(); if(!entry) return;
-  const btn=document.getElementById("gm-ed-wikt");
-  const defEl=document.getElementById("gm-ed-def");
-  if(!btn||!defEl) return;
-  const origLabel=btn.textContent;
-  btn.disabled=true; btn.textContent="⏳ Chargement…";
-  const word=entry.forms[0].toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
-  try{
-    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(word));
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const data=await resp.json();
-    const frSections=data.fr||[];
-    if(!frSections.length){ btn.textContent="Aucune définition trouvée"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500); return; }
-    const parts=[];
-    frSections.forEach(section=>{
-      const pos=(section.partOfSpeech||"").toLowerCase();
-      let posLabel="";
-      if(/verbe/i.test(pos)) posLabel="v.";
-      else if(/nom.*féminin|féminin.*nom/i.test(pos)) posLabel="n.f.";
-      else if(/nom/i.test(pos)) posLabel="n.m.";
-      else if(/adjectif/i.test(pos)) posLabel="adj.";
-      else if(/adverbe/i.test(pos)) posLabel="adv.";
-      else if(/interjection/i.test(pos)) posLabel="interj.";
-      else if(/pronom/i.test(pos)) posLabel="pron.";
-      const defs=section.definitions||[];
-      if(defs.length){
-        const defObj=defs[0];
-        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
-        if(defText) parts.push((posLabel?posLabel+" ":"")+defText);
-      }
-    });
-    if(!parts.length){ btn.textContent="Définition vide"; setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500); return; }
-    defEl.value=parts.length===1?parts[0]:parts.map((p,i)=>(i+1)+". "+p).join(" – ");
-    btn.textContent="✅ Importé";
-    setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2000);
-  }catch(err){
-    btn.textContent="❌ Erreur de chargement";
-    setTimeout(()=>{btn.disabled=false;btn.textContent=origLabel;},2500);
-  }
-}
-async function fetchWiktForDN(){
-  const entry=currentDNEntry(); if(!entry) return;
-  const res=document.getElementById("dn-ed-wikt-res"); if(!res) return;
-  res.innerHTML="<span style='color:var(--muted);font-size:12px;'>Chargement…</span>";
-  const word=entry.canon.toLowerCase().replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
-  try{
-    const resp=await fetch("https://fr.wiktionary.org/api/rest_v1/page/definition/"+encodeURIComponent(word));
-    if(!resp.ok) throw new Error("HTTP "+resp.status);
-    const data=await resp.json();
-    const frSections=data.fr||[];
-    if(!frSections.length){ res.innerHTML="<span style='color:var(--muted);font-size:12px;'>Aucune définition trouvée.</span>"; return; }
-    res.innerHTML="";
-    frSections.forEach(section=>{
-      const h=document.createElement("div");
-      h.style.cssText="font-size:11px;font-weight:900;color:var(--accent);margin:8px 0 4px;text-transform:uppercase;";
-      h.textContent=section.partOfSpeech||"";
-      res.appendChild(h);
-      (section.definitions||[]).slice(0,3).forEach((defObj,di)=>{
-        const defText=(typeof defObj==="string"?defObj:(defObj.definition||"")).replace(/<[^>]*>/g,"").trim();
-        if(!defText) return;
-        const row=document.createElement("div");
-        row.style.cssText="display:flex;align-items:flex-start;gap:6px;margin-bottom:6px;";
-        const txt=document.createElement("span");
-        txt.style.cssText="font-size:12px;flex:1;line-height:1.4;color:var(--txt);";
-        txt.textContent=(di+1)+". "+defText;
-        row.appendChild(txt);
-        const container=document.getElementById("dn-ed-defs");
-        (container?container.querySelectorAll("textarea"):[]).forEach((ta,si)=>{
-          const btn=document.createElement("button");
-          btn.className="btn"; btn.style.cssText="font-size:11px;padding:2px 6px;flex-shrink:0;";
-          btn.textContent="→"+(si+1);
-          btn.addEventListener("click",()=>{
-            const pos=(section.partOfSpeech||"").toLowerCase();
-            let posLabel="";
-            if(/verbe/i.test(pos)) posLabel="v.";
-            else if(/nom/i.test(pos)) posLabel=/féminin/i.test(pos)?"n.f.":"n.m.";
-            else if(/adjectif/i.test(pos)) posLabel="adj.";
-            else if(/adverbe/i.test(pos)) posLabel="adv.";
-            ta.value=(posLabel?posLabel+" ":"")+defText;
-          });
-          row.appendChild(btn);
-        });
-        res.appendChild(row);
-      });
-    });
-  }catch(e){
-    res.innerHTML="<span style='color:var(--err);font-size:12px;'>Erreur : "+e.message+"</span>";
-  }
-}
 
 /* ── Init (une seule fois) ── */
 function initThemods(){
@@ -1323,7 +833,7 @@ function initThemods(){
     // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
     document.getElementById("tv-game")?.addEventListener("mousedown", e=>{
       if(!window.matchMedia("(pointer:fine)").matches) return;
-      if(tmBrowse) return;
+
       if(e.target.closest("input,button,a,textarea")) return;
       e.preventDefault();
       tmRefocus();
@@ -1365,59 +875,18 @@ function initThemods(){
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
 
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
-      tmBrowse=false;
       if(isOds(tmTheme)) renderTmOds();
       else if(window.THEMODS_DATA?.[tmTheme]&&!["gm","dn","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
       else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
       else renderTmHome();
     });
 
-    // GM / DN / finales éditeur
-    document.getElementById("gm-ed-btn")?.addEventListener("click",()=>{
-      if(tmTheme==="dn") openDNEditor(); else openGMEditor();
-    });
-    document.getElementById("gm-ed-close")?.addEventListener("click",()=>closeGMEditor());
-    document.getElementById("gm-ed-cancel")?.addEventListener("click",()=>closeGMEditor());
-    document.getElementById("gm-ed-save")?.addEventListener("click",()=>saveGMEditor());
-    document.getElementById("tm-med-close")?.addEventListener("click",()=>closeTmMultiEditor());
-    document.getElementById("tm-med-cancel")?.addEventListener("click",()=>closeTmMultiEditor());
-    document.getElementById("tm-med-save")?.addEventListener("click",()=>saveTmMultiEditor());
-    // DN éditeur
-    document.getElementById("dn-del-btn")?.addEventListener("click",()=>deleteDNEntry());
-    document.getElementById("dn-ed-close")?.addEventListener("click",()=>closeDNEditor());
-    document.getElementById("dn-ed-cancel")?.addEventListener("click",()=>closeDNEditor());
-    document.getElementById("dn-ed-save")?.addEventListener("click",()=>saveDNEditor());
-    document.getElementById("dn-ed-del")?.addEventListener("click",()=>deleteDNEntry());
-    document.getElementById("gm-ed-wikt")?.addEventListener("click",()=>fetchWiktForGM());
-    document.getElementById("dn-ed-wikt")?.addEventListener("click",()=>fetchWiktForDN());
-    document.getElementById("dn-editor")?.addEventListener("click",e=>{
-      if(e.target===document.getElementById("dn-editor")) closeDNEditor();
-    });
-    document.getElementById("gm-ed-del-img")?.addEventListener("click",()=>{
-      gmEdPendingImg=null;
-      const imgWrap=document.getElementById("gm-ed-img-wrap");
-      const delBtn=document.getElementById("gm-ed-del-img");
-      if(imgWrap) imgWrap.style.display="none";
-      if(delBtn) delBtn.style.display="none";
-    });
-    document.getElementById("gm-ed-search")?.addEventListener("click",()=>{
-      const entry=currentEntry(); if(!entry) return;
-      const word=entry.forms[0].replace(/[Œœ]/g,"oe").replace(/[Ææ]/g,"ae");
-      window.open("https://www.google.com/search?q="+encodeURIComponent(word)+"&tbm=isch","_blank","noopener");
-    });
-    // Fermer en cliquant sur l'overlay (hors panneau)
-    document.getElementById("gm-editor")?.addEventListener("click",e=>{
-      if(e.target===document.getElementById("gm-editor")) closeGMEditor();
-    });
     document.getElementById("btn-finales")?.addEventListener("click",()=>renderTmFinales());
     document.getElementById("btn-back-finales")?.addEventListener("click",()=>renderTmHome());
     document.getElementById("btn-ods")?.addEventListener("click",()=>renderTmOds());
     document.getElementById("btn-back-ods")?.addEventListener("click",()=>renderTmHome());
     document.getElementById("btn-verbes")?.addEventListener("click",()=>renderTmVerbes());
     document.getElementById("btn-back-verbes")?.addEventListener("click",()=>renderTmHome());
-    document.getElementById("tm-btn-browse")?.addEventListener("click",()=>toggleBrowse());
-    document.getElementById("tm-btn-prev")?.addEventListener("click",()=>browsePrev());
-    document.getElementById("tm-btn-next")?.addEventListener("click",()=>browseNext());
 
     document.querySelectorAll("#v-themods .tc[data-theme]").forEach(card=>{
       card.addEventListener("click",()=>playTheme(card.dataset.theme));
