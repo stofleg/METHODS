@@ -501,7 +501,12 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 #rech-kb{padding:5px 4px 14px;display:none;flex-shrink:0;}
 #rech-kb .kb-disp::after{content:'|';animation:rech-cur .8s step-end infinite;color:var(--accent);}
 @keyframes rech-cur{50%{opacity:0;}}
-@media(max-width:640px){#rech-kb{display:block;}#rech-tab-dict .dict-inp{display:none;}}
+@media(max-width:640px){
+  #rech-kb{display:block;}
+  [data-rech-tab="dict"] .dict-inp{display:none;}
+  [data-rech-tab="search"] #rech-kb-top{display:none;}
+  [data-rech-tab="search"] #dict-sugg{display:none;}
+}
 /* Onglets Recherche */
 .rech-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--stroke);}
 .rech-tab{flex:1;padding:8px 0;font-size:12px;font-weight:700;letter-spacing:.06em;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
@@ -884,7 +889,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <button id="btn-dict" class="hidden" aria-label="Recherche">🔍</button>
 
 <!-- ══ VUE RECHERCHE ══ -->
-<div id="v-recherche" class="view">
+<div id="v-recherche" class="view" data-rech-tab="dict">
   <div class="card rech-outer">
     <div class="rech-hdr">
       <button id="rech-btn-back" class="btn" style="font-size:14px;padding:5px 9px;">←</button>
@@ -895,12 +900,15 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
       <button id="rech-tab-btn-dict" class="rech-tab active">Dictionnaire</button>
       <button id="rech-tab-btn-search" class="rech-tab">Recherche</button>
     </div>
-    <!-- Onglet Dictionnaire -->
-    <div id="rech-tab-dict" class="rech-body">
+    <!-- Champ de saisie partagé (hors onglets) -->
+    <div id="rech-input-wrap" style="padding:10px 14px 0;flex-shrink:0;">
       <input id="dict-input" class="dict-inp" type="text"
         autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
         placeholder="Saisir un mot…"/>
       <ul id="dict-sugg" class="dict-sugg"></ul>
+    </div>
+    <!-- Onglet Dictionnaire -->
+    <div id="rech-tab-dict" class="rech-body" style="padding-top:6px;">
       <div id="dict-result" style="display:none;">
         <p class="dict-result-word" id="dict-word"></p>
         <p id="dict-def" class="modal-def"></p>
@@ -959,7 +967,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.83</div>
+  pointer-events:none;user-select:none;">v3.84</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -971,7 +979,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v83";
+  const CURRENT_CACHE="methods-v84";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

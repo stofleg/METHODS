@@ -1193,6 +1193,7 @@ let _rechActiveTab = 'dict';
 
 function _rechSwitchTab(tab){
   _rechActiveTab = tab;
+  document.getElementById("v-recherche")?.setAttribute("data-rech-tab", tab);
   document.getElementById("rech-tab-btn-dict")?.classList.toggle("active", tab==="dict");
   document.getElementById("rech-tab-btn-search")?.classList.toggle("active", tab==="search");
   const dictEl=document.getElementById("rech-tab-dict");
@@ -1202,16 +1203,13 @@ function _rechSwitchTab(tab){
   const spec=document.getElementById("rech-kb-specials");
   if(spec) spec.style.display = tab==="search" ? "" : "none";
   const inp=document.getElementById("dict-input");
-  const kbTop=document.getElementById("rech-kb-top");
-  const disp=document.getElementById("rech-kb-disp");
   if(tab==="search"){
     inp?.setAttribute("inputmode","none");
-    inp?.removeAttribute("readonly");
-    if(kbTop) kbTop.style.display="none";
-    if(inp){ inp.value=""; inp.placeholder="Motif de recherche…"; inp.focus(); }
+    if(inp){ inp.value=""; inp.placeholder="Motif de recherche…"; }
+    setTimeout(()=>inp?.focus(), 50);
   } else {
     inp?.removeAttribute("inputmode");
-    if(kbTop) kbTop.style.display="";
+    const disp=document.getElementById("rech-kb-disp");
     if(inp){ inp.value=""; inp.placeholder="Saisir un mot…"; }
     if(disp) disp.textContent="";
   }
@@ -1331,6 +1329,13 @@ function _rechExec(q){
   return res;
 }
 
+let _rechEntrySet=null;
+function _getEntrySet(){
+  if(_rechEntrySet) return _rechEntrySet;
+  _rechEntrySet=new Set(window.SEQODS_DATA?.c||[]);
+  return _rechEntrySet;
+}
+
 const _RECH_MAX=500;
 function _rechRenderResults(words){
   const el=document.getElementById("rech-search-res"); if(!el) return;
@@ -1340,13 +1345,16 @@ function _rechRenderResults(words){
   const groups={};
   for(const w of shown)(groups[w.length]=groups[w.length]||[]).push(w);
   const normToE=getNormToE();
+  const entries=_getEntrySet();
   const lens=Object.keys(groups).map(Number).sort((a,b)=>a-b);
   let html=`<div class="rech-count">${total} mot${total>1?"s":""}${total>_RECH_MAX?` · ${_RECH_MAX} affichés`:""}</div>`;
   for(const len of lens){
     const g=groups[len];
     html+=`<div class="rech-group-hdr">${len} lettres · ${g.length}</div><div class="rech-group">`;
     for(const w of g){
-      const disp=(normToE[w]||w).split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+      const raw=(normToE[w]||w).split(",")[0].trim().replace(/\*/g,"");
+      const isEntry=entries.has(w);
+      const disp=isEntry ? raw.toUpperCase() : raw.toLowerCase();
       html+=`<span class="rech-res-word" data-canon="${w}">${disp}</span>`;
     }
     html+="</div>";
