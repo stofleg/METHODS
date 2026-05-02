@@ -171,11 +171,7 @@ function updateTmStats(){
   const gmEl=document.getElementById("gm-desc");
   if(gmEl) gmEl.textContent="1 808 groupes"+fmtPct(prog.done,gmTotal);
 
-  // Double Nature
-  const dnProg=getDNProgress();
-  const dnTotal=getAllDNEntries().length;
-  const dnEl=document.getElementById("dn-desc");
-  if(dnEl) dnEl.textContent=dnTotal+" mots"+fmtPct(dnProg.done,dnTotal);
+
 
   // Finales
   const finales=["able","age","ique","oir","ure","ard","ant","if","in","ail","ais","ois","erie","et","ette","ide","ite","eau","ot","um","eux","al","ase","ose","eur","ier","ien","isme","iste"];
@@ -268,7 +264,7 @@ function showSrsPrompt(theme, srsPool){
 async function playTheme(theme){
   tmTheme=theme;
   if(theme==="gm"){ startGM(); return; }
-  if(theme==="dn"){ startDN(); return; }
+
   if(isOds(theme)){ startOds(theme); return; }
   const data=window.THEMODS_DATA?.[theme]; if(!data) return;
   const today=todayStr();
@@ -504,7 +500,7 @@ function validateTmWord(raw){
     return;
   }
   if(tmTheme==="gm"){ validateGMWord(n); return; }
-  if(tmTheme==="dn"){ validateDNWord(n); return; }
+
   if(isOds(tmTheme)){ validateOdsWord(n); return; }
   const sess=tmSession; if(!sess) return;
   const matched=[];
@@ -546,7 +542,7 @@ function validateTmWord(raw){
 function showTmSolutions(){
   tmNoHelp=false;
   if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
-  if(tmTheme==="dn"){ tmSolutions=true; renderDNGame(); updateTmBtn(); return; }
+
   if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
   const sess=tmSession; if(!sess) return;
   tmSolutions=true;
@@ -582,11 +578,11 @@ function isGMResolved(){
 function updateTmBtn(){
   const sol=document.getElementById("tm-btn-sol");
   const solKb=document.getElementById("tm-btn-sol-kb");
-  const gmLike=tmTheme==="gm"||tmTheme==="dn"||isOds(tmTheme);
+  const gmLike=tmTheme==="gm"||isOds(tmTheme);
   [sol,solKb].forEach(b=>{
     if(!b) return;
     if(gmLike){
-      const resolved=tmTheme==="gm"?isGMResolved():tmTheme==="dn"?isDNResolved():isOdsResolved();
+      const resolved=tmTheme==="gm"?isGMResolved():isOdsResolved();
       if(resolved){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
       else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
       return;
@@ -731,133 +727,6 @@ function validateGMWord(n){
   updateTmBtn();
 }
 
-/* ── Double Nature ── */
-let dnEntryIdx=0, dnFound=false;
-
-function getDNProgress(){
-  if(!tmState.themes) tmState.themes={};
-  if(!tmState.themes.dn) tmState.themes.dn={};
-  if(!tmState.themes.dn._p) tmState.themes.dn._p={idx:0,done:0,order:null};
-  return tmState.themes.dn._p;
-}
-function getAllDNEntries(){ return window.THEMODS_DATA?.dn||[]; }
-function currentDNEntry(){
-  const all=getAllDNEntries(), prog=getDNProgress();
-  while(true){
-    const realIdx=prog.order?.[dnEntryIdx];
-    if(realIdx===undefined) return null;
-    const entry=all[realIdx];
-    if(!tmState.themes?.dn?._custom?.[entry.canon]?.deleted) return entry;
-    dnEntryIdx++; prog.idx=dnEntryIdx;
-  }
-}
-
-function isDNResolved(){ return dnFound||tmSolutions; }
-
-function findDNVerb(canon){
-  const C=window.SEQODS_DATA?.c||[], F=window.SEQODS_DATA?.f||[];
-  if(!C.length) return null;
-  for(const cand of [canon+"R", canon+"ER"]){
-    const i=_dictBisect(C, cand);
-    if(C[i]===cand && (_posLabel(F[i]||"")||"")[0]==="v") return cand;
-  }
-  return null;
-}
-
-function startDN(){
-  const all=getAllDNEntries(), prog=getDNProgress();
-  if(!prog.order||prog.order.length!==all.length){
-    prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; prog.done=0;
-  }
-  if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
-  dnEntryIdx=prog.idx; dnFound=false; tmSolutions=false; tmNoHelp=true;
-  setDictBtnVisible(false);
-  showTmView("tv-game");
-  document.getElementById("tm-gtitle").textContent="Double nature";
-  const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
-  updateTmBtn(); setTmMsg(""); renderDNGame();
-  if(tmKb) tmKb.clear();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
-}
-
-function renderDNGame(){
-  const all=getAllDNEntries();
-  const entry=currentDNEntry();
-  const list=document.getElementById("tm-wlist"); if(!list) return;
-  list.innerHTML="";
-  if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
-  const canon=entry.canon;
-  const revealed=isDNResolved();
-
-  const defs=entry.defs;
-
-  // Blocs de définitions AU-DESSUS des tuiles
-  defs.forEach((def,i)=>{
-    const block=document.createElement("div");
-    block.className="gm-def"+(revealed?" clickable":"");
-    const text=(def.f||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim()||"(définition absente)";
-    block.textContent=text;
-    if(revealed) block.addEventListener("click",()=>openDef(canon, def.d, def.f));
-    list.appendChild(block);
-  });
-
-  // Tuiles (initiale + cases vides) EN DESSOUS
-  const tilesDiv=document.createElement("div"); tilesDiv.className="gm-tiles";
-  const row=document.createElement("div"); row.className="gm-row";
-  for(let i=0;i<canon.length;i++){
-    const t=document.createElement("span");
-    if(revealed){ t.className="gt "+(dnFound?"ok":"miss"); t.textContent=canon[i]; }
-    else if(i===0){ t.className="gt init"; t.textContent=canon[0]; }
-    else { t.className="gt empty"; }
-    row.appendChild(t);
-  }
-  if(revealed){
-    row.style.cursor="pointer";
-    row.addEventListener("click",()=>openDef(canon, defs[0].d, defs[0].f));
-  }
-  tilesDiv.appendChild(row);
-  list.appendChild(tilesDiv);
-
-  // Note verbe éventuel
-  if(revealed){
-    const verb=findDNVerb(canon);
-    if(verb){
-      const C=window.SEQODS_DATA?.c||[], F=window.SEQODS_DATA?.f||[];
-      const vi=_dictBisect(C,verb);
-      const note=document.createElement("div");
-      note.style.cssText="text-align:center;font-size:13px;color:var(--muted);padding:6px 16px 2px;font-style:italic;cursor:pointer;";
-      note.textContent="→ verbe "+verb+" également valide";
-      note.addEventListener("click",()=>openDef(verb, verb, vi>=0&&C[vi]===verb?F[vi]:""));
-      list.appendChild(note);
-    }
-  }
-
-  // Compteur
-  if(revealed){
-    const nav=document.createElement("div"); nav.className="gm-nav";
-    const pos=document.createElement("span"); pos.className="gm-pos";
-    pos.textContent=(dnEntryIdx+1)+" / "+all.length;
-    nav.appendChild(pos); list.appendChild(nav);
-  }
-}
-
-function validateDNWord(n){
-  const entry=currentDNEntry(); if(!entry) return;
-  if(norm(entry.canon)!==n){
-    setTmMsg(getTmDict().has(n)?"Hors-jeu — mot valide mais pas dans cette liste.":"Mot non valide.",
-             getTmDict().has(n)?"warn":"err");
-    return;
-  }
-  dnFound=true;
-  const prog=getDNProgress();
-  prog.done=(prog.done||0)+1; prog.idx=dnEntryIdx+1;
-  setTmMsg("✓ Trouvé !","ok");
-  setDictBtnVisible(true);
-  renderDNGame(); updateTmBtn();
-  persistThemods().catch(()=>{});
-}
-
-
 /* ── Init (une seule fois) ── */
 function initThemods(){
   if(!tmInited){
@@ -890,14 +759,6 @@ function initThemods(){
           if(tmKb) tmKb.clear();
           persistThemods().catch(()=>{});
         } else { showTmSolutions(); }
-      } else if(tmTheme==="dn"){
-        if(isDNResolved()){
-          const prog=getDNProgress();
-          dnEntryIdx++; prog.idx=dnEntryIdx; dnFound=false; tmSolutions=false;
-          updateTmBtn(); setTmMsg(""); renderDNGame();
-          if(tmKb) tmKb.clear();
-          persistThemods().catch(()=>{});
-        } else { showTmSolutions(); }
       } else if(isOds(tmTheme)){
         if(isOdsResolved()){
           const prog=getOdsProgress(tmTheme);
@@ -917,7 +778,7 @@ function initThemods(){
 
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
       if(isOds(tmTheme)) renderTmOds();
-      else if(window.THEMODS_DATA?.[tmTheme]&&!["gm","dn","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
+      else if(window.THEMODS_DATA?.[tmTheme]&&!["gm","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
       else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
       else renderTmHome();
     });

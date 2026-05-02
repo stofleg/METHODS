@@ -49,7 +49,6 @@ function rechFindModules(canon){
   for(const s of D.gm||[]){
     if(s.entries?.some(e=>e.forms?.some(f=>norm(f)===canon))){ out.push({id:"gm",label:"Graphies multiples"}); break; }
   }
-  if((D.dn||[]).some(e=>norm(e.canon)===canon)) out.push({id:"dn",label:"Double nature"});
   for(const [th,lbl] of [["vi","Intransitifs"],["vt","Transitifs"],["vd","Défectifs"]]){
     for(const s of D[th]||[]){
       if(s.words?.some(w=>norm(w)===canon)){ out.push({id:th,label:"V. "+lbl.toLowerCase()}); break; }
