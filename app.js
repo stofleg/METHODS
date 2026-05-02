@@ -170,6 +170,21 @@ function initNav(){
   // Settings — shared panel
   document.getElementById("btn-tm-settings")?.addEventListener("click", ()=>openSettingsPanel());
   document.getElementById("em-btn-settings")?.addEventListener("click", ()=>openSettingsPanel());
+  // Swipe latéral ENTREMODS↔THEMODS
+  let _swSX=0, _swSY=0;
+  const _swStart=e=>{_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
+  document.getElementById("v-entremods")?.addEventListener("touchstart",_swStart,{passive:true});
+  document.getElementById("v-entremods")?.addEventListener("touchend",e=>{
+    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
+    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)) return;
+    if(dx<0){ emChronoStop(); showView("v-themods"); setDictBtnVisible(true); initThemods(); }
+  },{passive:true});
+  document.getElementById("v-themods")?.addEventListener("touchstart",_swStart,{passive:true});
+  document.getElementById("v-themods")?.addEventListener("touchend",e=>{
+    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
+    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)) return;
+    if(dx>0){ showView("v-entremods"); ensureEntreModsInit(); }
+  },{passive:true});
   // F1
   document.addEventListener("keydown", e=>{
     if(e.key==="F1"){
