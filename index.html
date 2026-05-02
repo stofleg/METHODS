@@ -441,15 +441,6 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 #btn-dict.hidden{opacity:0;pointer-events:none;transform:scale(.75);}
 @media(max-width:640px){ #btn-dict{ display:none; } }
 
-/* Bouton dict intégré dans le clavier mobile */
-.btn-dict-kb{width:34px;height:34px;border-radius:8px;border:0;
-  background:#2d3a55;color:#eaf0ff;font-size:18px;flex-shrink:0;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 2px 0 rgba(0,0,0,.4);cursor:pointer;}
-@media(prefers-color-scheme:light){.btn-dict-kb{background:#fff;color:#0b1220;box-shadow:0 2px 0 rgba(0,0,0,.18);}}
-.btn-dict-kb.hidden{display:none!important;}
-/* Dict keyboard — compact, always show on mobile */
-
 /* ── Modal dictionnaire ── */
 .dict-inp{width:100%;padding:9px 14px;border-radius:12px;
   border:1px solid var(--stroke);background:rgba(255,255,255,.07);
@@ -500,13 +491,17 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 @media(min-width:641px){#em-btn-solutions-kb{display:none;}}
 /* Clavier agrandi (confort iPhone 13 mini) */
 #em-kb{padding:5px 4px 14px;}
-#em-kb .kb-rows,#tm-kb .kb-rows{gap:6px;}
-#em-kb .kb-row,#tm-kb .kb-row{gap:4px;}
-#em-kb .kk,#tm-kb .kk{height:46px;font-size:19px;border-radius:10px;}
-#em-kb .kk.wide,#tm-kb .kk.wide{font-size:15px;}
-#em-kb .kb-top,#tm-kb .kb-top{padding:3px 3px 6px;}
-#em-kb .kb-disp,#tm-kb .kb-disp{font-size:16px;min-height:34px;}
+#em-kb .kb-rows,#tm-kb .kb-rows,#rech-kb .kb-rows{gap:6px;}
+#em-kb .kb-row,#tm-kb .kb-row,#rech-kb .kb-row{gap:4px;}
+#em-kb .kk,#tm-kb .kk,#rech-kb .kk{height:46px;font-size:19px;border-radius:10px;}
+#em-kb .kk.wide,#tm-kb .kk.wide,#rech-kb .kk.wide{font-size:15px;}
+#em-kb .kb-top,#tm-kb .kb-top,#rech-kb .kb-top{padding:3px 3px 6px;}
+#em-kb .kb-disp,#tm-kb .kb-disp,#rech-kb .kb-disp{font-size:16px;min-height:34px;}
 #tm-kb{padding:5px 4px 14px;}
+#rech-kb{padding:5px 4px 14px;display:none;flex-shrink:0;}
+#rech-kb .kb-disp::after{content:'|';animation:rech-cur .8s step-end infinite;color:var(--accent);}
+@keyframes rech-cur{50%{opacity:0;}}
+@media(max-width:640px){#rech-kb{display:block;}#v-recherche .dict-inp{display:none;}}
 /* Slots ENTREMODS : trait plein, légèrement plus hauts */
 #v-entremods .slot{border-style:solid;min-height:40px;font-size:15px;}
 #v-entremods .slot.found{border-color:rgba(45,212,212,.7);background:rgba(45,212,212,.18);}
@@ -666,7 +661,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   <!-- Clavier mobile ENTREMODS -->
   <div id="em-kb" class="keyboard">
     <div class="kb-top">
-      <button class="btn-dict-kb hidden" aria-label="Dictionnaire">📚</button>
       <div id="em-kb-disp" class="kb-disp"></div>
       <button id="em-btn-solutions-kb" class="btn btn-primary" style="font-size:12px;padding:5px 10px;">Jouer</button>
     </div>
@@ -824,7 +818,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   <!-- Clavier mobile THEMODS -->
   <div id="tm-kb" class="keyboard">
     <div class="kb-top">
-      <button class="btn-dict-kb hidden" aria-label="Dictionnaire">📚</button>
       <div id="tm-kb-disp" class="kb-disp"></div>
       <button id="tm-btn-sol-kb" class="btn btn-danger" style="font-size:12px;padding:5px 10px;">Solutions</button>
     </div>
@@ -920,6 +913,17 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         </div>
       </div>
     </div>
+    <!-- Clavier mobile Recherche -->
+    <div id="rech-kb" class="keyboard">
+      <div class="kb-top">
+        <div id="rech-kb-disp" class="kb-disp"></div>
+      </div>
+      <div class="kb-rows">
+        <div class="kb-row"><button class="kk" data-k="A">A</button><button class="kk" data-k="Z">Z</button><button class="kk" data-k="E">E</button><button class="kk" data-k="R">R</button><button class="kk" data-k="T">T</button><button class="kk" data-k="Y">Y</button><button class="kk" data-k="U">U</button><button class="kk" data-k="I">I</button><button class="kk" data-k="O">O</button><button class="kk" data-k="P">P</button></div>
+        <div class="kb-row"><button class="kk" data-k="Q">Q</button><button class="kk" data-k="S">S</button><button class="kk" data-k="D">D</button><button class="kk" data-k="F">F</button><button class="kk" data-k="G">G</button><button class="kk" data-k="H">H</button><button class="kk" data-k="J">J</button><button class="kk" data-k="K">K</button><button class="kk" data-k="L">L</button><button class="kk" data-k="M">M</button></div>
+        <div class="kb-row"><button class="kk wide clr" data-k="CLR">✕</button><button class="kk wide" data-k="DEL">⌫</button><button class="kk" data-k="W">W</button><button class="kk" data-k="X">X</button><button class="kk" data-k="C">C</button><button class="kk" data-k="V">V</button><button class="kk" data-k="B">B</button><button class="kk" data-k="N">N</button><button class="kk wide enter" data-k="OK">OK</button></div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -928,7 +932,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.77</div>
+  pointer-events:none;user-select:none;">v3.78</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -940,7 +944,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v77";
+  const CURRENT_CACHE="methods-v78";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

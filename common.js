@@ -937,7 +937,6 @@ function wireKeyboard(kbId, dispId, msgId, onKey){
 
 function setDictBtnVisible(v){
   document.getElementById("btn-dict")?.classList.toggle("hidden", !v);
-  document.querySelectorAll(".btn-dict-kb").forEach(b=>b.classList.toggle("hidden",!v));
 }
 
 // Extrait la nature grammaticale depuis le début d'une définition ("v.", "n.m.", "adj.", etc.)
@@ -999,6 +998,8 @@ function dictSelectWord(w, idx){
   const DATA=window.SEQODS_DATA; if(!DATA) return;
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=w; }
+  const _disp=document.getElementById("rech-kb-disp");
+  if(_disp) _disp.textContent=w;
   document.getElementById("dict-sugg").innerHTML="";
 
   let allIdxs=_findAllIdxs(w);
@@ -1194,6 +1195,8 @@ function openDictModal(){
   showView("v-recherche");
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=""; }
+  const disp=document.getElementById("rech-kb-disp");
+  if(disp) disp.textContent="";
   document.getElementById("dict-sugg").innerHTML="";
   document.getElementById("dict-result").style.display="none";
   dictUpdateLinks("");
@@ -1220,6 +1223,8 @@ function wireDictModal(){
   const inp=document.getElementById("dict-input");
   if(inp){
     inp.addEventListener("input", e=>{
+      const disp=document.getElementById("rech-kb-disp");
+      if(disp) disp.textContent=e.target.value;
       document.getElementById("dict-result").style.display="none";
       dictUpdateLinks(e.target.value);
       _dictRenderSugg(norm(e.target.value));
@@ -1240,6 +1245,40 @@ function wireDictModal(){
   document.addEventListener("keydown", e=>{
     if(e.key==="Escape" && document.querySelector("#v-recherche.active")) closeDictModal();
   });
+  // Clavier Recherche (mobile)
+  const rechKb=document.getElementById("rech-kb");
+  if(rechKb){
+    const _rechKbPress=k=>{
+      const i=document.getElementById("dict-input");
+      const d=document.getElementById("rech-kb-disp");
+      if(!i) return;
+      if(k==="CLR"){ i.value=""; }
+      else if(k==="DEL"){ i.value=i.value.slice(0,-1); }
+      else if(k==="OK"){
+        const v=norm(i.value); if(!v) return;
+        const C=window.SEQODS_DATA?.c; if(!C) return;
+        const s=_dictBisect(C,v);
+        if(s<C.length&&C[s]===v){ dictSelectWord(v); return; }
+        if(_getDSet().has(v)){ dictSelectWord(v); return; }
+        document.querySelector("#dict-sugg li:not(.dict-no-result)")?.click();
+        return;
+      } else { i.value+=k; }
+      if(d) d.textContent=i.value;
+      document.getElementById("dict-result").style.display="none";
+      dictUpdateLinks(i.value);
+      _dictRenderSugg(norm(i.value));
+    };
+    rechKb.addEventListener("mousedown",e=>{
+      const k=e.target.closest(".kk"); if(!k) return;
+      e.preventDefault(); _rechKbPress(k.dataset.k);
+    });
+    rechKb.addEventListener("touchstart",e=>{
+      const k=e.target.closest(".kk"); if(!k) return;
+      e.preventDefault(); _rechKbPress(k.dataset.k);
+    },{passive:false});
+    rechKb.addEventListener("click",e=>{ if(e.target.closest(".kk")) e.preventDefault(); });
+  }
+
   if(typeof wireRechercheAdmin==="function") wireRechercheAdmin();
 }
 
