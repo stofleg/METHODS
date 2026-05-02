@@ -151,18 +151,6 @@ function initSelect(){
 
 /* ── Navigation globale ── */
 function initNav(){
-  // THEMODS → METHODS
-  document.getElementById("btn-tm-back")?.addEventListener("click", ()=>{
-    showView("v-entremods");
-    ensureEntreModsInit();
-  });
-  // METHODS → THEMODS
-  document.getElementById("em-btn-to-themods")?.addEventListener("click", ()=>{
-    emChronoStop();
-    showView("v-themods");
-    setDictBtnVisible(true);
-    initThemods();
-  });
   // Déconnexion
   const doLogout=()=>{ emChronoStop(); clearSession(); currentUser=null; setDictBtnVisible(false); showView("v-auth"); };
   document.getElementById("btn-tm-logout")?.addEventListener("click", doLogout);

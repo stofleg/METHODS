@@ -597,7 +597,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="em-shdr">
       <span id="em-user-chip" class="user-chip"></span>
       <button id="em-btn-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <button id="em-btn-to-themods" class="btn" style="font-size:10px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">THEM</span><span class="l2">ODS</span></button>
       <div class="logo em-hdr-logo"><span class="l1">METH</span><span class="l2">ODS</span></div>
       <button id="em-btn-recherche" class="btn" style="font-size:16px;padding:5px 9px;">🔍</button>
       <button id="em-btn-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
@@ -680,7 +679,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="tm-shdr">
       <span id="tm-user-chip" class="user-chip"></span>
       <button id="btn-tm-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <button id="btn-tm-back" class="btn" style="font-size:10px;font-weight:900;padding:5px 9px;letter-spacing:.04em;"><span class="l1">METH</span><span class="l2">ODS</span></button>
       <div class="logo tm-hdr-logo"><span class="l1">THEM</span><span class="l2">ODS</span></div>
       <button id="btn-tm-recherche" class="btn" style="font-size:16px;padding:5px 9px;">🔍</button>
       <button id="btn-tm-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
@@ -932,7 +930,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.79</div>
+  pointer-events:none;user-select:none;">v3.80</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -944,7 +942,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v79";
+  const CURRENT_CACHE="methods-v80";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
