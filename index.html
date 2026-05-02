@@ -503,9 +503,7 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 @keyframes rech-cur{50%{opacity:0;}}
 @media(max-width:640px){
   #rech-kb{display:block;}
-  [data-rech-tab="dict"] .dict-inp{display:none;}
-  [data-rech-tab="search"] #rech-kb-top{display:none;}
-  [data-rech-tab="search"] #dict-sugg{display:none;}
+  #rech-kb-top{display:none;}
 }
 /* Onglets Recherche */
 .rech-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--stroke);}
@@ -903,6 +901,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <!-- Champ de saisie partagé (hors onglets) -->
     <div id="rech-input-wrap" style="padding:10px 14px 0;flex-shrink:0;">
       <input id="dict-input" class="dict-inp" type="text"
+        inputmode="none"
         autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
         placeholder="Saisir un mot…"/>
       <ul id="dict-sugg" class="dict-sugg"></ul>
@@ -967,7 +966,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.84</div>
+  pointer-events:none;user-select:none;">v3.85</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -979,7 +978,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v84";
+  const CURRENT_CACHE="methods-v85";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

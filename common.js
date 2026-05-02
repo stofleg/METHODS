@@ -1203,16 +1203,11 @@ function _rechSwitchTab(tab){
   const spec=document.getElementById("rech-kb-specials");
   if(spec) spec.style.display = tab==="search" ? "" : "none";
   const inp=document.getElementById("dict-input");
-  if(tab==="search"){
-    inp?.setAttribute("inputmode","none");
-    if(inp){ inp.value=""; inp.placeholder="Motif de recherche…"; }
-    setTimeout(()=>inp?.focus(), 50);
-  } else {
-    inp?.removeAttribute("inputmode");
-    const disp=document.getElementById("rech-kb-disp");
-    if(inp){ inp.value=""; inp.placeholder="Saisir un mot…"; }
-    if(disp) disp.textContent="";
+  if(inp){
+    inp.value="";
+    inp.placeholder = tab==="search" ? "Motif de recherche…" : "Saisir un mot…";
   }
+  if(tab==="search") setTimeout(()=>inp?.focus(), 50);
   if(tab==="dict"){
     document.getElementById("dict-result")?.style.setProperty("display","none");
     const s=document.getElementById("dict-sugg"); if(s) s.innerHTML="";
