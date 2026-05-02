@@ -1217,17 +1217,16 @@ function _rechSwitchTab(tab){
 let _rechWordSet=null;
 function _getWordSet(){
   if(_rechWordSet) return _rechWordSet;
-  const c=window.SEQODS_DATA?.c; if(!c) return new Set();
-  _rechWordSet=new Set(c);
+  _rechWordSet=new Set(getDictArr());
   return _rechWordSet;
 }
 
 let _rechAnagramMap=null;
 function _getAnagramMap(){
   if(_rechAnagramMap) return _rechAnagramMap;
-  const c=window.SEQODS_DATA?.c; if(!c) return new Map();
+  const arr=getDictArr(); if(!arr.length) return new Map();
   _rechAnagramMap=new Map();
-  for(const w of c){
+  for(const w of arr){
     const k=w.split("").sort().join("");
     if(!_rechAnagramMap.has(k)) _rechAnagramMap.set(k,[]);
     _rechAnagramMap.get(k).push(w);
@@ -1289,7 +1288,7 @@ function _rechTriggerSearch(raw){
 function _rechExec(q){
   const parsed=_rechParseQuery(q);
   if(!parsed) return [];
-  const words=window.SEQODS_DATA?.c; if(!words||!words.length) return [];
+  const words=getDictArr(); if(!words.length) return [];
   let res=[];
   switch(parsed.type){
     case "anagram":{ const k=parsed.letters.split("").sort().join(""); res=(_getAnagramMap().get(k)||[]).slice(); break; }

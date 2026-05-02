@@ -901,16 +901,16 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
         placeholder="Saisir un mot…"/>
       <ul id="dict-sugg" class="dict-sugg"></ul>
-      <div class="modal-links">
-        <a id="dict-wikt" href="#" target="_blank" rel="noopener" class="btn btn-ok" style="font-size:12px;text-decoration:none;">📖 Wiktionnaire</a>
-        <a id="dict-img" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:12px;text-decoration:none;">🔍 Image</a>
-      </div>
       <div id="dict-result" style="display:none;">
         <p class="dict-result-word" id="dict-word"></p>
         <p id="dict-def" class="modal-def"></p>
         <div id="dict-ana" class="modal-sec"></div>
         <div id="dict-rall" class="modal-sec"></div>
         <div id="dict-conj" class="modal-sec"></div>
+        <div class="modal-links" style="margin-top:10px;">
+          <a id="dict-wikt" href="#" target="_blank" rel="noopener" class="btn btn-ok" style="font-size:12px;text-decoration:none;">📖 Wiktionnaire</a>
+          <a id="dict-img" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:12px;text-decoration:none;">🔍 Image</a>
+        </div>
       </div>
       <!-- ── Admin stof2 ── -->
       <div id="rech-admin" style="display:none;">
@@ -959,7 +959,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.81</div>
+  pointer-events:none;user-select:none;">v3.82</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -971,7 +971,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v81";
+  const CURRENT_CACHE="methods-v82";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
