@@ -501,7 +501,7 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 #rech-kb{padding:5px 4px 14px;display:none;flex-shrink:0;}
 #rech-kb .kb-disp::after{content:'|';animation:rech-cur .8s step-end infinite;color:var(--accent);}
 @keyframes rech-cur{50%{opacity:0;}}
-@media(max-width:640px){#rech-kb{display:block;}#v-recherche .dict-inp{display:none;}}
+@media(max-width:640px){#rech-kb{display:block;}#rech-tab-dict .dict-inp{display:none;}}
 /* Onglets Recherche */
 .rech-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--stroke);}
 .rech-tab{flex:1;padding:8px 0;font-size:12px;font-weight:700;letter-spacing:.06em;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
@@ -935,7 +935,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     </div>
     <!-- Clavier mobile Recherche -->
     <div id="rech-kb" class="keyboard">
-      <div class="kb-top">
+      <div id="rech-kb-top" class="kb-top">
         <div id="rech-kb-disp" class="kb-disp"></div>
       </div>
       <div class="kb-rows">
@@ -959,7 +959,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.82</div>
+  pointer-events:none;user-select:none;">v3.83</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -971,7 +971,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v82";
+  const CURRENT_CACHE="methods-v83";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

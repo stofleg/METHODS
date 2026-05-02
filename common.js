@@ -1202,9 +1202,19 @@ function _rechSwitchTab(tab){
   const spec=document.getElementById("rech-kb-specials");
   if(spec) spec.style.display = tab==="search" ? "" : "none";
   const inp=document.getElementById("dict-input");
-  if(inp) inp.value="";
+  const kbTop=document.getElementById("rech-kb-top");
   const disp=document.getElementById("rech-kb-disp");
-  if(disp) disp.textContent="";
+  if(tab==="search"){
+    inp?.setAttribute("inputmode","none");
+    inp?.removeAttribute("readonly");
+    if(kbTop) kbTop.style.display="none";
+    if(inp){ inp.value=""; inp.placeholder="Motif de recherche…"; inp.focus(); }
+  } else {
+    inp?.removeAttribute("inputmode");
+    if(kbTop) kbTop.style.display="";
+    if(inp){ inp.value=""; inp.placeholder="Saisir un mot…"; }
+    if(disp) disp.textContent="";
+  }
   if(tab==="dict"){
     document.getElementById("dict-result")?.style.setProperty("display","none");
     const s=document.getElementById("dict-sugg"); if(s) s.innerHTML="";
@@ -1427,15 +1437,28 @@ function wireDictModal(){
       const i=document.getElementById("dict-input");
       const d=document.getElementById("rech-kb-disp");
       if(!i) return;
-      if(k==="CLR"){ i.value=""; }
-      else if(k==="DEL"){ i.value=i.value.slice(0,-1); }
-      else if(k==="OK"){
-        if(_rechActiveTab==="search"){
+      if(_rechActiveTab==="search"){
+        const pos=i.selectionStart??i.value.length;
+        const sel=i.selectionEnd??pos;
+        if(k==="CLR"){ i.value=""; }
+        else if(k==="DEL"){
+          if(sel>pos){ i.value=i.value.slice(0,pos)+i.value.slice(sel); i.selectionStart=i.selectionEnd=pos; }
+          else if(pos>0){ i.value=i.value.slice(0,pos-1)+i.value.slice(pos); i.selectionStart=i.selectionEnd=pos-1; }
+        } else if(k==="OK"){
           clearTimeout(_rechSearchTimer);
           const q=i.value.toUpperCase().trim();
           if(q) _rechRenderResults(_rechExec(q));
           return;
+        } else {
+          i.value=i.value.slice(0,pos)+k+i.value.slice(sel>pos?sel:pos);
+          i.selectionStart=i.selectionEnd=pos+1;
         }
+        _rechTriggerSearch(i.value);
+        return;
+      }
+      if(k==="CLR"){ i.value=""; }
+      else if(k==="DEL"){ i.value=i.value.slice(0,-1); }
+      else if(k==="OK"){
         const v=norm(i.value); if(!v) return;
         const C=window.SEQODS_DATA?.c; if(!C) return;
         const s=_dictBisect(C,v);
@@ -1445,13 +1468,9 @@ function wireDictModal(){
         return;
       } else { i.value+=k; }
       if(d) d.textContent=i.value;
-      if(_rechActiveTab==="search"){
-        _rechTriggerSearch(i.value);
-      } else {
-        document.getElementById("dict-result").style.display="none";
-        dictUpdateLinks(i.value);
-        _dictRenderSugg(norm(i.value));
-      }
+      document.getElementById("dict-result").style.display="none";
+      dictUpdateLinks(i.value);
+      _dictRenderSugg(norm(i.value));
     };
     rechKb.addEventListener("mousedown",e=>{
       const k=e.target.closest(".kk"); if(!k) return;
