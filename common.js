@@ -1189,9 +1189,165 @@ function _dictRenderSugg(prefix){
 }
 
 let _rechFromView = null;
+let _rechActiveTab = 'dict';
+
+function _rechSwitchTab(tab){
+  _rechActiveTab = tab;
+  document.getElementById("rech-tab-btn-dict")?.classList.toggle("active", tab==="dict");
+  document.getElementById("rech-tab-btn-search")?.classList.toggle("active", tab==="search");
+  const dictEl=document.getElementById("rech-tab-dict");
+  const srchEl=document.getElementById("rech-tab-search");
+  if(dictEl) dictEl.style.display = tab==="dict" ? "" : "none";
+  if(srchEl) srchEl.style.display = tab==="search" ? "" : "none";
+  const spec=document.getElementById("rech-kb-specials");
+  if(spec) spec.style.display = tab==="search" ? "" : "none";
+  const inp=document.getElementById("dict-input");
+  if(inp) inp.value="";
+  const disp=document.getElementById("rech-kb-disp");
+  if(disp) disp.textContent="";
+  if(tab==="dict"){
+    document.getElementById("dict-result")?.style.setProperty("display","none");
+    const s=document.getElementById("dict-sugg"); if(s) s.innerHTML="";
+  } else {
+    const r=document.getElementById("rech-search-res"); if(r) r.innerHTML="";
+  }
+}
+
+/* ── Moteur de recherche (onglet Recherche) ── */
+let _rechWordSet=null;
+function _getWordSet(){
+  if(_rechWordSet) return _rechWordSet;
+  const c=window.SEQODS_DATA?.c; if(!c) return new Set();
+  _rechWordSet=new Set(c);
+  return _rechWordSet;
+}
+
+let _rechAnagramMap=null;
+function _getAnagramMap(){
+  if(_rechAnagramMap) return _rechAnagramMap;
+  const c=window.SEQODS_DATA?.c; if(!c) return new Map();
+  _rechAnagramMap=new Map();
+  for(const w of c){
+    const k=w.split("").sort().join("");
+    if(!_rechAnagramMap.has(k)) _rechAnagramMap.set(k,[]);
+    _rechAnagramMap.get(k).push(w);
+  }
+  return _rechAnagramMap;
+}
+
+function _isSubanagram(letters,word){
+  const freq={};
+  for(const c of word) freq[c]=(freq[c]||0)+1;
+  for(const c of letters){ if(!freq[c]) return false; freq[c]--; }
+  return true;
+}
+
+function _rechParseQuery(q){
+  const parts=q.split("/");
+  const base=parts[0];
+  const alts=parts.slice(1).map(p=>({exclude:p[0]==="-",suffix:p[0]==="-"?p.slice(1):p}));
+  if(!base) return null;
+
+  if(base.includes("•")){
+    const leadDots=(base.match(/^•+/)||[""])[0].length;
+    const trailDots=(base.match(/•+$/)||[""])[0].length;
+    const core=base.replace(/^•+/,"").replace(/•+$/,"");
+    if(!core) return null;
+    if(leadDots>0&&trailDots===0) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
+    if(trailDots>0&&leadDots===0) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
+    return null;
+  }
+
+  const stars=(base.match(/\*/g)||[]).length;
+  if(stars>0){
+    const fi=base.indexOf("*"), la=base.lastIndexOf("*");
+    if(stars===1&&fi===0) return {type:"suffix",suffix:base.slice(1),alts};
+    if(stars===1&&la===base.length-1) return {type:"prefix",prefix:base.slice(0,-1),alts};
+    if(stars===2&&fi===0&&la===base.length-1) return {type:"contains",inner:base.slice(1,-1),alts};
+    return null;
+  }
+
+  if(base.includes("?")){
+    const qCount=(base.match(/\?/g)||[]).length;
+    const letters=base.replace(/\?/g,"");
+    return {type:"subanagram",letters,extraCount:qCount,alts};
+  }
+
+  if(/^[A-Z]+$/.test(base)) return {type:"anagram",letters:base,alts};
+  return null;
+}
+
+let _rechSearchTimer=null;
+function _rechTriggerSearch(raw){
+  clearTimeout(_rechSearchTimer);
+  const q=raw.toUpperCase().trim();
+  const el=document.getElementById("rech-search-res");
+  if(!q){ if(el) el.innerHTML=""; return; }
+  _rechSearchTimer=setTimeout(()=>_rechRenderResults(_rechExec(q)),250);
+}
+
+function _rechExec(q){
+  const parsed=_rechParseQuery(q);
+  if(!parsed) return [];
+  const words=window.SEQODS_DATA?.c; if(!words||!words.length) return [];
+  let res=[];
+  switch(parsed.type){
+    case "anagram":{ const k=parsed.letters.split("").sort().join(""); res=(_getAnagramMap().get(k)||[]).slice(); break; }
+    case "subanagram":{
+      const {letters,extraCount}=parsed;
+      const tl=letters.length+extraCount;
+      for(const w of words) if(w.length===tl&&_isSubanagram(letters,w)) res.push(w);
+      break;
+    }
+    case "suffix":{ const s=parsed.suffix; if(s) for(const w of words) if(w.endsWith(s)&&w.length>s.length) res.push(w); break; }
+    case "prefix":{ const p=parsed.prefix; if(p) for(const w of words) if(w.startsWith(p)&&w.length>p.length) res.push(w); break; }
+    case "contains":{
+      const inner=parsed.inner; if(!inner) break;
+      for(const w of words){ const i=w.indexOf(inner); if(i>0&&i+inner.length<w.length) res.push(w); }
+      break;
+    }
+    case "exact-suffix":{ const {core,totalLen}=parsed; for(const w of words) if(w.length===totalLen&&w.endsWith(core)) res.push(w); break; }
+    case "exact-prefix":{ const {core,totalLen}=parsed; for(const w of words) if(w.length===totalLen&&w.startsWith(core)) res.push(w); break; }
+  }
+  const baseSuffix=parsed.type==="suffix"?parsed.suffix:parsed.type==="exact-suffix"?parsed.core:null;
+  if(parsed.alts.length>0&&baseSuffix){
+    const ws=_getWordSet();
+    const incl=parsed.alts.filter(a=>!a.exclude);
+    const excl=parsed.alts.filter(a=>a.exclude);
+    res=res.filter(w=>{
+      const stem=w.slice(0,w.length-baseSuffix.length);
+      return (incl.length===0||incl.some(a=>ws.has(stem+a.suffix)))&&excl.every(a=>!ws.has(stem+a.suffix));
+    });
+  }
+  return res;
+}
+
+const _RECH_MAX=500;
+function _rechRenderResults(words){
+  const el=document.getElementById("rech-search-res"); if(!el) return;
+  if(!words.length){ el.innerHTML="<div class='rech-no-res'>Aucun résultat</div>"; return; }
+  const total=words.length;
+  const shown=words.slice(0,_RECH_MAX);
+  const groups={};
+  for(const w of shown)(groups[w.length]=groups[w.length]||[]).push(w);
+  const normToE=getNormToE();
+  const lens=Object.keys(groups).map(Number).sort((a,b)=>a-b);
+  let html=`<div class="rech-count">${total} mot${total>1?"s":""}${total>_RECH_MAX?` · ${_RECH_MAX} affichés`:""}</div>`;
+  for(const len of lens){
+    const g=groups[len];
+    html+=`<div class="rech-group-hdr">${len} lettres · ${g.length}</div><div class="rech-group">`;
+    for(const w of g){
+      const disp=(normToE[w]||w).split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+      html+=`<span class="rech-res-word" data-canon="${w}">${disp}</span>`;
+    }
+    html+="</div>";
+  }
+  el.innerHTML=html;
+}
 
 function openDictModal(){
   _rechFromView = document.querySelector(".view.active")?.id || "v-select";
+  _rechSwitchTab("dict");
   showView("v-recherche");
   const inp=document.getElementById("dict-input");
   if(inp){ inp.value=""; }
@@ -1220,18 +1376,38 @@ function wireDictModal(){
   document.getElementById("em-btn-recherche")?.addEventListener("click", openDictModal);
   document.getElementById("btn-tm-recherche")?.addEventListener("click", openDictModal);
 
+  // Onglets
+  document.getElementById("rech-tab-btn-dict")?.addEventListener("click", ()=>_rechSwitchTab("dict"));
+  document.getElementById("rech-tab-btn-search")?.addEventListener("click", ()=>_rechSwitchTab("search"));
+
+  // Clic sur un mot résultat
+  document.getElementById("rech-search-res")?.addEventListener("click", e=>{
+    const sp=e.target.closest(".rech-res-word"); if(!sp) return;
+    openDef(sp.dataset.canon);
+  });
+
   const inp=document.getElementById("dict-input");
   if(inp){
     inp.addEventListener("input", e=>{
       const disp=document.getElementById("rech-kb-disp");
       if(disp) disp.textContent=e.target.value;
-      document.getElementById("dict-result").style.display="none";
-      dictUpdateLinks(e.target.value);
-      _dictRenderSugg(norm(e.target.value));
+      if(_rechActiveTab==="search"){
+        _rechTriggerSearch(e.target.value);
+      } else {
+        document.getElementById("dict-result").style.display="none";
+        dictUpdateLinks(e.target.value);
+        _dictRenderSugg(norm(e.target.value));
+      }
     });
     inp.addEventListener("keydown", e=>{
       if(e.key==="Escape"){ closeDictModal(); return; }
       if(e.key==="Enter"){
+        if(_rechActiveTab==="search"){
+          clearTimeout(_rechSearchTimer);
+          const q=inp.value.toUpperCase().trim();
+          if(q) _rechRenderResults(_rechExec(q));
+          return;
+        }
         const v=norm(inp.value); if(!v) return;
         const C=window.SEQODS_DATA?.c; if(!C) return;
         const start=_dictBisect(C,v);
@@ -1255,6 +1431,12 @@ function wireDictModal(){
       if(k==="CLR"){ i.value=""; }
       else if(k==="DEL"){ i.value=i.value.slice(0,-1); }
       else if(k==="OK"){
+        if(_rechActiveTab==="search"){
+          clearTimeout(_rechSearchTimer);
+          const q=i.value.toUpperCase().trim();
+          if(q) _rechRenderResults(_rechExec(q));
+          return;
+        }
         const v=norm(i.value); if(!v) return;
         const C=window.SEQODS_DATA?.c; if(!C) return;
         const s=_dictBisect(C,v);
@@ -1264,9 +1446,13 @@ function wireDictModal(){
         return;
       } else { i.value+=k; }
       if(d) d.textContent=i.value;
-      document.getElementById("dict-result").style.display="none";
-      dictUpdateLinks(i.value);
-      _dictRenderSugg(norm(i.value));
+      if(_rechActiveTab==="search"){
+        _rechTriggerSearch(i.value);
+      } else {
+        document.getElementById("dict-result").style.display="none";
+        dictUpdateLinks(i.value);
+        _dictRenderSugg(norm(i.value));
+      }
     };
     rechKb.addEventListener("mousedown",e=>{
       const k=e.target.closest(".kk"); if(!k) return;
