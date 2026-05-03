@@ -1135,57 +1135,32 @@ function dictSelectWord(w, idx){
 
 function _dictRenderSugg(prefix){
   const sugg=document.getElementById("dict-sugg"); if(!sugg) return;
-  sugg.innerHTML="";
-  if(!prefix) return;
+  if(!prefix){ sugg.innerHTML=""; return; }
   const DATA=window.SEQODS_DATA; if(!DATA?.c) return;
   const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
-  const candidates=[];
   const _conjM=_getConjMap();
   const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
   const _CONJ=/-->\s+\S+\s+\d{2,}\./;
+  const candidates=[];
   for(let i=start; i<C.length; i++){
     if(!C[i].startsWith(prefix)) break;
-    if(_conjM.has(C[i])){
-      const f=F[i]||'';
-      if(!_POS.test(f) && _CONJ.test(f)) continue;
-    }
+    if(_conjM.has(C[i])){const f=F[i]||''; if(!_POS.test(f)&&_CONJ.test(f)) continue;}
     candidates.push(i);
   }
-  const frag=document.createDocumentFragment();
-  // Show "→ LEMMA" if prefix is: (a) a valid form not in c[], or (b) a pure conjugation entry.
-  // (b) is detected when conjMap has it and no non-filtered candidate has it as exact canon.
+  let html="";
   const _prefixIsConj=_conjM.has(prefix)&&!candidates.some(i=>C[i]===prefix);
   if((!_getCMap().has(prefix)||_prefixIsConj)&&(_getDSet().has(prefix)||_prefixIsConj)){
-    // For conj entries use conjMap directly (findLemma short-circuits for words still in c[]).
-    const lemma=_prefixIsConj ? _conjM.get(prefix) : findLemma(prefix);
-    if(lemma && lemma!==prefix){
-      const li=document.createElement("li");
-      li.appendChild(document.createTextNode("→ "));
-      const a=document.createElement("a"); a.href="#"; a.className="def-link";
-      a.textContent=lemma;
-      a.addEventListener("click",e=>{e.preventDefault();dictSelectWord(lemma);});
-      li.appendChild(a);
-      frag.appendChild(li);
-    }
+    const lemma=_prefixIsConj?_conjM.get(prefix):findLemma(prefix);
+    if(lemma&&lemma!==prefix) html+=`<li data-lemma="${lemma}">→ <a class="def-link">${lemma}</a></li>`;
   }
-  candidates.forEach(i=>{
-    const li=document.createElement("li");
-    let label=E[i]||C[i];
-    if(_wantsSlash(C[i]) && !label.includes('/')) label+=' /';
-    const pos=_posLabel(F[i]);
-    if(pos) label+="  "+pos;
-    li.textContent=label;
-    li.addEventListener("click",()=>dictSelectWord(C[i],i));
-    frag.appendChild(li);
-  });
-  if(!candidates.length && !frag.firstChild){
-    const li=document.createElement("li");
-    li.className="dict-no-result";
-    li.textContent="Mot inconnu.";
-    frag.appendChild(li);
+  for(const i of candidates){
+    let label=(E[i]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
+    const pos=_posLabel(F[i]); if(pos) label+="  "+pos;
+    html+=`<li data-idx="${i}">${label}</li>`;
   }
-  sugg.appendChild(frag);
+  sugg.innerHTML=html||"<li class='dict-no-result'>Mot inconnu.</li>";
 }
 
 let _rechFromView = null;
@@ -1378,6 +1353,16 @@ function wireDictModal(){
   document.getElementById("rech-tab-btn-dict")?.addEventListener("click", ()=>_rechSwitchTab("dict"));
   document.getElementById("rech-tab-btn-search")?.addEventListener("click", ()=>_rechSwitchTab("search"));
 
+  // Délégation suggestions dictionnaire
+  document.getElementById("dict-sugg")?.addEventListener("click", e=>{
+    const li=e.target.closest("li"); if(!li) return;
+    e.preventDefault();
+    if(li.dataset.lemma){ dictSelectWord(li.dataset.lemma); return; }
+    if(li.dataset.idx!==undefined){
+      const C=window.SEQODS_DATA?.c;
+      if(C) dictSelectWord(C[+li.dataset.idx], +li.dataset.idx);
+    }
+  });
   // Clic sur un mot résultat
   document.getElementById("rech-search-res")?.addEventListener("click", e=>{
     const sp=e.target.closest(".rech-res-word"); if(!sp) return;
@@ -1411,7 +1396,7 @@ function wireDictModal(){
         const start=_dictBisect(C,v);
         if(start<C.length && C[start]===v){ dictSelectWord(v); return; }
         if(_getDSet().has(v)){ dictSelectWord(v); return; }
-        const first=document.querySelector("#dict-sugg li:not(.dict-no-result)");
+        const first=document.querySelector("#dict-sugg li[data-idx]");
         if(first) first.click();
       }
     });
@@ -1453,7 +1438,7 @@ function wireDictModal(){
         const s=_dictBisect(C,v);
         if(s<C.length&&C[s]===v){ dictSelectWord(v); return; }
         if(_getDSet().has(v)){ dictSelectWord(v); return; }
-        document.querySelector("#dict-sugg li:not(.dict-no-result)")?.click();
+        document.querySelector("#dict-sugg li[data-idx]")?.click();
         return;
       } else { i.value+=k; }
       if(d) d.textContent=i.value;
