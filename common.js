@@ -968,22 +968,36 @@ function _getCMap(){
   return _cMap;
 }
 
-// Returns true when canon is purely invariable (interj./loc./adv. not ending in -MENT)
-// and has no variable nature (n., adj., v., etc.) across all c[] entries.
-function _wantsSlash(canon){
-  const DATA=window.SEQODS_DATA; if(!DATA) return false;
-  const {e:E,f:F}=DATA;
-  const idxs=_findAllIdxs(canon);
-  if(!idxs.length) return false;
-  if(idxs.some(i=>(E[i]||'').includes('/'))) return false; // already has /
-  let hasInvar=false, hasVar=false;
-  for(const i of idxs){
-    const f=F[i]||'';
-    if(/\binterj\b|\bloc\b|\badv\b/.test(f)) hasInvar=true;
-    if(/\bn\.[mf]\b|\bn\.\s|\bn\.\)|\badj\b|\bv\.|\bpron\b|\bnum\b/.test(f)) hasVar=true;
+// Set lazy de tous les canons qui doivent afficher "/" (pré-construit en O(n) une seule fois)
+let _wantsSlashSet = null;
+function _getWantsSlashSet(){
+  if(_wantsSlashSet) return _wantsSlashSet;
+  _wantsSlashSet = new Set();
+  const DATA=window.SEQODS_DATA; if(!DATA) return _wantsSlashSet;
+  const {c:C,e:E,f:F}=DATA;
+  const _INVAR=/\binterj\b|\bloc\b|\badv\b/;
+  const _VAR=/\bn\.[mf]\b|\bn\.\s|\bn\.\)|\badj\b|\bv\.|\bpron\b|\bnum\b/;
+  // Regrouper les indices par canon
+  const byCanon=new Map();
+  for(let i=0;i<C.length;i++){
+    const c=C[i]; if(!byCanon.has(c)) byCanon.set(c,[i]); else byCanon.get(c).push(i);
   }
-  return hasInvar && !hasVar && !canon.endsWith('MENT');
+  for(const [canon,idxs] of byCanon){
+    if(canon.endsWith('MENT')) continue;
+    if(idxs.some(i=>(E[i]||'').includes('/'))) continue;
+    let hasInvar=false, hasVar=false;
+    for(const i of idxs){
+      const f=F[i]||'';
+      if(_INVAR.test(f)) hasInvar=true;
+      if(_VAR.test(f)) hasVar=true;
+    }
+    if(hasInvar && !hasVar) _wantsSlashSet.add(canon);
+  }
+  return _wantsSlashSet;
 }
+
+// Conservé pour openDef / dictSelectWord (appels unitaires)
+function _wantsSlash(canon){ return _getWantsSlashSet().has(canon); }
 
 function dictUpdateLinks(displayWord){
   const raw=(displayWord||"").split(",")[0].trim().toLowerCase().replace(/\s+.*/,"");
@@ -1319,8 +1333,7 @@ function _rechRenderResults(words){
 }
 
 function prewarmDictMaps(){
-  // Maps dict en priorité (needed on first keystroke), anagram map en différé (search only)
-  setTimeout(()=>{ _getCMap(); _getDSet(); _getConjMap(); }, 0);
+  setTimeout(()=>{ _getCMap(); _getDSet(); _getConjMap(); _getWantsSlashSet(); }, 0);
   setTimeout(()=>{ _getAnagramMap(); }, 1000);
 }
 
