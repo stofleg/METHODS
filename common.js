@@ -1324,13 +1324,6 @@ function _rechExec(q){
   return res;
 }
 
-let _rechEntrySet=null;
-function _getEntrySet(){
-  if(_rechEntrySet) return _rechEntrySet;
-  _rechEntrySet=new Set(window.SEQODS_DATA?.c||[]);
-  return _rechEntrySet;
-}
-
 const _RECH_MAX=500;
 function _rechRenderResults(words){
   const el=document.getElementById("rech-search-res"); if(!el) return;
@@ -1339,18 +1332,13 @@ function _rechRenderResults(words){
   const shown=words.slice(0,_RECH_MAX);
   const groups={};
   for(const w of shown)(groups[w.length]=groups[w.length]||[]).push(w);
-  const normToE=getNormToE();
-  const entries=_getEntrySet();
   const lens=Object.keys(groups).map(Number).sort((a,b)=>a-b);
   let html=`<div class="rech-count">${total} mot${total>1?"s":""}${total>_RECH_MAX?` · ${_RECH_MAX} affichés`:""}</div>`;
   for(const len of lens){
     const g=groups[len];
     html+=`<div class="rech-group-hdr">${len} lettres · ${g.length}</div><div class="rech-group">`;
     for(const w of g){
-      const raw=(normToE[w]||w).split(",")[0].trim().replace(/\*/g,"");
-      const isEntry=entries.has(w);
-      const disp=isEntry ? raw.toUpperCase() : raw.toLowerCase();
-      html+=`<span class="rech-res-word" data-canon="${w}">${disp}</span>`;
+      html+=`<span class="rech-res-word" data-canon="${w}">${w}</span>`;
     }
     html+="</div>";
   }
