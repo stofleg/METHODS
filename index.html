@@ -812,6 +812,21 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         </div>
       </div>
     </div>
+    <!-- sous-vue : liste complétée -->
+    <div id="tv-done" class="tmv">
+      <div class="tm-hdr">
+        <div class="tm-nav">
+          <button id="btn-back-done" class="btn" style="font-size:14px;padding:5px 9px;">←</button>
+          <span id="tv-done-title" class="tm-nav-title"></span>
+        </div>
+      </div>
+      <div class="tm-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:20px;">
+        <div style="font-size:52px;line-height:1;">🏆</div>
+        <div style="font-size:18px;font-weight:900;color:var(--ok);">Liste complétée !</div>
+        <div id="tv-done-completions" style="font-size:13px;color:var(--muted);min-height:18px;"></div>
+        <button id="btn-done-reset" class="btn btn-danger" style="padding:9px 22px;font-size:14px;">Réinitialiser</button>
+      </div>
+    </div>
     <!-- sous-vue : jeu -->
     <div id="tv-game" class="tmv">
       <div class="tm-ghdr">
@@ -965,7 +980,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v3.88</div>
+  pointer-events:none;user-select:none;">v3.89</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -977,7 +992,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v88";
+  const CURRENT_CACHE="methods-v89";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

@@ -283,11 +283,17 @@ async function playTheme(theme){
 
   const playPool = unseenPool.length ? unseenPool : srsPool.length ? srsPool : lockedPool;
   if(playPool.length){ startSession(theme, playPool[Math.floor(Math.random()*playPool.length)]); return; }
-  if(msg){
-    const total=data.length, val=data.filter(({label})=>getSt(theme,label).validated).length;
-    msg.textContent= val===total ? "100%" : "Aucune session disponible.";
-    msg.className="tm-msg ok";
-    showTmView("");
+
+  const total=data.length, val=data.filter(({label})=>getSt(theme,label).validated).length;
+  if(val===total){
+    if(!tmState.themes[theme]) tmState.themes[theme]={};
+    tmState.themes[theme]._completions=(tmState.themes[theme]._completions||0)+1;
+    persistThemods().catch(()=>{});
+    _showTmDone(theme);
+  } else {
+    if(window.THEMODS_DATA?.[theme]&&!["gm","vi","vt","vd"].includes(theme)) renderTmFinales();
+    else if(["vi","vt","vd"].includes(theme)) renderTmVerbes();
+    else renderTmHome();
   }
 }
 
@@ -603,7 +609,21 @@ function tmReplay(){
   else renderTmHome();
 }
 
-
+function _showTmDone(theme){
+  tmTheme=theme;
+  const completions=(tmState.themes[theme]?._completions)||0;
+  const titleEl=document.getElementById("tv-done-title");
+  if(titleEl) titleEl.textContent=THEME_NAMES[theme]||theme;
+  const cEl=document.getElementById("tv-done-completions");
+  if(cEl){
+    if(completions===1) cEl.textContent="1ère validation complète";
+    else if(completions===2) cEl.textContent="2ème validation complète";
+    else if(completions>2) cEl.textContent=completions+"ème validation complète";
+    else cEl.textContent="";
+  }
+  setDictBtnVisible(true);
+  showTmView("tv-done");
+}
 
 /* ── Graphies multiples ── */
 function getAllGMEntries(){
@@ -779,6 +799,22 @@ function initThemods(){
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
       if(isOds(tmTheme)) renderTmOds();
       else if(window.THEMODS_DATA?.[tmTheme]&&!["gm","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
+      else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
+      else renderTmHome();
+    });
+
+    document.getElementById("btn-back-done")?.addEventListener("click",()=>{
+      if(window.THEMODS_DATA?.[tmTheme]&&!["gm","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
+      else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
+      else renderTmHome();
+    });
+
+    document.getElementById("btn-done-reset")?.addEventListener("click",()=>{
+      if(!tmTheme||!tmState.themes[tmTheme]) return;
+      const th=tmState.themes[tmTheme];
+      Object.keys(th).forEach(k=>{ if(k!=='_completions'&&k!=='_p') delete th[k]; });
+      persistThemods().catch(()=>{});
+      if(window.THEMODS_DATA?.[tmTheme]&&!["gm","vi","vt","vd"].includes(tmTheme)) renderTmFinales();
       else if(["vi","vt","vd"].includes(tmTheme)) renderTmVerbes();
       else renderTmHome();
     });

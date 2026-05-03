@@ -1182,7 +1182,7 @@ function _rechSwitchTab(tab){
     inp.value="";
     inp.placeholder = tab==="search" ? "Motif de recherche…" : "Saisir un mot…";
   }
-  if(tab==="search") setTimeout(()=>inp?.focus(), 50);
+  setTimeout(()=>inp?.focus(), 50);
   if(tab==="dict"){
     document.getElementById("dict-result")?.style.setProperty("display","none");
     const s=document.getElementById("dict-sugg"); if(s) s.innerHTML="";
@@ -1316,6 +1316,12 @@ function _rechRenderResults(words){
     html+="</div>";
   }
   el.innerHTML=html;
+}
+
+function prewarmDictMaps(){
+  const warm=()=>{ _getDSet(); _getCMap(); _getConjMap(); _getAnagramMap(); };
+  if(typeof requestIdleCallback!=='undefined') requestIdleCallback(warm,{timeout:5000});
+  else setTimeout(warm, 1500);
 }
 
 function openDictModal(){

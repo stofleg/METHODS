@@ -133,6 +133,7 @@ async function afterLogin(){
   });
   showView("v-select");
   setDictBtnVisible(true);
+  prewarmDictMaps();
   // interval auto-persist
   setInterval(()=>{ persistThemods().catch(()=>{}); persistEntreModsState().catch(()=>{}); }, 60000);
 }
