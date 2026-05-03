@@ -1144,7 +1144,7 @@ function _dictRenderSugg(prefix){
   const _conjM=_getConjMap();
   const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
   const _CONJ=/-->\s+\S+\s+\d{2,}\./;
-  for(let i=start; i<C.length && candidates.length<14; i++){
+  for(let i=start; i<C.length; i++){
     if(!C[i].startsWith(prefix)) break;
     if(_conjM.has(C[i])){
       const f=F[i]||'';
@@ -1324,16 +1324,14 @@ function _rechExec(q){
   return res;
 }
 
-const _RECH_MAX=500;
 function _rechRenderResults(words){
   const el=document.getElementById("rech-search-res"); if(!el) return;
   if(!words.length){ el.innerHTML="<div class='rech-no-res'>Aucun résultat</div>"; return; }
   const total=words.length;
-  const shown=words.slice(0,_RECH_MAX);
   const groups={};
-  for(const w of shown)(groups[w.length]=groups[w.length]||[]).push(w);
+  for(const w of words)(groups[w.length]=groups[w.length]||[]).push(w);
   const lens=Object.keys(groups).map(Number).sort((a,b)=>a-b);
-  let html=`<div class="rech-count">${total} mot${total>1?"s":""}${total>_RECH_MAX?` · ${_RECH_MAX} affichés`:""}</div>`;
+  let html=`<div class="rech-count">${total} mot${total>1?"s":""}</div>`;
   for(const len of lens){
     const g=groups[len];
     html+=`<div class="rech-group-hdr">${len} lettres · ${g.length}</div><div class="rech-group">`;
