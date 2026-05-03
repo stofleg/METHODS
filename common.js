@@ -1182,7 +1182,7 @@ function _rechSwitchTab(tab){
     inp.value="";
     inp.placeholder = tab==="search" ? "Motif de recherche…" : "Saisir un mot…";
   }
-  setTimeout(()=>inp?.focus(), 50);
+  inp?.focus();
   if(tab==="dict"){
     document.getElementById("dict-result")?.style.setProperty("display","none");
     const s=document.getElementById("dict-sugg"); if(s) s.innerHTML="";
@@ -1319,9 +1319,9 @@ function _rechRenderResults(words){
 }
 
 function prewarmDictMaps(){
-  const warm=()=>{ _getDSet(); _getCMap(); _getConjMap(); _getAnagramMap(); };
-  if(typeof requestIdleCallback!=='undefined') requestIdleCallback(warm,{timeout:5000});
-  else setTimeout(warm, 1500);
+  // Maps dict en priorité (needed on first keystroke), anagram map en différé (search only)
+  setTimeout(()=>{ _getCMap(); _getDSet(); _getConjMap(); }, 0);
+  setTimeout(()=>{ _getAnagramMap(); }, 1000);
 }
 
 function openDictModal(){
@@ -1335,7 +1335,7 @@ function openDictModal(){
   document.getElementById("dict-sugg").innerHTML="";
   document.getElementById("dict-result").style.display="none";
   dictUpdateLinks("");
-  setTimeout(()=>inp?.focus(), 80);
+  inp?.focus();
 }
 
 function closeDictModal(){
