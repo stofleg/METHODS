@@ -1239,26 +1239,26 @@ function _rechParseQuery(q){
   const alts=parts.slice(1).map(p=>({exclude:p[0]==="-",suffix:p[0]==="-"?p.slice(1):p}));
   if(!base) return null;
 
-  if(base.includes("•")){
-    const leadDots=(base.match(/^•+/)||[""])[0].length;
-    const trailDots=(base.match(/•+$/)||[""])[0].length;
-    const core=base.replace(/^•+/,"").replace(/•+$/,"");
-    if(!core) return null;
-    if(leadDots>0&&trailDots===0) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
-    if(trailDots>0&&leadDots===0) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
-    // Puce au milieu : B•R, B••R, etc. — chaque • = exactement 1 lettre
-    const regexStr="^"+[...base].map(c=>c==="•"?".":c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("")+"$";
-    return {type:"wildcard",regex:new RegExp(regexStr),alts};
-  }
-
-  const stars=(base.match(/\*/g)||[]).length;
-  if(stars>0){
-    const fi=base.indexOf("*"), la=base.lastIndexOf("*");
-    if(stars===1&&fi===0) return {type:"suffix",suffix:base.slice(1),alts};
-    if(stars===1&&la===base.length-1) return {type:"prefix",prefix:base.slice(0,-1),alts};
-    if(stars===2&&fi===0&&la===base.length-1) return {type:"contains",inner:base.slice(1,-1),alts};
-    // Joker général : B*D, B*D*E, etc.
-    const regexStr="^"+base.split("*").map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join(".*")+"$";
+  if(base.includes("•")||base.includes("*")){
+    const stars=(base.match(/\*/g)||[]).length;
+    const hasDots=base.includes("•");
+    // Chemins rapides : patterns purs sans mélange
+    if(!hasDots){
+      const fi=base.indexOf("*"),la=base.lastIndexOf("*");
+      if(stars===1&&fi===0) return {type:"suffix",suffix:base.slice(1),alts};
+      if(stars===1&&la===base.length-1) return {type:"prefix",prefix:base.slice(0,-1),alts};
+      if(stars===2&&fi===0&&la===base.length-1) return {type:"contains",inner:base.slice(1,-1),alts};
+    }
+    if(!stars){
+      const leadDots=(base.match(/^•+/)||[""])[0].length;
+      const trailDots=(base.match(/•+$/)||[""])[0].length;
+      const core=base.replace(/^•+/,"").replace(/•+$/,"");
+      if(!core) return null;
+      if(leadDots>0&&trailDots===0) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
+      if(trailDots>0&&leadDots===0) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
+    }
+    // Cas général et mixte : B*D•E, B•R, B*D*E, etc.
+    const regexStr="^"+[...base].map(c=>c==="*"?".*":c==="•"?".":c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("")+"$";
     return {type:"wildcard",regex:new RegExp(regexStr),alts};
   }
 
