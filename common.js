@@ -1255,7 +1255,9 @@ function _rechParseQuery(q){
     if(stars===1&&fi===0) return {type:"suffix",suffix:base.slice(1),alts};
     if(stars===1&&la===base.length-1) return {type:"prefix",prefix:base.slice(0,-1),alts};
     if(stars===2&&fi===0&&la===base.length-1) return {type:"contains",inner:base.slice(1,-1),alts};
-    return null;
+    // Joker général : B*D, B*D*E, etc.
+    const regexStr="^"+base.split("*").map(s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join(".*")+"$";
+    return {type:"wildcard",regex:new RegExp(regexStr),alts};
   }
 
   if(base.includes("?")){
@@ -1299,6 +1301,7 @@ function _rechExec(q){
     }
     case "exact-suffix":{ const {core,totalLen}=parsed; for(const w of words) if(w.length===totalLen&&w.endsWith(core)) res.push(w); break; }
     case "exact-prefix":{ const {core,totalLen}=parsed; for(const w of words) if(w.length===totalLen&&w.startsWith(core)) res.push(w); break; }
+    case "wildcard":{ for(const w of words) if(parsed.regex.test(w)) res.push(w); break; }
   }
   const baseSuffix=parsed.type==="suffix"?parsed.suffix:parsed.type==="exact-suffix"?parsed.core:null;
   if(parsed.alts.length>0&&baseSuffix){
