@@ -1254,8 +1254,8 @@ function _rechParseQuery(q){
       const trailDots=(base.match(/•+$/)||[""])[0].length;
       const core=base.replace(/^•+/,"").replace(/•+$/,"");
       if(!core) return null;
-      if(leadDots>0&&trailDots===0) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
-      if(trailDots>0&&leadDots===0) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
+      if(leadDots>0&&trailDots===0&&!core.includes("•")) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
+      if(trailDots>0&&leadDots===0&&!core.includes("•")) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
     }
     // Cas général et mixte : B*D•E, B•R, B*D*E, etc.
     const regexStr="^"+[...base].map(c=>c==="*"?".*":c==="•"?".":c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("")+"$";
