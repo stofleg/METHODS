@@ -1246,7 +1246,9 @@ function _rechParseQuery(q){
     if(!core) return null;
     if(leadDots>0&&trailDots===0) return {type:"exact-suffix",core,totalLen:leadDots+core.length,alts};
     if(trailDots>0&&leadDots===0) return {type:"exact-prefix",core,totalLen:core.length+trailDots,alts};
-    return null;
+    // Puce au milieu : B•R, B••R, etc. — chaque • = exactement 1 lettre
+    const regexStr="^"+[...base].map(c=>c==="•"?".":c.replace(/[.*+?^${}()|[\]\\]/g,"\\$&")).join("")+"$";
+    return {type:"wildcard",regex:new RegExp(regexStr),alts};
   }
 
   const stars=(base.match(/\*/g)||[]).length;
