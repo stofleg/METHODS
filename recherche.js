@@ -11,7 +11,7 @@ window._rechCache = _rechCache; // exposé pour openDef() / dictSelectWord()
 
 const _rechModExclCache = {}; // moduleId → {loaded:bool, words:Set<canon>}
 
-function _isAdm(){ return currentUser?.pseudo?.toLowerCase()==="stof2"; }
+function _isAdm(){ const p=currentUser?.pseudo?.toLowerCase(); return p==="stof2"||p==="stofleg"; }
 
 async function _rechLoad(canon){
   if(_rechCache[canon]?.loaded) return;
