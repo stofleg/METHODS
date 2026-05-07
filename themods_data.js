@@ -361,198 +361,214 @@ window.THEMODS_DATA.age = [
 ];
 
 window.THEMODS_DATA.vi = [
-  {"label":"AB","words":["ABERRER", "ABRÉAGIR"]},
-  {"label":"AC","words":["ACCÉDER"]},
-  {"label":"AD","words":["ADHÉRER"]},
-  {"label":"AF","words":["AFFÉRER", "AFFLUER"]},
-  {"label":"AG","words":["AGIOTER", "AGONISER"]},
-  {"label":"AH","words":["AHANER"]},
-  {"label":"AM","words":["AMBLER", "AMOUILLER"]},
-  {"label":"AN","words":["ANHÉLER", "ANORDIR"]},
-  {"label":"AP","words":["APPONTER"]},
-  {"label":"AS","words":["ASSONER"]},
-  {"label":"AT","words":["ATTENTER"]},
-  {"label":"AV","words":["AVIRONNER", "AVOCASSER"]},
-  {"label":"BAB","words":["BABILLER", "BABOLER"]},
-  {"label":"BAD","words":["BADAUDER", "BADINER"]},
-  {"label":"BAM","words":["BAMBOCHER"]},
-  {"label":"BAN","words":["BANQUETER"]},
-  {"label":"BAR","words":["BARÉTER", "BARJAQUER", "BAROUDER", "BARRIR"]},
-  {"label":"BAS","words":["BASTER"]},
-  {"label":"BAT","words":["BATAILLER", "BATIFOLER", "BATOILLER"]},
-  {"label":"BAV","words":["BAVARDER", "BAVASSER"]},
-  {"label":"BAY","words":["BAYER"]},
-  {"label":"BE","words":["BEDONNER", "BÉER", "BÉGUETER", "BÊTISER"]},
-  {"label":"BI","words":["BIBELOTER", "BICHER", "BIFURQUER", "BIQUER", "BISQUER"]},
-  {"label":"BL","words":["BLABLATER", "BLATÉRER", "BLÉSER", "BLOGUER", "BLONDOYER"]},
-  {"label":"BO","words":["BOITER", "BOITILLER", "BONDIR", "BOSTONNER", "BOTANISER", "BOUBOULER", "BOULOCHER", "BOURONNER"]},
-  {"label":"BR","words":["BRASILLER", "BRILLER", "BRONCHER", "BRUISSER", "BRUNCHER"]},
-  {"label":"CAB","words":["CABINER", "CABOTER", "CABOTINER", "CABRIOLER"]},
-  {"label":"CAC","words":["CACABER", "CACARDER"]},
-  {"label":"CAG","words":["CAGUER"]},
-  {"label":"CAI","words":["CAILLETER"]},
-  {"label":"CAL","words":["CALANCHER", "CALMIR", "CALUGER"]},
-  {"label":"CAN","words":["CANCANER", "CANOTER"]},
-  {"label":"CAP","words":["CAPÉER", "CAPEYER", "CAPITULER", "CAPONNER"]},
-  {"label":"CAQ","words":["CAQUETER"]},
-  {"label":"CAR","words":["CARACOLER", "CARTAYER"]},
-  {"label":"CAS","words":["CASCADER"]},
-  {"label":"CAT","words":["CATCHER"]},
-  {"label":"CHA","words":["CHALUTER", "CHANCELER", "CHATONNER", "CHATOYER", "CHATTER", "CHAUVIR"]},
-  {"label":"CHE","words":["CHENALER", "CHÉRER", "CHERRER", "CHEVRETER"]},
-  {"label":"CHI","words":["CHIALER", "CHIBRER", "CHIGNER", "CHILLER", "CHINOISER"]},
-  {"label":"CHL","words":["CHLINGUER"]},
-  {"label":"CHN","words":["CHNEUQUER"]},
-  {"label":"CHO","words":["CHOPINER", "CHOPPER", "CHOUANNER", "CHOUGNER", "CHOUINER"]},
-  {"label":"CL","words":["CLAPOTER", "CLAQUETER", "CLAVARDER", "CLIGNOTER", "CLIQUETER", "CLOPINER", "CLOPPER"]},
-  {"label":"COA","words":["COASSER"]},
-  {"label":"COC","words":["COCONNER", "COCOTER", "COCOTTER"]},
-  {"label":"COE","words":["COEXISTER"]},
-  {"label":"COH","words":["COHABITER", "COHÉRITER"]},
-  {"label":"COI","words":["COÏNCIDER", "COÏTER"]},
-  {"label":"COK","words":["COKOTER"]},
-  {"label":"COL","words":["COLLAPSER"]},
-  {"label":"COM","words":["COMATER", "COMMERCER", "COMMÉRER", "COMPARAITRE", "COMPATIR", "COMPÉTER", "COMPÉTIR", "COMPLAIRE"]},
-  {"label":"CON","words":["CONCORDER", "CONCOURIR", "CONFLUER", "CONSISTER", "CONSONER", "CONVERGER", "CONVERSER", "CONVOLER"]},
-  {"label":"COO","words":["COOPÉRER"]},
-  {"label":"COP","words":["COPINER", "COPULER"]},
-  {"label":"COQ","words":["COQUETER"]},
-  {"label":"COS","words":["COSSER"]},
-  {"label":"COU","words":["COUCOUER", "COUCOULER", "COUINER", "COURATER"]},
-  {"label":"CR","words":["CRAILLER", "CRAPOTER", "CRAQUETER", "CRÉCHER", "CRÉPITER", "CREVOTER", "CRIAILLER", "CRIQUER", "CRISER", "CRISSER", "CROASSER"]},
-  {"label":"CU","words":["CULMINER"]},
-  {"label":"DA","words":["DAIGNER", "DANSOTER", "DANSOTTER"]},
-  {"label":"DEA","words":["DÉAMBULER"]},
-  {"label":"DEB","words":["DÉBOUQUER"]},
-  {"label":"DEC","words":["DÉCÉLÉRER", "DÉCHANTER", "DÉCOLÉRER", "DÉCONNER", "DÉCOUCHER", "DÉCOULER"]},
-  {"label":"DEF","words":["DÉFAILLIR", "DÉFLAGRER", "DÉFUNTER"]},
-  {"label":"DEG","words":["DÉGAMMER", "DÉGOUTTER"]},
-  {"label":"DEH","words":["DÉHOTTER"]},
-  {"label":"DEJ","words":["DÉJEUNER"]},
-  {"label":"DEL","words":["DÉLIRER"]},
-  {"label":"DEM","words":["DÉMÉRITER", "DÉMORDRE"]},
-  {"label":"DEP","words":["DÉPARLER", "DÉPÉRIR", "DÉPLAIRE"]},
-  {"label":"DER","words":["DÉRADER", "DÉRAGER", "DÉRAILLER", "DÉRAPER", "DÉROGER", "DÉRUPITER"]},
-  {"label":"DET","words":["DÉTALER", "DÉTONER", "DÉTONNER"]},
-  {"label":"DI","words":["DIFFLUER", "DIGRESSER", "DÎNER", "DINGUER", "DISCORDER", "DISCOURIR", "DISSERTER", "DISSONER", "DIVAGUER", "DIVERGER"]},
-  {"label":"DU","words":["DUNKER"]},
-  {"label":"EF","words":["EFFLUVER"]},
-  {"label":"EM","words":["EMPIÉTER"]},
-  {"label":"EN","words":["ENDÊVER", "ENTRENUIRE"]},
-  {"label":"ER","words":["ERRER"]},
-  {"label":"ET","words":["ÉTERNUER", "ÉTINCELER", "ÊTRE"]},
-  {"label":"EX","words":["EXCELLER", "EXCIPER", "EXISTER", "EXULTER"]},
-  {"label":"FA","words":["FAIBLIR", "FASEILLER", "FASEYER"]},
-  {"label":"FE","words":["FEULER"]},
-  {"label":"FI","words":["FIENTER", "FINASSER"]},
-  {"label":"FL","words":["FLAGEOLER", "FLAMBOYER", "FLANCHER", "FLÂNER", "FLEURETER", "FLIRTER", "FLOCONNER", "FLOCULER", "FLUCTUER", "FLUER"]},
-  {"label":"FO","words":["FOISONNER", "FOLÂTRER", "FORLIGNER", "FORNIQUER", "FOUINER"]},
-  {"label":"FR","words":["FRAÎCHIR", "FRÉMIR", "FRÉTILLER", "FROUER", "FROUILLER"]},
-  {"label":"FU","words":["FUITER", "FULGURER", "FURETER"]},
-  {"label":"GA","words":["GALÉJER", "GALÉRER", "GAMBADER", "GAMBILLER", "GAMINER", "GARGOTER", "GASCONNER", "GÂTIFIER"]},
-  {"label":"GE","words":["GEEKER", "GEINDRE"]},
-  {"label":"GL","words":["GLATIR", "GLOTTORER", "GLOUSSER"]},
-  {"label":"GO","words":["GODAILLER", "GODILLER", "GOLFER", "GOUTTER"]},
-  {"label":"GR","words":["GRAVITER", "GRELOTER", "GRELOTTER", "GRÉSILLER", "GRICHER", "GRIGNER", "GRINCER", "GRINCHER", "GRISOLER", "GRISOLLER", "GRISONNER", "GROOVER"]},
-  {"label":"GU","words":["GUINCHER"]},
-  {"label":"HA","words":["HÂBLER", "HALETER"]},
-  {"label":"HE","words":["HENNIR", "HERCHER", "HERSCHER", "HÉSITER"]},
-  {"label":"HI","words":["HIBERNER"]},
-  {"label":"HO","words":["HOQUETER"]},
-  {"label":"HU","words":["HULULER"]},
-  {"label":"IM","words":["IMPLOSER"]},
-  {"label":"IN","words":["INDAGUER", "INSISTER", "INTERAGIR"]},
-  {"label":"IO","words":["IODLER", "IOULER"]},
-  {"label":"IR","words":["IRONISER"]},
-  {"label":"JA","words":["JABOTER", "JACASSER", "JAPPER", "JARGONNER", "JASSER"]},
-  {"label":"JE","words":["JERKER"]},
-  {"label":"JO","words":["JOBER", "JODLER", "JOGGER", "JONGLER", "JOUAILLER", "JOUIR", "JOUTER"]},
-  {"label":"JU","words":["JUBILER", "JUMPER", "JUTER"]},
-  {"label":"KO","words":["KOTER"]},
-  {"label":"LA","words":["LAÏUSSER", "LAMBINER", "LAPINER", "LARMOYER"]},
-  {"label":"LE","words":["LÉGIFÉRER", "LÉSINER", "LÉVITER"]},
-  {"label":"LI","words":["LIARDER"]},
-  {"label":"LO","words":["LOFER", "LOQUETER", "LOUCHIR", "LOUVETER", "LOUVOYER"]},
-  {"label":"LU","words":["LUIRE", "LUNCHER", "LUTTER"]},
-  {"label":"MA","words":["MARGAUDER", "MARGOTER", "MARGOTTER", "MARONNER", "MARRONNER"]},
-  {"label":"ME","words":["MÉDIRE", "MÉMÉRER", "MENTIR", "MERDOYER", "MÉSUSER", "MEUGLER"]},
-  {"label":"MI","words":["MIAULER", "MILITER", "MINAUDER"]},
-  {"label":"MO","words":["MOLARDER", "MOLLARDER", "MOTIONNER", "MOUFETER", "MOUFTER"]},
-  {"label":"MU","words":["MUSARDER"]},
-  {"label":"NA","words":["NAGEOTER", "NAVETTER", "NAVIGUER"]},
-  {"label":"NI","words":["NIDIFIER"]},
-  {"label":"NO","words":["NOCER", "NORDIR"]},
-  {"label":"NU","words":["NUIRE"]},
-  {"label":"OB","words":["OBLIQUER", "OBVIER"]},
-  {"label":"OE","words":["ŒUVRER"]},
-  {"label":"OF","words":["OFFICIER"]},
-  {"label":"OP","words":["OPINER", "OPTER"]},
-  {"label":"OR","words":["ORBITER"]},
-  {"label":"OS","words":["OSCILLER"]},
-  {"label":"OV","words":["OVULER"]},
-  {"label":"PAC","words":["PACTISER"]},
-  {"label":"PAG","words":["PAGAYER"]},
-  {"label":"PAL","words":["PALABRER", "PALPITER"]},
-  {"label":"PAN","words":["PANOTER", "PANTELER"]},
-  {"label":"PAP","words":["PAPOTER"]},
-  {"label":"PAR","words":["PARADER", "PARESSER", "PARLOTER", "PARTOUSER", "PARTOUZER"]},
-  {"label":"PAT","words":["PATAUGER", "PATIENTER", "PÂTIR"]},
-  {"label":"PAU","words":["PAUSER"]},
-  {"label":"PE","words":["PÉCLOTER", "PÈDZER", "PENDILLER", "PÉPIER", "PERDURER", "PERFORMER", "PÉRORER", "PERSISTER", "PESTER", "PÉTARADER", "PÉTILLER", "PÉTOCHER", "PÉTUNER"]},
-  {"label":"PI","words":["PIAFFER", "PIAILLER", "PIAPIATER", "PIAULER", "PINAILLER", "PINTOCHER", "PIONNER", "PIORNER", "PISSOTER", "PITUITER"]},
-  {"label":"PL","words":["PLANCHER"]},
-  {"label":"PO","words":["POGOTER", "POIROTER", "POITRINER", "PONTIFIER", "POTINER", "POUCER", "POUDROYER", "POUFFER", "POUGNER", "POULINER"]},
-  {"label":"PR","words":["PRÉLUDER", "PROCÉDER", "PROFITER", "PROSPÉRER"]},
-  {"label":"PS","words":["PSYCHOTER"]},
-  {"label":"PU","words":["PULLULER", "PUPULER", "PUTASSER"]},
-  {"label":"QU","words":["QUINTOYER"]},
-  {"label":"RA","words":["RAFFOLER", "RAGER", "RAGOTER", "RÂLER", "RALLER", "RAMPER", "RAUQUER"]},
-  {"label":"REA","words":["RÉAGIR"]},
-  {"label":"REB","words":["REBIQUER"]},
-  {"label":"REC","words":["RECAUSER", "RECHUTER"]},
-  {"label":"RED","words":["REDONDER"]},
-  {"label":"REE","words":["RÉER"]},
-  {"label":"REF","words":["REFLUER"]},
-  {"label":"REG","words":["RÉGATER", "RÉGNER", "REGORGER", "RÉGRESSER"]},
-  {"label":"REL","words":["RELUIRE"]},
-  {"label":"REM","words":["REMARCHER", "REMBRAYER", "REMÉDIER"]},
-  {"label":"REN","words":["RENÂCLER", "RENARDER", "RENAUDER"]},
-  {"label":"REP","words":["REPAIRER"]},
-  {"label":"RES","words":["RÉSIDER", "RÉSISTER"]},
-  {"label":"RET","words":["RETENTIR", "RETIGER", "RETONTIR", "RÉTROAGIR"]},
-  {"label":"REV","words":["RÊVASSER"]},
-  {"label":"RI","words":["RIBOULER", "RICANER", "RICOCHER", "RIGOLER", "RIOTER", "RIPAILLER", "RIRE", "RIVALISER"]},
-  {"label":"RO","words":["RÔDAILLER", "ROGNONNER", "RONFLER", "ROQUER", "ROUGEOYER", "ROUMÉGUER", "ROUPILLER", "ROUSPÉTER"]},
-  {"label":"RU","words":["RUTILER"]},
-  {"label":"SA","words":["SALIVER", "SANGLOTER", "SAUTILLER"]},
-  {"label":"SC","words":["SCHADER", "SCRABBLER"]},
-  {"label":"SE","words":["SÉJOURNER", "SEMBLER", "SERPENTER", "SÉVIR"]},
-  {"label":"SI","words":["SIÉGER", "SIESTER", "SILER"]},
-  {"label":"SL","words":["SLALOMER"]},
-  {"label":"SM","words":["SMURFER"]},
-  {"label":"SO","words":["SOMBRER", "SOMNOLER", "SOUPER", "SOURIRE"]},
-  {"label":"SP","words":["SPÉCULER", "SPORULER", "SPRINTER"]},
-  {"label":"ST","words":["STAGNER"]},
-  {"label":"SU","words":["SUBSISTER", "SUBVENIR", "SUCCÉDER", "SUCCOMBER", "SUFFIRE", "SURNAGER", "SURRÉAGIR", "SURSAUTER", "SURVIRER"]},
-  {"label":"SW","words":["SWINGUER"]},
-  {"label":"TA","words":["TAFFER", "TALLER", "TANGUER", "TAPAGER", "TAPINER", "TARDER", "TARTIR", "TÂTONNER"]},
-  {"label":"TC","words":["TCHATER", "TCHATTER", "TCHOULER"]},
-  {"label":"TE","words":["TEMPÊTER", "TERRIR"]},
-  {"label":"TI","words":["TICTAQUER", "TIGER", "TILTER", "TIQUER", "TISER", "TITUBER"]},
-  {"label":"TO","words":["TONITRUER", "TONNER", "TORAILLER", "TOSSER", "TOUPINER", "TOURNOYER", "TOUSSER", "TOUSSOTER"]},
-  {"label":"TR","words":["TRABOULER", "TRALUIRE", "TRANSIGER", "TREKKER", "TRÉPIDER", "TRICOLER", "TRIMER", "TRINQUER", "TRIOMPHER", "TRIPER", "TRIPPER", "TRÔNER", "TROTTINER", "TROUILLER"]},
-  {"label":"UL","words":["ULULER"]},
-  {"label":"VA","words":["VACILLER", "VAGIR", "VAGUER", "VARAPPER", "VATICINER"]},
-  {"label":"VE","words":["VÉGÉTER", "VÊLER", "VERDOYER", "VERMILLER", "VESSER", "VÉTILLER"]},
-  {"label":"VI","words":["VIELLER", "VIRAILLER", "VIVOTER"]},
-  {"label":"VO","words":["VOGUER", "VOISINER", "VOLETER", "VOLTER", "VOLTIGER", "VOYAGER"]},
-  {"label":"VR","words":["VROMBIR"]},
-  {"label":"YA","words":["YASSER"]},
-  {"label":"YO","words":["YODLER", "YOUTSER", "YOUYOUTER", "YOYOTER", "YOYOTTER"]},
-  {"label":"ZE","words":["ZÉZAYER"]},
-  {"label":"ZI","words":["ZIGONNER", "ZIGZAGUER"]},
-  {"label":"ZO","words":["ZOUKER", "ZOZOTER"]},
-  {"label":"ZW","words":["ZWANZER"]},
+  {"label":"AB","words":["ABERRER", "ABRÉAGIR"]}
+  {"label":"AC","words":["ACCÉDER", "ACQUIESCER"]}
+  {"label":"AD","words":["ADHÉRER"]}
+  {"label":"AF","words":["AFFÉRER", "AFFLUER"]}
+  {"label":"AG","words":["AGIOTER", "AGONISER"]}
+  {"label":"AH","words":["AHANER"]}
+  {"label":"AM","words":["AMBLER", "AMOUILLER"]}
+  {"label":"AN","words":["ANECDOTISER", "ANHÉLER", "ANORDIR"]}
+  {"label":"AP","words":["APPARTENIR", "APPONTER"]}
+  {"label":"AS","words":["ASSONER"]}
+  {"label":"AT","words":["ATTENTER"]}
+  {"label":"AV","words":["AVIRONNER", "AVOCASSER"]}
+  {"label":"BAB","words":["BABILLER", "BABOLER"]}
+  {"label":"BAD","words":["BADAUDER", "BADINER"]}
+  {"label":"BAM","words":["BAMBOCHER"]}
+  {"label":"BAN","words":["BANQUETER"]}
+  {"label":"BAR","words":["BARÉTER", "BARGUIGNER", "BARJAQUER", "BAROUDER", "BARRIR"]}
+  {"label":"BAS","words":["BASTER"]}
+  {"label":"BAT","words":["BATAILLER", "BATIFOLER", "BATOILLER"]}
+  {"label":"BAV","words":["BAVARDER", "BAVASSER"]}
+  {"label":"BAY","words":["BAYER"]}
+  {"label":"BE","words":["BEDONNER", "BÉER", "BÉGUETER", "BELOTER", "BÉNÉFICIER", "BÊTISER"]}
+  {"label":"BI","words":["BIBELOTER", "BICHER", "BIFURQUER", "BIQUER", "BISQUER", "BIVOUAQUER"]}
+  {"label":"BL","words":["BLABLATER", "BLATÉRER", "BLÉSER", "BLOGUER", "BLONDOYER"]}
+  {"label":"BO","words":["BOITER", "BOITILLER", "BONDIR", "BOSTONNER", "BOTANISER", "BOUBOULER", "BOUFFONNER", "BOUILLOTER", "BOUILLOTTER", "BOULOCHER", "BOURDONNER", "BOURGEONNER", "BOURLINGUER", "BOURONNER", "BOURSICOTER", "BOUSTIFAILLER"]}
+  {"label":"BR","words":["BRAINSTORMER", "BRAIRE", "BRASILLER", "BRETAILLER", "BRILLER", "BRONCHER", "BRUIRE", "BRUISSER", "BRUNCHER"]}
+  {"label":"BU","words":["BÛCHERONNER", "BUISSONNER"]}
+  {"label":"CAB","words":["CABINER", "CABOTER", "CABOTINER", "CABRIOLER"]}
+  {"label":"CAC","words":["CACABER", "CACARDER", "CACHETONNER"]}
+  {"label":"CAF","words":["CAFOUILLER"]}
+  {"label":"CAG","words":["CAGUER"]}
+  {"label":"CAI","words":["CAILLETER"]}
+  {"label":"CAL","words":["CALANCHER", "CALMIR", "CALUGER"]}
+  {"label":"CAN","words":["CANCANER", "CANDIDATER", "CANOTER"]}
+  {"label":"CAP","words":["CAPÉER", "CAPEYER", "CAPITULER", "CAPONNER"]}
+  {"label":"CAQ","words":["CAQUETER"]}
+  {"label":"CAR","words":["CARACOLER", "CARAMBOUILLER", "CARCAILLER", "CARTAYER", "CARTOUCHER"]}
+  {"label":"CAS","words":["CASCADER"]}
+  {"label":"CAT","words":["CATCHER"]}
+  {"label":"CAU","words":["CAUCHEMARDER"]}
+  {"label":"CAV","words":["CAVALCADER"]}
+  {"label":"CHA","words":["CHALUTER", "CHAMBRANLER", "CHANCELER", "CHATONNER", "CHATOYER", "CHATTER", "CHAUVIR"]}
+  {"label":"CHE","words":["CHENALER", "CHÉRER", "CHERRER", "CHEVRETER", "CHEVRETTER"]}
+  {"label":"CHI","words":["CHIALER", "CHIBRER", "CHIGNER", "CHILLER", "CHINOISER"]}
+  {"label":"CHL","words":["CHLINGUER"]}
+  {"label":"CHN","words":["CHNEUQUER"]}
+  {"label":"CHO","words":["CHOPINER", "CHOPPER", "CHOUANNER", "CHOUGNER", "CHOUINER"]}
+  {"label":"CL","words":["CLAPOTER", "CLAQUETER", "CLAUDIQUER", "CLAVARDER", "CLIGNOTER", "CLIQUETER", "CLOPINER", "CLOPPER"]}
+  {"label":"COA","words":["COASSER"]}
+  {"label":"COC","words":["COCONNER", "COCOTER", "COCOTTER"]}
+  {"label":"COE","words":["COEXISTER"]}
+  {"label":"COH","words":["COHABITER", "COHÉRITER"]}
+  {"label":"COI","words":["COÏNCIDER", "COÏTER"]}
+  {"label":"COK","words":["COKOTER"]}
+  {"label":"COL","words":["COLLABORER", "COLLAPSER"]}
+  {"label":"COM","words":["COMATER", "COMMERCER", "COMMÉRER", "COMPARAITRE", "COMPATIR", "COMPÉTER", "COMPÉTIR", "COMPÉTITIONNER", "COMPLAIRE"]}
+  {"label":"CON","words":["CONCORDER", "CONCOURIR", "CONDESCENDRE", "CONFLUER", "CONSISTER", "CONSONER", "CONTREVENIR", "CONTRIBUER", "CONVERGER", "CONVERSER", "CONVOLER"]}
+  {"label":"COO","words":["COOPÉRER"]}
+  {"label":"COP","words":["COPINER", "COPULER"]}
+  {"label":"COQ","words":["COQUERIQUER", "COQUETER"]}
+  {"label":"COR","words":["CORRESPONDRE"]}
+  {"label":"COS","words":["COSSER"]}
+  {"label":"COU","words":["COUCHAILLER", "COUCOUER", "COUCOULER", "COUINER", "COURAILLER", "COURATER", "COURCAILLER"]}
+  {"label":"CR","words":["CRAILLER", "CRAPOTER", "CRAQUETER", "CRÉCHER", "CRÉPITER", "CREVOTER", "CRIAILLER", "CRIQUER", "CRISER", "CRISSER", "CROASSER", "CROUPIONNER", "CROUSTILLER"]}
+  {"label":"CU","words":["CULMINER"]}
+  {"label":"DA","words":["DAIGNER", "DANSOTER", "DANSOTTER"]}
+  {"label":"DEA","words":["DÉAMBULER"]}
+  {"label":"DEB","words":["DÉBOUQUER"]}
+  {"label":"DEC","words":["DÉCANILLER", "DÉCÉLÉRER", "DÉCHANTER", "DÉCOHABITER", "DÉCOLÉRER", "DÉCONNER", "DÉCOUCHER", "DÉCOULER"]}
+  {"label":"DEF","words":["DÉFAILLIR", "DÉFLAGRER", "DÉFUNTER"]}
+  {"label":"DEG","words":["DÉGAMMER", "DÉGOULINER", "DÉGOUTTER"]}
+  {"label":"DEH","words":["DÉHOTTER"]}
+  {"label":"DEJ","words":["DÉJEUNER"]}
+  {"label":"DEL","words":["DÉLIRER"]}
+  {"label":"DEM","words":["DÉMÉRITER", "DÉMORDRE"]}
+  {"label":"DEP","words":["DÉPARLER", "DÉPÉRIR", "DÉPLAIRE"]}
+  {"label":"DER","words":["DÉRADER", "DÉRAGER", "DÉRAILLER", "DÉRAISONNER", "DÉRAPER", "DÉROGER", "DÉRUPITER"]}
+  {"label":"DET","words":["DÉTALER", "DÉTONER", "DÉTONNER"]}
+  {"label":"DI","words":["DIFFLUER", "DIGRESSER", "DÎNER", "DINGUER", "DISCORDER", "DISCOURIR", "DISCUTAILLER", "DISPUTAILLER", "DISSERTER", "DISSONER", "DIVAGUER", "DIVERGER"]}
+  {"label":"DO","words":["DOGMATISER", "DONJUANISER", "DOUBLONNER"]}
+  {"label":"DR","words":["DRAGEONNER"]}
+  {"label":"DU","words":["DUNKER"]}
+  {"label":"DY","words":["DYSFONCTIONNER"]}
+  {"label":"EC","words":["ÉCRIVAILLER", "ÉCRIVASSER"]}
+  {"label":"EF","words":["EFFLUVER"]}
+  {"label":"EM","words":["EMPIÉTER"]}
+  {"label":"EN","words":["ENDÊVER", "ENTRENUIRE"]}
+  {"label":"EQ","words":["ÉQUIVOQUER"]}
+  {"label":"ER","words":["ERRER"]}
+  {"label":"ES","words":["ESCADRONNER", "ESCARMOUCHER", "ESQUIMAUTER"]}
+  {"label":"ET","words":["ÉTERNUER", "ÉTINCELER", "ÊTRE"]}
+  {"label":"EX","words":["EXCELLER", "EXCIPER", "EXCURSIONNER", "EXISTER", "EXTRAVAGUER", "EXULTER"]}
+  {"label":"FA","words":["FAIBLIR", "FAINÉANTER", "FANFARONNER", "FARANDOLER", "FASEILLER", "FASEYER"]}
+  {"label":"FE","words":["FEULER"]}
+  {"label":"FI","words":["FIENTER", "FINASSER"]}
+  {"label":"FL","words":["FLAGEOLER", "FLAMBOYER", "FLANCHER", "FLÂNER", "FLEMMARDER", "FLEURETER", "FLIRTER", "FLOCONNER", "FLOCULER", "FLUCTUER", "FLUER"]}
+  {"label":"FO","words":["FOISONNER", "FOLÂTRER", "FOLICHONNER", "FONCTIONNER", "FORLIGNER", "FORNIQUER", "FOUINER", "FOURMILLER", "FOUTIMASSER"]}
+  {"label":"FR","words":["FRAÎCHIR", "FRANSQUILLONNER", "FRATERNISER", "FRÉMIR", "FRÉTILLER", "FRISSONNER", "FROUER", "FROUFROUTER", "FROUILLER", "FRUCTIFIER"]}
+  {"label":"FU","words":["FUITER", "FULGURER", "FUMERONNER", "FURETER"]}
+  {"label":"GA","words":["GADROUILLER", "GALÉJER", "GALÉRER", "GAMBADER", "GAMBILLER", "GAMINER", "GARGOTER", "GARGOUILLER", "GASCONNER", "GÂTIFIER"]}
+  {"label":"GE","words":["GEEKER", "GEINDRE", "GESTICULER"]}
+  {"label":"GI","words":["GIROUETTER"]}
+  {"label":"GL","words":["GLANDOUILLER", "GLATIR", "GLOTTORER", "GLOUGLOUTER", "GLOUSSER"]}
+  {"label":"GO","words":["GODAILLER", "GODILLER", "GOLFER", "GOUTTER"]}
+  {"label":"GR","words":["GRAILLONNER", "GRAVITER", "GRELOTER", "GRELOTTER", "GRENOUILLER", "GRÉSILLER", "GRICHER", "GRIGNER", "GRINCER", "GRINCHER", "GRISOLER", "GRISOLLER", "GRISONNER", "GROGNASSER", "GROGNONNER", "GROOVER"]}
+  {"label":"GU","words":["GUEULETONNER", "GUINCHER", "GUINDAILLER"]}
+  {"label":"HA","words":["HÂBLER", "HALETER"]}
+  {"label":"HE","words":["HENNIR", "HERCHER", "HERSCHER", "HÉSITER"]}
+  {"label":"HI","words":["HIBERNER"]}
+  {"label":"HO","words":["HOQUETER"]}
+  {"label":"HU","words":["HULULER"]}
+  {"label":"IM","words":["IMPLOSER"]}
+  {"label":"IN","words":["INDAGUER", "INSISTER", "INTERAGIR", "INTERCÉDER", "INTERFÉRER"]}
+  {"label":"IO","words":["IODLER", "IOULER"]}
+  {"label":"IR","words":["IRONISER"]}
+  {"label":"JA","words":["JABOTER", "JACASSER", "JAPPER", "JARGONNER", "JASSER"]}
+  {"label":"JE","words":["JERKER"]}
+  {"label":"JO","words":["JOBER", "JODLER", "JOGGER", "JONGLER", "JOUAILLER", "JOUIR", "JOUTER"]}
+  {"label":"JU","words":["JUBILER", "JUMPER", "JUTER"]}
+  {"label":"KO","words":["KOTER"]}
+  {"label":"LA","words":["LAÏUSSER", "LAMBINER", "LAPINER", "LARMOYER"]}
+  {"label":"LE","words":["LÉGIFÉRER", "LÉSINER", "LÉVITER"]}
+  {"label":"LI","words":["LIARDER"]}
+  {"label":"LO","words":["LOFER", "LOQUETER", "LOUCHIR", "LOUVETER", "LOUVOYER"]}
+  {"label":"LU","words":["LUIRE", "LUNCHER", "LUTTER"]}
+  {"label":"LY","words":["LYRER"]}
+  {"label":"MA","words":["MACHICOTER", "MARGAUDER", "MARGOTER", "MARGOTTER", "MARIVAUDER", "MARONNER", "MARRONNER", "MARSOUINER"]}
+  {"label":"ME","words":["MÉDIRE", "MÉMÉRER", "MENTIR", "MERDOUILLER", "MERDOYER", "MÉSUSER", "MEUGLER"]}
+  {"label":"MI","words":["MIAULER", "MICHETONNER", "MILITER", "MINAUDER"]}
+  {"label":"MO","words":["MOLARDER", "MOLLARDER", "MONOLOGUER", "MOTIONNER", "MOUCHERONNER", "MOUFETER", "MOUFTER"]}
+  {"label":"MU","words":["MUSARDER"]}
+  {"label":"NA","words":["NAGEOTER", "NAVETTER", "NAVIGUER"]}
+  {"label":"NE","words":["NÉOLOGISER"]}
+  {"label":"NI","words":["NIDIFIER"]}
+  {"label":"NO","words":["NOCER", "NORDIR"]}
+  {"label":"NU","words":["NUIRE"]}
+  {"label":"OB","words":["OBLIQUER", "OBTEMPÉRER", "OBVIER"]}
+  {"label":"OE","words":["ŒUVRER"]}
+  {"label":"OF","words":["OFFICIER"]}
+  {"label":"OP","words":["OPINER", "OPTER"]}
+  {"label":"OR","words":["ORBITER"]}
+  {"label":"OS","words":["OSCILLER"]}
+  {"label":"OV","words":["OVULER"]}
+  {"label":"PAC","words":["PACTISER"]}
+  {"label":"PAG","words":["PAGAYER"]}
+  {"label":"PAL","words":["PALABRER", "PALPITER"]}
+  {"label":"PAN","words":["PANORAMIQUER", "PANOTER", "PANTELER", "PANTOUFLER"]}
+  {"label":"PAP","words":["PAPILLONNER", "PAPOTER"]}
+  {"label":"PAR","words":["PARADER", "PARESSER", "PARLEMENTER", "PARLOTER", "PARTICIPER", "PARTOUSER", "PARTOUZER"]}
+  {"label":"PAT","words":["PATAUGER", "PATIENTER", "PÂTIR", "PATRIGOTER"]}
+  {"label":"PAU","words":["PAUSER"]}
+  {"label":"PE","words":["PÉCLOTER", "PÈDZER", "PENDILLER", "PENDOUILLER", "PÉPIER", "PERDURER", "PÉRÉGRINER", "PERFORMER", "PÉRICLITER", "PÉRIPHRASER", "PÉRORER", "PERSÉVÉRER", "PERSISTER", "PESTER", "PÉTARADER", "PÉTILLER", "PÉTITIONNER", "PÉTOCHER", "PÉTOUILLER", "PÉTRARQUISER", "PÉTUNER"]}
+  {"label":"PH","words":["PHILOSOPHER"]}
+  {"label":"PI","words":["PIAFFER", "PIAILLER", "PIAPIATER", "PIAULER", "PINAILLER", "PINDARISER", "PINTOCHER", "PIONNER", "PIORNER", "PIQUENIQUER", "PIROUETTER", "PISSOTER", "PITUITER"]}
+  {"label":"PL","words":["PLAIRE", "PLANCHER", "PLEURNICHER"]}
+  {"label":"PO","words":["POGOTER", "POIREAUTER", "POIROTER", "POITRINER", "POLÉMIQUER", "POLISSONNER", "POLITIQUER", "PONTIFIER", "POSTILLONNER", "POTINER", "POUCER", "POUDROYER", "POUFFER", "POUGNER", "POULINER", "POUVOIR"]}
+  {"label":"PR","words":["PRÉDOMINER", "PRÉEXISTER", "PRÉLUDER", "PRÉVARIQUER", "PROCÉDER", "PROCESSIONNER", "PROFITER", "PROGRESSER", "PROLIFÉRER", "PROSPÉRER"]}
+  {"label":"PS","words":["PSYCHOTER"]}
+  {"label":"PU","words":["PULLULER", "PUPULER", "PUTASSER"]}
+  {"label":"QU","words":["QUINTOYER"]}
+  {"label":"RA","words":["RAFFOLER", "RAGER", "RAGOTER", "RAIRE", "RÂLER", "RALLER", "RAMPER", "RATATOUILLER", "RATIOCINER", "RAUQUER"]}
+  {"label":"REA","words":["RÉAGIR"]}
+  {"label":"REB","words":["REBIQUER"]}
+  {"label":"REC","words":["RECAUSER", "RECHUTER", "RECOMPARAÎTRE", "RÉCRIMINER"]}
+  {"label":"RED","words":["REDÉCOLLER", "REDONDER"]}
+  {"label":"REE","words":["RÉER"]}
+  {"label":"REF","words":["REFLUER"]}
+  {"label":"REG","words":["RÉGATER", "RÉGNER", "REGORGER", "RÉGRESSER"]}
+  {"label":"REL","words":["RELUIRE"]}
+  {"label":"REM","words":["REMARCHER", "REMBRAYER", "REMÉDIER"]}
+  {"label":"REN","words":["RENÂCLER", "RENARDER", "RENAUDER"]}
+  {"label":"REP","words":["REPAIRER"]}
+  {"label":"RES","words":["RÉSIDER", "RÉSISTER", "RESPLENDIR", "RESSEMBLER", "RESSORTIR"]}
+  {"label":"RET","words":["RETENTIR", "RETIGER", "RETONTIR", "RÉTROAGIR", "RÉTROPÉDALER"]}
+  {"label":"REV","words":["RÊVASSER", "RÉVEILLONNER"]}
+  {"label":"RI","words":["RIBOULER", "RICANER", "RICOCHER", "RIGOLER", "RIOTER", "RIPAILLER", "RIRE", "RIVALISER"]}
+  {"label":"RO","words":["RÔDAILLER", "ROGNONNER", "RONCHONNER", "RONFLER", "RONSARDISER", "ROQUER", "ROUGEOYER", "ROUMÉGUER", "ROUPILLER", "ROUSCAILLER", "ROUSPÉTER"]}
+  {"label":"RU","words":["RUTILER"]}
+  {"label":"SA","words":["SALIVER", "SANGLOTER", "SAUTILLER"]}
+  {"label":"SC","words":["SCHADER", "SCHELINGUER", "SCHLINGUER", "SCHNEUQUER", "SCINTILLER", "SCISSIONNER", "SCRABBLER"]}
+  {"label":"SE","words":["SÉJOURNER", "SEMBLER", "SERPENTER", "SÉVIR"]}
+  {"label":"SI","words":["SIÉGER", "SIESTER", "SILER"]}
+  {"label":"SL","words":["SLALOMER"]}
+  {"label":"SM","words":["SMURFER"]}
+  {"label":"SO","words":["SOLILOQUER", "SOMBRER", "SOMMEILLER", "SOMNOLER", "SONNAILLER", "SOUPER", "SOURCILLER", "SOURIRE"]}
+  {"label":"SP","words":["SPÉCULER", "SPORULER", "SPRINTER"]}
+  {"label":"ST","words":["STAGNER"]}
+  {"label":"SU","words":["SUBSISTER", "SUBVENIR", "SUCCÉDER", "SUCCOMBER", "SUFFIRE", "SURABONDER", "SURENCHÉRIR", "SURGEONNER", "SURNAGER", "SURRÉAGIR", "SURSAUTER", "SURVIRER"]}
+  {"label":"SW","words":["SWINGUER"]}
+  {"label":"SY","words":["SYMPATHISER", "SYNCRISTALLISER"]}
+  {"label":"TA","words":["TAFFER", "TALLER", "TANGUER", "TAPAGER", "TAPINER", "TARDER", "TARTIR", "TATAOUINER", "TATILLONNER", "TÂTONNER"]}
+  {"label":"TC","words":["TCHATER", "TCHATTER", "TCHOULER"]}
+  {"label":"TE","words":["TÉLÉTRAVAILLER", "TEMPÊTER", "TERGIVERSER", "TERRIR"]}
+  {"label":"TI","words":["TICTAQUER", "TIGER", "TILTER", "TINTINNABULER", "TIQUER", "TISER", "TITUBER"]}
+  {"label":"TO","words":["TONITRUER", "TONNER", "TORAILLER", "TORRAILLER", "TOSSER", "TOUPINER", "TOURBILLONNER", "TOURNAILLER", "TOURNICOTER", "TOURNIQUER", "TOURNOYER", "TOUSSAILLER", "TOUSSER", "TOUSSOTER"]}
+  {"label":"TR","words":["TRABOULER", "TRALUIRE", "TRANSIGER", "TRANSITIONNER", "TRANSMIGRER", "TRANSPARAÎTRE", "TRAVAILLOTER", "TREKKER", "TREMBLOTER", "TRÉPIDER", "TRESSAILLIR", "TRESSAUTER", "TRICOLER", "TRIMER", "TRINQUER", "TRIOMPHER", "TRIPER", "TRIPPER", "TRÔNER", "TROTTINER", "TROUILLER"]}
+  {"label":"UL","words":["ULULER"]}
+  {"label":"VA","words":["VACILLER", "VADROUILLER", "VAGABONDER", "VAGIR", "VAGUER", "VALDINGUER", "VARAPPER", "VASOUILLER", "VATICINER"]}
+  {"label":"VE","words":["VÉGÉTER", "VÊLER", "VENDREDIRE", "VERDOYER", "VERMILLER", "VESSER", "VÉTILLER"]}
+  {"label":"VI","words":["VIBRIONNER", "VIELLER", "VILLÉGIATURER", "VIRAILLER", "VIREVOLTER", "VIVOTER"]}
+  {"label":"VO","words":["VOGUER", "VOISINER", "VOLETER", "VOLTER", "VOLTIGER", "VOYAGER"]}
+  {"label":"VR","words":["VROMBIR"]}
+  {"label":"YA","words":["YASSER"]}
+  {"label":"YO","words":["YODLER", "YOUTSER", "YOUYOUTER", "YOYOTER", "YOYOTTER"]}
+  {"label":"ZE","words":["ZÉZAYER"]}
+  {"label":"ZI","words":["ZIGONNER", "ZIGZAGUER", "ZINZINULER"]}
+  {"label":"ZO","words":["ZOUKER", "ZOZOTER"]}
+  {"label":"ZW","words":["ZWANZER"]}
 ];
 
 window.THEMODS_DATA.oir = [
