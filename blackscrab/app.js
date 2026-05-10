@@ -1,34 +1,69 @@
 'use strict';
 
 /* ── State ─────────────────────────────────────────────── */
-let settings = { minLen: 5, maxLen: 8, joker: false };
-let pool     = [];
+let settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
+let pool      = [];
 let jokerPool = [];
 let bsAllMap  = null;
-let seance   = [];
-let score    = 0;
-let target   = 21;
-let kbBuf    = '';
-let msgTimer = null;
+let srsData   = {};
+let seance    = [];
+let score     = 0;
+let target    = 21;
+let kbBuf     = '';
+let msgTimer  = null;
+let chronoTimer     = null;
+let chronoRemaining = 0;
+let gameActive      = false;
 
-const SETTINGS_KEY = 'bs-settings';
+const SETTINGS_KEY   = 'bs-settings';
+const SRS_KEY        = 'bs-srs';
+const SRS_DONE_DAYS  = 30;
+const SRS_INTERVALS  = [3, 7, 14, 30, 60, 90, 180];
 
 /* ── Settings persistence ──────────────────────────────── */
 
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    settings.minLen = Math.max(2, Math.min(15, +s.minLen || 5));
-    settings.maxLen = Math.max(2, Math.min(15, +s.maxLen || 8));
+    settings.minLen    = Math.max(2, Math.min(15, +s.minLen    || 5));
+    settings.maxLen    = Math.max(2, Math.min(15, +s.maxLen    || 8));
+    settings.maxWords  = Math.max(1, Math.min(21, +s.maxWords  || 5));
+    settings.joker     = !!s.joker;
+    settings.chrono    = !!s.chrono;
+    settings.chronoMin = Math.max(5, Math.min(60, +s.chronoMin || 10));
     if (settings.minLen > settings.maxLen) settings.maxLen = settings.minLen;
-    settings.joker = !!s.joker;
   } catch(e) {
-    settings = { minLen: 5, maxLen: 8, joker: false };
+    settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
   }
 }
 
 function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
+}
+
+/* ── SRS ───────────────────────────────────────────────── */
+
+function loadSRS() {
+  try { srsData = JSON.parse(localStorage.getItem(SRS_KEY) || '{}'); } catch(e) { srsData = {}; }
+}
+
+function saveSRS() {
+  try { localStorage.setItem(SRS_KEY, JSON.stringify(srsData)); } catch(e) {}
+}
+
+function srsMarkDone(key) {
+  srsData[key] = { due: Date.now() + SRS_DONE_DAYS * 86400000, interval: -1 };
+}
+
+function srsMarkPartial(key) {
+  const cur = srsData[key];
+  let idx = 0;
+  if (cur?.interval > 0) {
+    const i = SRS_INTERVALS.indexOf(cur.interval);
+    idx = Math.min(i < 0 ? 0 : i + 1, SRS_INTERVALS.length - 1);
+  }
+  const days = SRS_INTERVALS[idx];
+  srsData[key] = { due: Date.now() + days * 86400000, interval: days };
 }
 
 /* ── Pool ──────────────────────────────────────────────── */
@@ -39,12 +74,8 @@ function computeJokerWords(baseSorted) {
   const words = [];
   for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
     const extKey = [...baseSorted, L].sort().join('');
-    const group = bsAllMap.get(extKey);
-    if (group) {
-      for (const w of group) {
-        if (!seen.has(w)) { seen.add(w); words.push(w); }
-      }
-    }
+    const group  = bsAllMap.get(extKey);
+    if (group) for (const w of group) if (!seen.has(w)) { seen.add(w); words.push(w); }
   }
   return words;
 }
@@ -52,10 +83,7 @@ function computeJokerWords(baseSorted) {
 function isSubset(base, extended) {
   const cnt = {};
   for (const c of extended) cnt[c] = (cnt[c] || 0) + 1;
-  for (const c of base) {
-    if (!cnt[c]) return false;
-    cnt[c]--;
-  }
+  for (const c of base) { if (!cnt[c]) return false; cnt[c]--; }
   return true;
 }
 
@@ -63,18 +91,28 @@ function buildPool() {
   const src = window.BS_ALL;
   if (!src?.length) { pool = []; jokerPool = []; bsAllMap = null; return; }
 
-  bsAllMap = new Map();
-  for (const t of src) bsAllMap.set(t[0], t.slice(1));
+  if (!bsAllMap) {
+    bsAllMap = new Map();
+    for (const t of src) bsAllMap.set(t[0], t.slice(1));
+  }
 
-  pool = src
-    .filter(t => t[0].length >= settings.minLen && t[0].length <= settings.maxLen)
-    .map(t => ({ sorted: t[0], words: t.slice(1) }));
+  const now = Date.now();
+
+  pool = src.filter(t => {
+    if (t[0].length < settings.minLen || t[0].length > settings.maxLen) return false;
+    if (t.length - 1 > settings.maxWords) return false;
+    const srs = srsData[t[0]];
+    return !(srs && srs.due > now);
+  }).map(t => ({ sorted: t[0], words: t.slice(1) }));
 
   jokerPool = [];
   if (settings.joker) {
     for (const entry of pool) {
+      const jokerKey = entry.sorted + '?';
+      const srs = srsData[jokerKey];
+      if (srs && srs.due > now) continue;
       const words = computeJokerWords(entry.sorted);
-      if (words.length >= 2 && words.length <= 8) {
+      if (words.length >= 2 && words.length <= settings.maxWords) {
         jokerPool.push({ sorted: entry.sorted, words, isJoker: true });
       }
     }
@@ -93,33 +131,25 @@ function shuffle(arr) {
 }
 
 function buildSeance() {
-  if (!pool.length) return [];
+  if (!pool.length && !jokerPool.length) return [];
 
   const groups = {};
-  for (const t of pool) {
-    const n = t.words.length;
-    (groups[n] || (groups[n] = [])).push(t);
-  }
+  for (const t of pool) { const n = t.words.length; (groups[n] || (groups[n] = [])).push(t); }
   const shuffled = {};
   for (const n in groups) shuffled[n] = shuffle(groups[n]);
 
   const jGroups = {};
-  for (const t of jokerPool) {
-    const n = t.words.length;
-    (jGroups[n] || (jGroups[n] = [])).push(t);
-  }
+  for (const t of jokerPool) { const n = t.words.length; (jGroups[n] || (jGroups[n] = [])).push(t); }
   const jShuffled = {};
   for (const n in jGroups) jShuffled[n] = shuffle(jGroups[n]);
 
   const chosen = [];
   let remaining = 21;
-  let bigCount  = 0; // tirages with > 3 words — max 2 per session
 
   while (remaining > 0) {
-    const maxN = bigCount >= 2 ? 3 : remaining;
     const available = new Set([
-      ...Object.keys(shuffled).map(Number).filter(n => n <= maxN && shuffled[n].length > 0),
-      ...Object.keys(jShuffled).map(Number).filter(n => n <= maxN && jShuffled[n].length > 0),
+      ...Object.keys(shuffled).map(Number).filter(n => n <= remaining && shuffled[n].length > 0),
+      ...Object.keys(jShuffled).map(Number).filter(n => n <= remaining && jShuffled[n].length > 0),
     ]);
     if (!available.size) break;
     const keys = [...available];
@@ -136,7 +166,6 @@ function buildSeance() {
       entry = shuffled[n].pop();
     }
 
-    if (n > 3) bigCount++;
     chosen.push(entry);
     remaining -= n;
   }
@@ -154,10 +183,69 @@ function tirageSortedDisplay(t) {
   return t.isJoker ? t.sorted + '?' : t.sorted;
 }
 
+/* ── Chrono ────────────────────────────────────────────── */
+
+function startChrono() {
+  if (!settings.chrono) return;
+  clearInterval(chronoTimer);
+  chronoRemaining = settings.chronoMin * 60;
+  document.getElementById('chrono-display').classList.remove('hidden');
+  updateChronoDisplay();
+  chronoTimer = setInterval(() => {
+    chronoRemaining--;
+    updateChronoDisplay();
+    if (chronoRemaining <= 0) {
+      clearInterval(chronoTimer); chronoTimer = null;
+      showRecap(true);
+    }
+  }, 1000);
+}
+
+function stopChrono() {
+  clearInterval(chronoTimer); chronoTimer = null;
+  document.getElementById('chrono-display')?.classList.add('hidden');
+}
+
+function updateChronoDisplay() {
+  const el = document.getElementById('chrono-display');
+  if (!el) return;
+  const m = Math.floor(chronoRemaining / 60);
+  const s = chronoRemaining % 60;
+  el.textContent = m + ':' + String(s).padStart(2, '0');
+  el.classList.toggle('chrono-warn', chronoRemaining <= 60);
+}
+
+/* ── Views ─────────────────────────────────────────────── */
+
+function showStartScreen() {
+  gameActive = false;
+  stopChrono();
+  document.getElementById('solution-view').classList.add('hidden');
+  document.getElementById('input-area').classList.add('hidden');
+  const grid = document.getElementById('grid');
+  grid.classList.remove('hidden');
+  grid.innerHTML = '';
+  const prompt = document.createElement('div');
+  prompt.className = 'start-prompt';
+  const sub = document.createElement('p');
+  sub.className = 'start-sub';
+  sub.textContent = 'Trouvez tous les anagrammes';
+  const btn = document.createElement('button');
+  btn.className = 'start-btn';
+  btn.textContent = '▶ Jouer';
+  btn.addEventListener('click', newGame);
+  prompt.appendChild(sub);
+  prompt.appendChild(btn);
+  grid.appendChild(prompt);
+}
+
 function newGame() {
+  buildPool();
+  gameActive = true;
   score = 0;
   kbBuf = '';
   clearTimeout(msgTimer);
+  stopChrono();
   document.getElementById('solution-view').classList.add('hidden');
   document.getElementById('grid').classList.remove('hidden');
   document.getElementById('input-area').classList.remove('hidden');
@@ -167,9 +255,10 @@ function newGame() {
   updateScore();
   setMsg('');
   updateWordDisplay();
+  startChrono();
   if (!target) {
     document.getElementById('grid').innerHTML =
-      '<p style="color:var(--red);padding:20px">Aucun tirage pour ces réglages.</p>';
+      '<p class="no-pool-msg">Aucun tirage disponible.<br>Modifiez les réglages ou attendez que des tirages redeviennent disponibles (répétition espacée).</p>';
   }
 }
 
@@ -210,20 +299,15 @@ function renderGrid() {
     } else {
       const dots = document.createElement('span');
       dots.className = 'card-dots';
-      const ref = t.isJoker ? t.words[0] : t.words[0];
-      dots.textContent = '· '.repeat(Math.min(ref.length, 8)).trimEnd();
+      dots.textContent = '· '.repeat(Math.min(t.words[0].length, 8)).trimEnd();
       info.appendChild(dots);
     }
     tokWrap.appendChild(info);
     card.appendChild(tokWrap);
 
     const badge = document.createElement('div');
-    if (t.foundWords.length > 0) {
-      badge.className = 'card-badge';
-      badge.textContent = t.foundWords.length;
-    } else {
-      badge.className = 'card-circle';
-    }
+    badge.className = t.foundWords.length > 0 ? 'card-badge' : 'card-circle';
+    if (t.foundWords.length > 0) badge.textContent = t.foundWords.length;
     card.appendChild(badge);
 
     grid.appendChild(card);
@@ -343,30 +427,44 @@ function wireDesktopInput() {
 /* ── Settings UI ───────────────────────────────────────── */
 
 function refreshSettingsUI() {
-  document.getElementById('val-min').textContent = settings.minLen;
-  document.getElementById('val-max').textContent = settings.maxLen;
+  document.getElementById('val-min').textContent    = settings.minLen;
+  document.getElementById('val-max').textContent    = settings.maxLen;
+  document.getElementById('val-mw').textContent     = settings.maxWords;
+  document.getElementById('val-chrono').textContent = settings.chronoMin + ' min';
+
   const jokerBtn = document.getElementById('sett-joker');
   if (jokerBtn) {
     jokerBtn.textContent = settings.joker ? 'Activé' : 'Désactivé';
     jokerBtn.classList.toggle('active', settings.joker);
   }
+  const chronoBtn = document.getElementById('sett-chrono');
+  if (chronoBtn) {
+    chronoBtn.textContent = settings.chrono ? 'Activé' : 'Désactivé';
+    chronoBtn.classList.toggle('active', settings.chrono);
+  }
+  document.getElementById('row-chrono-dur')?.classList.toggle('hidden', !settings.chrono);
+}
+
+function openSettingsPanel(anchorEl, e) {
+  e.stopPropagation();
+  const panel = document.getElementById('settings-panel');
+  if (panel.classList.contains('hidden')) {
+    refreshSettingsUI();
+    const bottom = anchorEl.getBoundingClientRect().bottom;
+    panel.style.top = (bottom + 6) + 'px';
+    panel.classList.remove('hidden');
+  } else {
+    panel.classList.add('hidden');
+  }
 }
 
 function wireSettings() {
-  const panel   = document.getElementById('settings-panel');
-  const btnOpen = document.getElementById('btn-settings');
+  const panel = document.getElementById('settings-panel');
 
-  btnOpen.addEventListener('click', e => {
-    e.stopPropagation();
-    if (panel.classList.contains('hidden')) {
-      refreshSettingsUI();
-      const bottom = document.getElementById('header').getBoundingClientRect().bottom;
-      panel.style.top = (bottom + 6) + 'px';
-      panel.classList.remove('hidden');
-    } else {
-      panel.classList.add('hidden');
-    }
-  });
+  document.getElementById('btn-settings').addEventListener('click', e =>
+    openSettingsPanel(document.getElementById('header'), e));
+  document.getElementById('btn-settings-sol')?.addEventListener('click', e =>
+    openSettingsPanel(document.getElementById('solution-header'), e));
 
   document.addEventListener('click', e => {
     if (!panel.classList.contains('hidden') && !panel.contains(e.target))
@@ -375,8 +473,7 @@ function wireSettings() {
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   document.getElementById('dec-min').addEventListener('click', () => {
-    settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen);
-    refreshSettingsUI();
+    settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen); refreshSettingsUI();
   });
   document.getElementById('inc-min').addEventListener('click', () => {
     settings.minLen = clamp(settings.minLen + 1, 2, 15);
@@ -384,30 +481,53 @@ function wireSettings() {
     refreshSettingsUI();
   });
   document.getElementById('dec-max').addEventListener('click', () => {
-    settings.maxLen = clamp(settings.maxLen - 1, settings.minLen, 15);
-    refreshSettingsUI();
+    settings.maxLen = clamp(settings.maxLen - 1, settings.minLen, 15); refreshSettingsUI();
   });
   document.getElementById('inc-max').addEventListener('click', () => {
-    settings.maxLen = clamp(settings.maxLen + 1, 2, 15);
-    refreshSettingsUI();
+    settings.maxLen = clamp(settings.maxLen + 1, 2, 15); refreshSettingsUI();
+  });
+  document.getElementById('dec-mw').addEventListener('click', () => {
+    settings.maxWords = clamp(settings.maxWords - 1, 1, 21); refreshSettingsUI();
+  });
+  document.getElementById('inc-mw').addEventListener('click', () => {
+    settings.maxWords = clamp(settings.maxWords + 1, 1, 21); refreshSettingsUI();
+  });
+  document.getElementById('dec-chrono').addEventListener('click', () => {
+    settings.chronoMin = clamp(settings.chronoMin - 5, 5, 60); refreshSettingsUI();
+  });
+  document.getElementById('inc-chrono').addEventListener('click', () => {
+    settings.chronoMin = clamp(settings.chronoMin + 5, 5, 60); refreshSettingsUI();
   });
 
   document.getElementById('sett-joker')?.addEventListener('click', () => {
-    settings.joker = !settings.joker;
-    refreshSettingsUI();
+    settings.joker = !settings.joker; refreshSettingsUI();
+  });
+  document.getElementById('sett-chrono')?.addEventListener('click', () => {
+    settings.chrono = !settings.chrono; refreshSettingsUI();
   });
 
   document.getElementById('btn-sett-apply').addEventListener('click', () => {
     saveSettings();
+    bsAllMap = null; // force rebuild
     buildPool();
     panel.classList.add('hidden');
-    newGame();
+    if (gameActive) newGame(); else showStartScreen();
   });
 }
 
 /* ── Solution view ─────────────────────────────────────── */
 
 function showRecap(abandoned = false) {
+  stopChrono();
+  gameActive = false;
+
+  seance.forEach(t => {
+    const key = t.isJoker ? t.sorted + '?' : t.sorted;
+    if (t.done) srsMarkDone(key);
+    else if (t.foundWords.length > 0) srsMarkPartial(key);
+  });
+  saveSRS();
+
   const view  = document.getElementById('solution-view');
   const title = document.getElementById('solution-title');
   const list  = document.getElementById('solution-list');
@@ -424,15 +544,15 @@ function showRecap(abandoned = false) {
     const item = document.createElement('div');
     item.className = 'sol-item';
 
-    const header = document.createElement('div');
-    header.className = 'v-header';
+    const hdr = document.createElement('div');
+    hdr.className = 'v-header';
     tirageSortedDisplay(t).split('').forEach(l => {
       const sp = document.createElement('span');
       sp.className = 'v-token' + (l === '?' ? ' v-token-joker' : '');
       sp.textContent = l;
-      header.appendChild(sp);
+      hdr.appendChild(sp);
     });
-    item.appendChild(header);
+    item.appendChild(hdr);
 
     const sols = document.createElement('div');
     sols.className = 'v-solutions';
@@ -450,6 +570,14 @@ function showRecap(abandoned = false) {
     item.appendChild(sols);
     list.appendChild(item);
   });
+
+  // Bottom replay button
+  const replayBottom = document.createElement('button');
+  replayBottom.className = 'start-btn';
+  replayBottom.style.cssText = 'margin:8px 0 4px;width:100%;';
+  replayBottom.textContent = '↺ Rejouer';
+  replayBottom.addEventListener('click', newGame);
+  list.appendChild(replayBottom);
 
   view.classList.remove('hidden');
 }
@@ -471,6 +599,7 @@ async function init() {
   }
 
   loadSettings();
+  loadSRS();
   buildPool();
   wireKeyboard();
   wireDesktopInput();
@@ -482,7 +611,7 @@ async function init() {
   });
   document.getElementById('solution-replay').addEventListener('click', newGame);
 
-  newGame();
+  showStartScreen();
 }
 
 document.addEventListener('DOMContentLoaded', init);
