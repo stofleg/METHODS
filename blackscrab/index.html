@@ -9,7 +9,7 @@
 <title>BlackScrab</title>
 <link rel="manifest" href="./manifest.json">
 <style>
-/* ── Reset & base ─────────────────────────────────────── */
+/* ── Reset & base ──────────────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#111318;
@@ -41,12 +41,12 @@ body{
   padding-bottom:env(safe-area-inset-bottom);
 }
 
-/* ── Header ───────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────── */
 #header{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:10px 14px 8px;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;
   background:var(--bg);
   flex-shrink:0;
   border-bottom:1px solid var(--border);
@@ -62,7 +62,7 @@ body{
 }
 #btn-new:active{opacity:.7;}
 
-/* ── Grid (vertical scroll) ───────────────────────────── */
+/* ── Grid (vertical scroll) ────────────────────────────────────────── */
 #grid{
   flex:1;
   overflow-y:auto;
@@ -73,7 +73,7 @@ body{
   padding:10px;
 }
 
-/* ── Card ─────────────────────────────────────────────── */
+/* ── Card ──────────────────────────────────────────────── */
 .card{
   background:var(--surface);
   border:2px solid var(--border);
@@ -120,7 +120,7 @@ body{
   flex-shrink:0;
 }
 
-/* ── Input area (bottom, always visible) ──────────────── */
+/* ── Input area (bottom, always visible) ──────────────────────────── */
 #input-area{
   flex-shrink:0;
   background:var(--kb);
@@ -139,7 +139,7 @@ body{
 .word-msg.error{color:var(--red);font-weight:600;}
 .word-msg.warn{color:var(--warn);font-weight:600;}
 
-/* ── Desktop input ────────────────────────────────────── */
+/* ── Desktop input ──────────────────────────────────────────────── */
 .desktop-row{
   display:flex;align-items:center;gap:8px;padding:6px 12px 10px;
 }
@@ -156,7 +156,7 @@ body{
 #dt-ok:active{opacity:.75;}
 @media(max-width:640px){.desktop-row{display:none;}}
 
-/* ── Mobile keyboard ──────────────────────────────────── */
+/* ── Mobile keyboard ──────────────────────────────────────────────── */
 .keyboard{
   display:none;flex-direction:column;
   background:var(--kb);padding:4px 4px 6px;gap:4px;
@@ -178,7 +178,7 @@ body{
 .kk.clr{background:var(--kk-clr);}
 .kk.del{background:var(--kk-del);}
 
-/* ── Victory modal ───────────────────────────────────── */
+/* ── Victory modal ─────────────────────────────────────────────── */
 #victory-modal{
   position:fixed;inset:0;
   background:rgba(10,11,18,.92);
@@ -282,7 +282,7 @@ body{
 <script src="../ods_data.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v101';
+  const CURRENT_CACHE = 'blackscrab-v102';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>

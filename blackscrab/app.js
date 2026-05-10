@@ -1,6 +1,6 @@
 'use strict';
 
-/* ── State ─────────────────────────────────────────────── */
+/* ── State ──────────────────────────────────────────────── */
 let allTirages = [];   // [{sorted, word}]
 let seance     = [];   // [{sorted, word, letters[], foundOrder}]  0 = pas trouvé
 let score = 0;
@@ -56,8 +56,9 @@ function newGame() {
   seance = shuffle(allTirages).slice(0, 21).map(t => ({
     sorted: t.sorted,
     word: t.word,
-    letters: shuffle(t.sorted.split('')),
+    letters: t.sorted.split(''),   // ordre alphabétique, pas mélangé
     foundOrder: 0,
+    foundWord: '',                 // mot effectivement tapé par le joueur
   }));
 
   renderGrid();
@@ -70,7 +71,7 @@ function onNewGame() {
   if (score === 0 || score === 21 || confirm('Recommencer une nouvelle partie ?')) newGame();
 }
 
-/* ── Rendering ─────────────────────────────────────────── */
+/* ── Rendering ──────────────────────────────────────────────── */
 
 function renderGrid() {
   const grid = document.getElementById('grid');
@@ -97,7 +98,7 @@ function renderGrid() {
     const sub = document.createElement('div');
     if (t.foundOrder) {
       sub.className = 'card-word';
-      sub.textContent = t.word;
+      sub.textContent = t.foundWord;
     } else {
       sub.className = 'card-dots';
       sub.textContent = '· '.repeat(Math.min(t.word.length, 8)).trimEnd();
@@ -135,18 +136,22 @@ function setMsg(text, cls) {
   if (text) msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'word-msg'; }, 2000);
 }
 
-/* ── Submission ────────────────────────────────────────── */
+/* ── Submission ──────────────────────────────────────────────── */
 
 function submit() {
   const word = kbBuf.trim().toUpperCase();
   if (!word) return;
 
+  /* trier les lettres du mot tapé pour comparer au sorted du tirage */
+  const wordSorted = word.split('').sort().join('');
+
   /* check against all unfound tirages */
-  const hit = seance.find(t => !t.foundOrder && t.word === word);
+  const hit = seance.find(t => !t.foundOrder && t.sorted === wordSorted);
 
   if (hit) {
     score++;
     hit.foundOrder = score;
+    hit.foundWord = word;          // on garde le mot tapé, pas le canonique
     kbBuf = '';
     updateWordDisplay();
     setMsg('');
@@ -163,7 +168,7 @@ function submit() {
   }
 
   /* already found ? */
-  const already = seance.find(t => t.foundOrder && t.word === word);
+  const already = seance.find(t => t.foundOrder && t.sorted === wordSorted);
   if (already) {
     setMsg('déjà trouvé', 'warn');
   } else {
@@ -173,7 +178,7 @@ function submit() {
   updateWordDisplay();
 }
 
-/* ── Keyboard (mobile) ─────────────────────────────────── */
+/* ── Keyboard (mobile) ────────────────────────────────────────── */
 
 function wireKeyboard() {
   const kb = document.getElementById('bs-kb');
@@ -198,7 +203,7 @@ function wireKeyboard() {
   kb.addEventListener('click', e => { if (e.target.closest('.kk')) e.preventDefault(); });
 }
 
-/* ── Desktop input ─────────────────────────────────────── */
+/* ── Desktop input ──────────────────────────────────────────────── */
 
 function wireDesktopInput() {
   const input = document.getElementById('dt-input');
@@ -214,7 +219,7 @@ function wireDesktopInput() {
   btn?.addEventListener('click', submit);
 }
 
-/* ── Victory ───────────────────────────────────────────── */
+/* ── Victory ──────────────────────────────────────────────── */
 
 function findDef(word) {
   const TD = window.THEMODS_DATA;
@@ -238,11 +243,11 @@ function showVictory() {
 
   /* sort by discovery order */
   [...seance].sort((a, b) => a.foundOrder - b.foundOrder).forEach(t => {
-    const def  = findDef(t.word);
+    const def  = findDef(t.foundWord) || findDef(t.word);
     const item = document.createElement('div');
     item.className = 'v-item';
     item.innerHTML =
-      `<div class="v-head"><span class="v-num">${t.foundOrder}</span><span class="v-word">${t.word}</span></div>` +
+      `<div class="v-head"><span class="v-num">${t.foundOrder}</span><span class="v-word">${t.foundWord}</span></div>` +
       (def ? `<span class="v-def">${def}</span>` : '');
     list.appendChild(item);
   });
@@ -254,5 +259,5 @@ document.getElementById('victory-close')?.addEventListener('click', () => {
   document.getElementById('victory-modal').classList.add('hidden');
 });
 
-/* ── Start ─────────────────────────────────────────────── */
+/* ── Start ──────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
