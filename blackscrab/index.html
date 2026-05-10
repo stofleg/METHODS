@@ -261,12 +261,30 @@ a.def-link{color:var(--gold);text-decoration:none;}
 a.def-link:hover{text-decoration:underline;}
 .found-word{cursor:pointer;}
 .found-word:hover{text-decoration:underline;}
+
+/* ── Chrono ──────────────────────────────────────────── */
+.chrono{font-size:18px;font-weight:800;color:var(--text);min-width:48px;text-align:center;flex-shrink:0;}
+.chrono.chrono-warn{color:var(--red);}
+
+/* ── Start screen ────────────────────────────────────── */
+.start-prompt{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:18px;padding:20px;
+}
+.start-sub{font-size:14px;color:var(--text-dim);text-align:center;}
+.start-btn{
+  background:var(--gold);color:var(--bg);border:none;border-radius:12px;
+  padding:14px 36px;font-size:17px;font-weight:800;cursor:pointer;
+}
+.start-btn:active{opacity:.8;}
+.no-pool-msg{color:var(--text-dim);padding:30px 20px;text-align:center;line-height:1.6;}
 </style>
 </head>
 <body>
 
 <header id="header">
   <div id="logo">♠ Black<span>Scrab</span></div>
+  <span id="chrono-display" class="hidden chrono"></span>
   <button id="btn-settings" class="hdr-btn">⚙</button>
   <div id="score">0 / 21</div>
 </header>
@@ -290,6 +308,26 @@ a.def-link:hover{text-decoration:underline;}
       <button class="sett-step" id="dec-max">−</button>
       <span class="sett-val" id="val-max">8</span>
       <button class="sett-step" id="inc-max">+</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Solutions max</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-mw">−</button>
+      <span class="sett-val" id="val-mw">5</span>
+      <button class="sett-step" id="inc-mw">+</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Chrono</span>
+    <button class="sett-btn" id="sett-chrono">Désactivé</button>
+  </div>
+  <div class="sett-row hidden" id="row-chrono-dur">
+    <span class="sett-label">Durée</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-chrono">−</button>
+      <span class="sett-val" id="val-chrono">10 min</span>
+      <button class="sett-step" id="inc-chrono">+</button>
     </div>
   </div>
   <button class="sett-apply" id="btn-sett-apply">Nouvelle partie →</button>
@@ -340,6 +378,7 @@ a.def-link:hover{text-decoration:underline;}
 <div id="solution-view" class="hidden">
   <div id="solution-header">
     <span id="solution-title"></span>
+    <button class="hdr-btn" id="btn-settings-sol">⚙</button>
     <button id="solution-replay" class="hdr-btn">↺ Rejouer</button>
   </div>
   <div id="solution-list"></div>
@@ -368,7 +407,7 @@ a.def-link:hover{text-decoration:underline;}
 <script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v108';
+  const CURRENT_CACHE = 'blackscrab-v109';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
