@@ -219,8 +219,8 @@ body{
 .v-word-row{display:flex;flex-direction:column;gap:2px;}
 .v-word-row.v-found .v-word{color:var(--green);font-weight:700;}
 .v-word-row.v-missed .v-word{color:var(--text-dim);text-decoration:line-through;font-weight:600;}
-.v-word{font-size:13px;letter-spacing:.4px;}
-.v-def{font-size:11px;color:var(--text-dim);line-height:1.4;}
+.v-word{font-size:13px;letter-spacing:.4px;cursor:pointer;}
+.v-word:hover{text-decoration:underline;}
 
 .hidden{display:none!important;}
 
@@ -232,6 +232,31 @@ body{
 }
 .abandon-btn:active{opacity:.7;}
 .abandon-btn.replay{color:var(--gold);border-color:var(--gold);}
+
+/* ── Modale définition ─────────────────────────────────── */
+#def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
+#def-modal.open{display:flex;}
+#def-bd{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+#def-panel{
+  position:relative;z-index:1;background:var(--surface);border:1px solid var(--border);
+  border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:640px;
+  max-height:80svh;overflow-y:auto;
+}
+#def-panel h2{font-size:18px;font-weight:950;color:var(--text);}
+.def-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+#def-body{font-size:14px;line-height:1.4;color:var(--text-dim);}
+#def-links{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.def-ext-btn{
+  background:var(--surface2);color:var(--text-dim);border:1px solid var(--border);
+  border-radius:8px;padding:5px 10px;font-size:12px;text-decoration:none;
+}
+.modal-sec{margin-top:12px;font-size:13px;line-height:1.5;}
+.modal-sec strong{color:var(--text);display:block;margin-bottom:4px;}
+.modal-sec span{color:var(--text-dim);}
+a.def-link{color:var(--gold);text-decoration:none;}
+a.def-link:hover{text-decoration:underline;}
+.found-word{cursor:pointer;}
+.found-word:hover{text-decoration:underline;}
 </style>
 </head>
 <body>
@@ -319,11 +344,31 @@ body{
   </div>
 </div>
 
+<!-- ── Modale définition ── -->
+<div id="def-modal">
+  <div id="def-bd"></div>
+  <div id="def-panel">
+    <div class="def-top">
+      <h2 id="def-title"></h2>
+      <button id="def-close" class="hdr-btn">Fermer</button>
+    </div>
+    <p id="def-body"></p>
+    <div id="def-links" style="display:none">
+      <a id="def-wikt" href="#" target="_blank" rel="noopener" class="def-ext-btn">📖 Wiktionnaire</a>
+      <a id="def-img"  href="#" target="_blank" rel="noopener" class="def-ext-btn">🔍 Image</a>
+    </div>
+    <div id="def-ana"    class="modal-sec"></div>
+    <div id="def-rall"   class="modal-sec"></div>
+    <div id="def-flechie"></div>
+  </div>
+</div>
+
 <script src="../ods_data.js"></script>
 <script src="./data.js"></script>
+<script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v105';
+  const CURRENT_CACHE = 'blackscrab-v106';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
