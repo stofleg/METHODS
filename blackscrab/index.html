@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="BlackScrab">
+<title>BlackScrab</title>
+<link rel="manifest" href="./manifest.json">
+<style>
+/* ── Reset & base ─────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#111318;
+  --surface:#1c1f2e;
+  --surface2:#252840;
+  --border:#333755;
+  --gold:#f0c040;
+  --green:#3a9e74;
+  --red:#d94f5e;
+  --token-bg:#e5dcc8;
+  --token-text:#1c1f2e;
+  --text:#d4d6f0;
+  --text-dim:#6070a0;
+  --kb:#171a27;
+  --kk-bg:#2a2e46;
+  --kk-ok:#2d7a58;
+  --kk-clr:#6a2838;
+  --kk-del:#363a58;
+}
+html,body{height:100%;height:100dvh;}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+
+/* ── Header ───────────────────────────────────────────── */
+#header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:10px 14px 8px;
+  background:var(--bg);
+  flex-shrink:0;
+  border-bottom:1px solid var(--border);
+  gap:8px;
+}
+#logo{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--gold);}
+#logo span{color:var(--text-dim);font-weight:400;}
+#score{
+  font-size:18px;font-weight:800;
+  color:var(--gold);
+  min-width:62px;text-align:right;
+}
+#btn-new{
+  background:var(--surface2);
+  color:var(--text);
+  border:1px solid var(--border);
+  border-radius:8px;
+  padding:5px 11px;
+  font-size:13px;
+  cursor:pointer;
+  flex-shrink:0;
+}
+#btn-new:active{opacity:.7;}
+
+/* ── Grid ─────────────────────────────────────────────── */
+#grid{
+  flex:1;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+  padding:10px;
+  align-content:start;
+}
+
+/* ── Card ─────────────────────────────────────────────── */
+.card{
+  background:var(--surface);
+  border:2px solid var(--border);
+  border-radius:10px;
+  padding:8px 6px 7px;
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:5px;
+  transition:border-color .15s;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.card.selected{border-color:var(--gold);background:var(--surface2);}
+.card.found{border-color:var(--green);}
+.card:active{opacity:.75;}
+
+/* ── Tokens ───────────────────────────────────────────── */
+.card-tokens{
+  display:flex;
+  flex-wrap:wrap;
+  justify-content:center;
+  gap:2px;
+}
+.token{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:22px;
+  height:26px;
+  font-size:11px;
+  font-weight:800;
+  border-radius:3px;
+  background:var(--token-bg);
+  color:var(--token-text);
+  flex-shrink:0;
+}
+.card.found .token{opacity:.55;}
+
+/* ── Card word / dots ─────────────────────────────────── */
+.card-word{
+  font-size:11px;
+  font-weight:700;
+  color:var(--green);
+  letter-spacing:.5px;
+  text-align:center;
+  word-break:break-all;
+}
+.card-dots{
+  font-size:11px;
+  color:var(--text-dim);
+  letter-spacing:1px;
+}
+
+/* ── Input area (bottom) ──────────────────────────────── */
+#input-area{
+  flex-shrink:0;
+  background:var(--kb);
+  border-top:1px solid var(--border);
+}
+#input-area.hidden{display:none;}
+
+/* word display + message row */
+.kb-top-row{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:6px 12px 4px;
+  min-height:34px;
+}
+#word-display{
+  font-size:18px;
+  font-weight:700;
+  letter-spacing:2px;
+  color:var(--text);
+  min-width:40px;
+}
+.word-msg{font-size:13px;color:var(--text-dim);}
+.word-msg.error{color:var(--red);font-weight:600;}
+
+/* ── Desktop input (hidden on mobile) ────────────────── */
+.desktop-row{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 12px 12px;
+}
+#dt-input{
+  flex:1;
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  font-size:16px;
+  font-weight:700;
+  letter-spacing:2px;
+  padding:8px 12px;
+  outline:none;
+  caret-color:var(--gold);
+}
+#dt-input:focus{border-color:var(--gold);}
+#dt-ok{
+  background:var(--kk-ok);
+  color:#fff;
+  border:none;
+  border-radius:8px;
+  padding:9px 16px;
+  font-size:15px;
+  font-weight:700;
+  cursor:pointer;
+}
+#dt-ok:active{opacity:.75;}
+@media(max-width:640px){
+  .desktop-row{display:none;}
+}
+
+/* ── Mobile keyboard (hidden on desktop) ─────────────── */
+.keyboard{
+  display:none;
+  flex-direction:column;
+  background:var(--kb);
+  padding:4px 4px 6px;
+  gap:4px;
+}
+@media(max-width:640px){
+  .keyboard{display:flex;}
+}
+.kb-rows{display:flex;flex-direction:column;gap:5px;}
+.kb-row{display:flex;gap:4px;justify-content:center;}
+.kk{
+  flex:1;
+  max-width:38px;
+  height:44px;
+  background:var(--kk-bg);
+  color:var(--text);
+  border:none;
+  border-radius:8px;
+  font-size:17px;
+  font-weight:600;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  -webkit-tap-highlight-color:transparent;
+  user-select:none;
+}
+.kk:active{opacity:.65;}
+.kk.wide{max-width:52px;font-size:13px;}
+.kk.ok{background:var(--kk-ok);color:#fff;font-size:14px;font-weight:700;}
+.kk.clr{background:var(--kk-clr);}
+.kk.del{background:var(--kk-del);}
+
+/* ── Victory modal ───────────────────────────────────── */
+#victory-modal{
+  position:fixed;inset:0;
+  background:rgba(10,11,18,.92);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  z-index:200;
+  padding:20px;
+}
+#victory-modal.hidden{display:none;}
+#victory-inner{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:20px;
+  width:100%;
+  max-width:440px;
+  max-height:80vh;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+#victory-header{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+}
+#victory-title{
+  font-size:20px;font-weight:800;color:var(--gold);
+}
+#victory-close{
+  background:var(--surface2);
+  border:1px solid var(--border);
+  border-radius:8px;
+  color:var(--text);
+  padding:4px 10px;
+  font-size:14px;
+  cursor:pointer;
+}
+#victory-list{
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:8px;
+}
+.v-item{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+  padding:8px 10px;
+  background:var(--surface2);
+  border-radius:8px;
+}
+.v-word{
+  font-size:14px;
+  font-weight:800;
+  color:var(--green);
+  letter-spacing:.5px;
+}
+.v-def{
+  font-size:12px;
+  color:var(--text-dim);
+  line-height:1.4;
+}
+
+/* ── Utility ─────────────────────────────────────────── */
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header id="header">
+  <div id="logo">♠ Black<span>Scrab</span></div>
+  <button id="btn-new">↺ Nouvelle</button>
+  <div id="score">0 / 21</div>
+</header>
+
+<!-- Tirages grid -->
+<main id="grid"></main>
+
+<!-- Input area -->
+<div id="input-area" class="hidden">
+  <div class="kb-top-row">
+    <span id="word-display"></span>
+    <span id="word-msg" class="word-msg"></span>
+  </div>
+
+  <!-- Desktop -->
+  <div class="desktop-row">
+    <input id="dt-input" type="text"
+      autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
+      placeholder="Entrer un mot…">
+    <button id="dt-ok">OK</button>
+  </div>
+
+  <!-- Mobile keyboard -->
+  <div id="bs-kb" class="keyboard">
+    <div class="kb-rows">
+      <div class="kb-row">
+        <button class="kk" data-k="A">A</button><button class="kk" data-k="Z">Z</button>
+        <button class="kk" data-k="E">E</button><button class="kk" data-k="R">R</button>
+        <button class="kk" data-k="T">T</button><button class="kk" data-k="Y">Y</button>
+        <button class="kk" data-k="U">U</button><button class="kk" data-k="I">I</button>
+        <button class="kk" data-k="O">O</button><button class="kk" data-k="P">P</button>
+      </div>
+      <div class="kb-row">
+        <button class="kk" data-k="Q">Q</button><button class="kk" data-k="S">S</button>
+        <button class="kk" data-k="D">D</button><button class="kk" data-k="F">F</button>
+        <button class="kk" data-k="G">G</button><button class="kk" data-k="H">H</button>
+        <button class="kk" data-k="J">J</button><button class="kk" data-k="K">K</button>
+        <button class="kk" data-k="L">L</button><button class="kk" data-k="M">M</button>
+      </div>
+      <div class="kb-row">
+        <button class="kk wide clr" data-k="CLR">✕</button>
+        <button class="kk" data-k="W">W</button><button class="kk" data-k="X">X</button>
+        <button class="kk" data-k="C">C</button><button class="kk" data-k="V">V</button>
+        <button class="kk" data-k="B">B</button><button class="kk" data-k="N">N</button>
+        <button class="kk wide del" data-k="DEL">⌫</button>
+        <button class="kk wide ok" data-k="OK">OK</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Victory modal -->
+<div id="victory-modal" class="hidden">
+  <div id="victory-inner">
+    <div id="victory-header">
+      <span id="victory-title">♠ BlackScrab · 21 / 21</span>
+      <button id="victory-close">Fermer</button>
+    </div>
+    <div id="victory-list"></div>
+  </div>
+</div>
+
+<!-- Data (definitions) -->
+<script src="../ods_data.js"></script>
+<!-- Game logic -->
+<script src="./app.js"></script>
+
+<script>
+  /* ── Cache invalidation ─── */
+  const CURRENT_CACHE = 'blackscrab-v100';
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.ready.then(reg => reg.update());
+  }
+</script>
+</body>
+</html>
