@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'blackscrab-v106';
+const CACHE_NAME = 'blackscrab-v107';
 const BASE  = new URL('.', self.location).href;
 const ROOT  = new URL('..', self.location).href;
 
