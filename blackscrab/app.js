@@ -163,6 +163,7 @@ function renderGrid() {
         const wd = document.createElement('span');
         wd.className = 'found-word';
         wd.textContent = w;
+        wd.addEventListener('click', () => openDef(w));
         info.appendChild(wd);
       });
     } else {
@@ -355,19 +356,6 @@ function wireSettings() {
 
 /* ── Récapitulatif ─────────────────────────────────────── */
 
-function findDef(word) {
-  const TD = window.THEMODS_DATA;
-  if (!TD) return '';
-  for (let n = 9; n >= 1; n--) {
-    const ed = TD[`ods${n}`];
-    if (!ed) continue;
-    for (const g of ed)
-      for (const e of (g.entries || []))
-        if (e.forms?.includes(word)) return e.def || '';
-  }
-  return '';
-}
-
 function showRecap(abandoned = false) {
   setAbandonBtn(true);
   const modal = document.getElementById('victory-modal');
@@ -397,11 +385,13 @@ function showRecap(abandoned = false) {
     sols.className = 'v-solutions';
     t.words.forEach(w => {
       const found = t.foundWords.includes(w);
-      const def = found ? findDef(w) : '';
       const row = document.createElement('div');
       row.className = 'v-word-row' + (found ? ' v-found' : ' v-missed');
-      row.innerHTML = `<span class="v-word">${w}</span>` +
-        (def ? `<span class="v-def">${def}</span>` : '');
+      const wSpan = document.createElement('span');
+      wSpan.className = 'v-word';
+      wSpan.textContent = w;
+      wSpan.addEventListener('click', () => openDef(w));
+      row.appendChild(wSpan);
       sols.appendChild(row);
     });
     item.appendChild(sols);
@@ -436,6 +426,7 @@ async function init() {
   wireKeyboard();
   wireDesktopInput();
   wireSettings();
+  wireDefModal();
 
   document.getElementById('btn-new').addEventListener('click', onNewGame);
   document.getElementById('btn-abandon').addEventListener('click', () => {
