@@ -3,10 +3,11 @@
 /* ── State ─────────────────────────────────────────────── */
 let settings = { minLen: 5, maxLen: 8, joker: false };
 let pool     = [];
+let jokerPool = [];
+let bsAllMap  = null;
 let seance   = [];
 let score    = 0;
 let target   = 21;
-let gameOver = false;
 let kbBuf    = '';
 let msgTimer = null;
 
@@ -32,12 +33,52 @@ function saveSettings() {
 
 /* ── Pool ──────────────────────────────────────────────── */
 
+function computeJokerWords(baseSorted) {
+  if (!bsAllMap) return [];
+  const seen = new Set();
+  const words = [];
+  for (const L of 'ABCDEFGHIJKLMNOPQRSTUVWXYZ') {
+    const extKey = [...baseSorted, L].sort().join('');
+    const group = bsAllMap.get(extKey);
+    if (group) {
+      for (const w of group) {
+        if (!seen.has(w)) { seen.add(w); words.push(w); }
+      }
+    }
+  }
+  return words;
+}
+
+function isSubset(base, extended) {
+  const cnt = {};
+  for (const c of extended) cnt[c] = (cnt[c] || 0) + 1;
+  for (const c of base) {
+    if (!cnt[c]) return false;
+    cnt[c]--;
+  }
+  return true;
+}
+
 function buildPool() {
   const src = window.BS_ALL;
-  if (!src?.length) { pool = []; return; }
+  if (!src?.length) { pool = []; jokerPool = []; bsAllMap = null; return; }
+
+  bsAllMap = new Map();
+  for (const t of src) bsAllMap.set(t[0], t.slice(1));
+
   pool = src
     .filter(t => t[0].length >= settings.minLen && t[0].length <= settings.maxLen)
     .map(t => ({ sorted: t[0], words: t.slice(1) }));
+
+  jokerPool = [];
+  if (settings.joker) {
+    for (const entry of pool) {
+      const words = computeJokerWords(entry.sorted);
+      if (words.length >= 2 && words.length <= 8) {
+        jokerPool.push({ sorted: entry.sorted, words, isJoker: true });
+      }
+    }
+  }
 }
 
 /* ── Game ──────────────────────────────────────────────── */
@@ -62,60 +103,64 @@ function buildSeance() {
   const shuffled = {};
   for (const n in groups) shuffled[n] = shuffle(groups[n]);
 
+  const jGroups = {};
+  for (const t of jokerPool) {
+    const n = t.words.length;
+    (jGroups[n] || (jGroups[n] = [])).push(t);
+  }
+  const jShuffled = {};
+  for (const n in jGroups) jShuffled[n] = shuffle(jGroups[n]);
+
   const chosen = [];
   let remaining = 21;
+  let bigCount  = 0; // tirages with > 3 words — max 2 per session
+
   while (remaining > 0) {
-    const available = Object.keys(shuffled)
-      .map(Number)
-      .filter(n => n <= remaining && shuffled[n].length > 0);
-    if (!available.length) break;
-    const n = available[Math.floor(Math.random() * available.length)];
-    chosen.push(shuffled[n].pop());
+    const maxN = bigCount >= 2 ? 3 : remaining;
+    const available = new Set([
+      ...Object.keys(shuffled).map(Number).filter(n => n <= maxN && shuffled[n].length > 0),
+      ...Object.keys(jShuffled).map(Number).filter(n => n <= maxN && jShuffled[n].length > 0),
+    ]);
+    if (!available.size) break;
+    const keys = [...available];
+    const n = keys[Math.floor(Math.random() * keys.length)];
+
+    const canReg   = shuffled[n]?.length  > 0;
+    const canJoker = jShuffled[n]?.length > 0;
+    let entry;
+    if (canReg && canJoker) {
+      entry = Math.random() < 0.4 ? jShuffled[n].pop() : shuffled[n].pop();
+    } else if (canJoker) {
+      entry = jShuffled[n].pop();
+    } else {
+      entry = shuffled[n].pop();
+    }
+
+    if (n > 3) bigCount++;
+    chosen.push(entry);
     remaining -= n;
   }
 
-  // Joker : ~1/3 des tirages ont une lettre cachée
-  if (settings.joker) {
-    chosen.forEach(t => {
-      if (Math.random() < 1 / 3) {
-        const letters = t.sorted.split('');
-        t.joker = letters[Math.floor(Math.random() * letters.length)];
-      }
-    });
-  }
-
   return shuffle(chosen).map(t => ({
-    sorted: t.sorted,
-    words:  t.words,
+    sorted:     t.sorted,
+    words:      t.words,
     foundWords: [],
-    done:   false,
-    joker:  t.joker || null,
+    done:       false,
+    isJoker:    t.isJoker || false,
   }));
 }
 
 function tirageSortedDisplay(t) {
-  if (!t.joker) return t.sorted;
-  return t.sorted.replace(t.joker, '') + '?';
-}
-
-function setAbandonBtn(over) {
-  gameOver = over;
-  const btn = document.getElementById('btn-abandon');
-  if (!btn) return;
-  if (over) {
-    btn.textContent = '↺ Rejouer';
-    btn.classList.add('replay');
-  } else {
-    btn.textContent = '⚑ Abandon';
-    btn.classList.remove('replay');
-  }
+  return t.isJoker ? t.sorted + '?' : t.sorted;
 }
 
 function newGame() {
   score = 0;
   kbBuf = '';
   clearTimeout(msgTimer);
-  setAbandonBtn(false);
+  document.getElementById('solution-view').classList.add('hidden');
+  document.getElementById('grid').classList.remove('hidden');
+  document.getElementById('input-area').classList.remove('hidden');
   seance = buildSeance();
   target = seance.reduce((s, t) => s + t.words.length, 0);
   renderGrid();
@@ -126,10 +171,6 @@ function newGame() {
     document.getElementById('grid').innerHTML =
       '<p style="color:var(--red);padding:20px">Aucun tirage pour ces réglages.</p>';
   }
-}
-
-function onNewGame() {
-  if (gameOver || score === 0 || confirm('Recommencer une nouvelle partie ?')) newGame();
 }
 
 /* ── Rendering ─────────────────────────────────────────── */
@@ -163,13 +204,14 @@ function renderGrid() {
         const wd = document.createElement('span');
         wd.className = 'found-word';
         wd.textContent = w;
-        wd.addEventListener('click', () => openDef(w));
+        wd.addEventListener('click', e => { e.stopPropagation(); openDef(w); });
         info.appendChild(wd);
       });
     } else {
       const dots = document.createElement('span');
       dots.className = 'card-dots';
-      dots.textContent = '· '.repeat(Math.min(t.words[0].length, 8)).trimEnd();
+      const ref = t.isJoker ? t.words[0] : t.words[0];
+      dots.textContent = '· '.repeat(Math.min(ref.length, 8)).trimEnd();
       info.appendChild(dots);
     }
     tokWrap.appendChild(info);
@@ -213,12 +255,21 @@ function setMsg(text, cls) {
 
 /* ── Submission ────────────────────────────────────────── */
 
+function findTirage(done, wordSorted) {
+  for (const t of seance) {
+    if (t.done !== done) continue;
+    if (!t.isJoker && t.sorted === wordSorted) return t;
+    if (t.isJoker && wordSorted.length === t.sorted.length + 1 && isSubset(t.sorted, wordSorted)) return t;
+  }
+  return null;
+}
+
 function submit() {
   const word = kbBuf.trim().toUpperCase();
   if (!word) return;
 
   const wordSorted = word.split('').sort().join('');
-  const tirage = seance.find(t => !t.done && t.sorted === wordSorted);
+  const tirage = findTirage(false, wordSorted);
 
   if (tirage) {
     if (tirage.foundWords.includes(word)) {
@@ -248,7 +299,7 @@ function submit() {
     return;
   }
 
-  const doneTirage = seance.find(t => t.done && t.sorted === wordSorted);
+  const doneTirage = findTirage(true, wordSorted);
   setMsg(doneTirage ? 'déjà terminé' : 'mot hors jeu', doneTirage ? 'warn' : 'error');
   kbBuf = ''; updateWordDisplay();
 }
@@ -354,13 +405,15 @@ function wireSettings() {
   });
 }
 
-/* ── Récapitulatif ─────────────────────────────────────── */
+/* ── Solution view ─────────────────────────────────────── */
 
 function showRecap(abandoned = false) {
-  setAbandonBtn(true);
-  const modal = document.getElementById('victory-modal');
-  const title = document.getElementById('victory-title');
-  const list  = document.getElementById('victory-list');
+  const view  = document.getElementById('solution-view');
+  const title = document.getElementById('solution-title');
+  const list  = document.getElementById('solution-list');
+
+  document.getElementById('grid').classList.add('hidden');
+  document.getElementById('input-area').classList.add('hidden');
 
   title.textContent = abandoned
     ? `♠ BlackScrab · ${score} / ${target} — Abandon`
@@ -369,7 +422,7 @@ function showRecap(abandoned = false) {
   list.innerHTML = '';
   seance.forEach(t => {
     const item = document.createElement('div');
-    item.className = 'v-item' + (t.done ? '' : ' v-item-open');
+    item.className = 'sol-item';
 
     const header = document.createElement('div');
     header.className = 'v-header';
@@ -383,7 +436,7 @@ function showRecap(abandoned = false) {
 
     const sols = document.createElement('div');
     sols.className = 'v-solutions';
-    t.words.forEach(w => {
+    [...t.words].sort().forEach(w => {
       const found = t.foundWords.includes(w);
       const row = document.createElement('div');
       row.className = 'v-word-row' + (found ? ' v-found' : ' v-missed');
@@ -398,12 +451,8 @@ function showRecap(abandoned = false) {
     list.appendChild(item);
   });
 
-  modal.classList.remove('hidden');
+  view.classList.remove('hidden');
 }
-
-document.getElementById('victory-close')?.addEventListener('click', () => {
-  document.getElementById('victory-modal').classList.add('hidden');
-});
 
 /* ── Init ──────────────────────────────────────────────── */
 
@@ -428,11 +477,10 @@ async function init() {
   wireSettings();
   wireDefModal();
 
-  document.getElementById('btn-new').addEventListener('click', onNewGame);
   document.getElementById('btn-abandon').addEventListener('click', () => {
-    if (gameOver) { newGame(); }
-    else if (confirm('Abandonner et voir le récapitulatif ?')) showRecap(true);
+    if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
   });
+  document.getElementById('solution-replay').addEventListener('click', newGame);
 
   newGame();
 }

@@ -185,29 +185,33 @@ body{
 }
 .sett-apply:active{opacity:.8;}
 
-/* ── Récapitulatif modal ──────────────────────────────── */
-#victory-modal{
-  position:fixed;inset:0;background:rgba(10,11,18,.93);
-  display:flex;align-items:center;justify-content:center;
-  z-index:200;padding:20px;
+/* ── Solution view ────────────────────────────────────── */
+#solution-view{
+  position:fixed;inset:0;z-index:100;
+  background:var(--bg);
+  display:flex;flex-direction:column;
+  padding-bottom:env(safe-area-inset-bottom);
 }
-#victory-modal.hidden{display:none;}
-#victory-inner{
-  background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  padding:20px;width:100%;max-width:480px;max-height:85vh;
-  display:flex;flex-direction:column;gap:12px;
+#solution-view.hidden{display:none!important;}
+#solution-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;
+  border-bottom:1px solid var(--border);flex-shrink:0;gap:8px;
 }
-#victory-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
-#victory-title{font-size:17px;font-weight:800;color:var(--gold);}
-#victory-close{
-  background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-  color:var(--text);padding:4px 10px;font-size:14px;cursor:pointer;flex-shrink:0;
+#solution-title{font-size:16px;font-weight:800;color:var(--gold);flex:1;}
+#solution-list{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:8px;padding:12px;
 }
-#victory-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+#solution-replay{
+  flex-shrink:0;background:var(--kk-ok);color:#fff;border:none;
+  padding:14px;font-size:15px;font-weight:700;cursor:pointer;
+  margin:0 12px 12px;border-radius:10px;
+}
+#solution-replay:active{opacity:.8;}
 
-/* Tirage dans le récap */
-.v-item{padding:10px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);}
-.v-item.v-item-open{border-color:#6a3028;opacity:.85;}
+/* Tirage dans la vue solution */
+.sol-item{padding:10px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);}
 .v-header{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:7px;}
 .v-token{
   display:inline-flex;align-items:center;justify-content:center;
@@ -218,7 +222,7 @@ body{
 .v-solutions{display:flex;flex-direction:column;gap:4px;}
 .v-word-row{display:flex;flex-direction:column;gap:2px;}
 .v-word-row.v-found .v-word{color:var(--green);font-weight:700;}
-.v-word-row.v-missed .v-word{color:var(--text-dim);text-decoration:line-through;font-weight:600;}
+.v-word-row.v-missed .v-word{color:var(--red);font-weight:600;}
 .v-word{font-size:13px;letter-spacing:.4px;cursor:pointer;}
 .v-word:hover{text-decoration:underline;}
 
@@ -263,7 +267,6 @@ a.def-link:hover{text-decoration:underline;}
 
 <header id="header">
   <div id="logo">♠ Black<span>Scrab</span></div>
-  <button id="btn-new" class="hdr-btn">↺ Nouvelle</button>
   <button id="btn-settings" class="hdr-btn">⚙</button>
   <div id="score">0 / 21</div>
 </header>
@@ -334,14 +337,12 @@ a.def-link:hover{text-decoration:underline;}
   </div>
 </div>
 
-<div id="victory-modal" class="hidden">
-  <div id="victory-inner">
-    <div id="victory-header">
-      <span id="victory-title"></span>
-      <button id="victory-close">Fermer</button>
-    </div>
-    <div id="victory-list"></div>
+<div id="solution-view" class="hidden">
+  <div id="solution-header">
+    <span id="solution-title"></span>
+    <button id="solution-replay" class="hdr-btn">↺ Rejouer</button>
   </div>
+  <div id="solution-list"></div>
 </div>
 
 <!-- ── Modale définition ── -->
@@ -367,7 +368,7 @@ a.def-link:hover{text-decoration:underline;}
 <script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v107';
+  const CURRENT_CACHE = 'blackscrab-v108';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
