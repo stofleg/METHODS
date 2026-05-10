@@ -9,7 +9,6 @@
 <title>BlackScrab</title>
 <link rel="manifest" href="./manifest.json">
 <style>
-/* ── Reset & base ─────────────────────────────────────── */
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
   --bg:#111318;
@@ -18,6 +17,7 @@
   --border:#333755;
   --gold:#f0c040;
   --green:#3a9e74;
+  --green-dim:rgba(58,158,116,.18);
   --red:#d94f5e;
   --warn:#d98a20;
   --token-bg:#e5dcc8;
@@ -32,117 +32,95 @@
 }
 html,body{height:100%;height:100dvh;}
 body{
-  background:var(--bg);
-  color:var(--text);
+  background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
-  display:flex;
-  flex-direction:column;
-  overflow:hidden;
+  display:flex;flex-direction:column;overflow:hidden;
   padding-bottom:env(safe-area-inset-bottom);
 }
 
 /* ── Header ───────────────────────────────────────────── */
 #header{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
+  display:flex;align-items:center;justify-content:space-between;
   padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;
-  background:var(--bg);
-  flex-shrink:0;
-  border-bottom:1px solid var(--border);
-  gap:8px;
+  background:var(--bg);flex-shrink:0;
+  border-bottom:1px solid var(--border);gap:8px;
 }
 #logo{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--gold);}
 #logo span{color:var(--text-dim);font-weight:400;}
 #score{font-size:18px;font-weight:800;color:var(--gold);min-width:56px;text-align:right;}
-#btn-new{
+.hdr-btn{
   background:var(--surface2);color:var(--text);
   border:1px solid var(--border);border-radius:8px;
-  padding:5px 11px;font-size:13px;cursor:pointer;flex-shrink:0;
+  padding:5px 10px;font-size:13px;cursor:pointer;flex-shrink:0;
+  white-space:nowrap;
 }
-#btn-new:active{opacity:.7;}
+.hdr-btn:active{opacity:.7;}
+#btn-abandon{color:#e07060;border-color:#6a3028;}
 
 /* ── Grid (vertical scroll) ───────────────────────────── */
 #grid{
-  flex:1;
-  overflow-y:auto;
-  -webkit-overflow-scrolling:touch;
-  display:flex;
-  flex-direction:column;
-  gap:7px;
-  padding:10px;
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  display:flex;flex-direction:column;gap:7px;padding:10px;
 }
 
 /* ── Card ─────────────────────────────────────────────── */
 .card{
-  background:var(--surface);
-  border:2px solid var(--border);
-  border-radius:10px;
-  padding:10px 12px;
-  display:flex;
-  align-items:center;
-  gap:10px;
-  transition:border-color .15s;
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:10px;padding:10px 12px;
+  display:flex;align-items:center;gap:10px;
   flex-shrink:0;
 }
-.card.found{border-color:var(--green);}
+@keyframes cardComplete{
+  0%  {border-color:var(--green);background:var(--surface);}
+  40% {border-color:var(--green);background:var(--green-dim);}
+  100%{opacity:0;transform:scaleY(0);max-height:0;margin:0;padding:0;}
+}
+.card.completing{
+  animation:cardComplete .55s ease-in-out forwards;
+  transform-origin:top;overflow:hidden;
+}
 
-/* left column */
 .card-main{flex:1;display:flex;flex-direction:column;gap:5px;}
 
 /* tokens */
 .card-tokens{display:flex;flex-wrap:wrap;gap:3px;}
 .token{
   display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:32px;
-  font-size:13px;font-weight:800;
-  border-radius:4px;
-  background:var(--token-bg);color:var(--token-text);
+  width:28px;height:32px;font-size:13px;font-weight:800;
+  border-radius:4px;background:var(--token-bg);color:var(--token-text);
   flex-shrink:0;
 }
-.card.found .token{opacity:.45;}
 
-/* word / dots */
-.card-word{font-size:12px;font-weight:700;color:var(--green);letter-spacing:.6px;}
+/* found words inline */
+.card-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
+.found-word{font-size:12px;font-weight:700;color:var(--green);letter-spacing:.5px;}
 .card-dots{font-size:12px;color:var(--text-dim);letter-spacing:1px;}
 
-/* right: ordinal badge or empty circle */
+/* badge */
 .card-badge{
   width:36px;height:36px;border-radius:50%;
   background:var(--green);color:#fff;
-  font-size:14px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
+  font-size:15px;font-weight:800;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
 .card-circle{
   width:36px;height:36px;border-radius:50%;
-  border:2px solid var(--border);
-  flex-shrink:0;
+  border:2px solid var(--border);flex-shrink:0;
 }
 
-/* ── Input area (bottom, always visible) ──────────────── */
-#input-area{
-  flex-shrink:0;
-  background:var(--kb);
-  border-top:1px solid var(--border);
-}
-
-/* word display + message */
+/* ── Input area ───────────────────────────────────────── */
+#input-area{flex-shrink:0;background:var(--kb);border-top:1px solid var(--border);}
 .kb-top-row{
   display:flex;align-items:center;justify-content:space-between;
   padding:6px 14px 4px;min-height:34px;
 }
-#word-display{
-  font-size:20px;font-weight:700;letter-spacing:3px;color:var(--text);min-width:40px;
-}
+#word-display{font-size:20px;font-weight:700;letter-spacing:3px;color:var(--text);min-width:40px;}
 .word-msg{font-size:13px;color:var(--text-dim);}
 .word-msg.error{color:var(--red);font-weight:600;}
 .word-msg.warn{color:var(--warn);font-weight:600;}
 
-/* ── Desktop input ────────────────────────────────────── */
-.desktop-row{
-  display:flex;align-items:center;gap:8px;padding:6px 12px 10px;
-}
+/* desktop */
+.desktop-row{display:flex;align-items:center;gap:8px;padding:6px 12px 10px;}
 #dt-input{
   flex:1;background:var(--surface2);border:1px solid var(--border);
   border-radius:8px;color:var(--text);font-size:16px;font-weight:700;
@@ -156,19 +134,15 @@ body{
 #dt-ok:active{opacity:.75;}
 @media(max-width:640px){.desktop-row{display:none;}}
 
-/* ── Mobile keyboard ──────────────────────────────────── */
-.keyboard{
-  display:none;flex-direction:column;
-  background:var(--kb);padding:4px 4px 6px;gap:4px;
-}
+/* mobile keyboard */
+.keyboard{display:none;flex-direction:column;background:var(--kb);padding:4px 4px 6px;gap:4px;}
 @media(max-width:640px){.keyboard{display:flex;}}
 .kb-rows{display:flex;flex-direction:column;gap:5px;}
 .kb-row{display:flex;gap:4px;justify-content:center;}
 .kk{
   flex:1;max-width:38px;height:44px;
   background:var(--kk-bg);color:var(--text);
-  border:none;border-radius:8px;
-  font-size:17px;font-weight:600;cursor:pointer;
+  border:none;border-radius:8px;font-size:17px;font-weight:600;cursor:pointer;
   display:flex;align-items:center;justify-content:center;
   -webkit-tap-highlight-color:transparent;user-select:none;
 }
@@ -178,68 +152,67 @@ body{
 .kk.clr{background:var(--kk-clr);}
 .kk.del{background:var(--kk-del);}
 
-/* ── Victory modal ───────────────────────────────────── */
+/* ── Récapitulatif modal ──────────────────────────────── */
 #victory-modal{
-  position:fixed;inset:0;
-  background:rgba(10,11,18,.92);
+  position:fixed;inset:0;background:rgba(10,11,18,.93);
   display:flex;align-items:center;justify-content:center;
   z-index:200;padding:20px;
 }
 #victory-modal.hidden{display:none;}
 #victory-inner{
   background:var(--surface);border:1px solid var(--border);border-radius:16px;
-  padding:20px;width:100%;max-width:440px;max-height:80vh;
+  padding:20px;width:100%;max-width:480px;max-height:85vh;
   display:flex;flex-direction:column;gap:12px;
 }
-#victory-header{display:flex;align-items:center;justify-content:space-between;}
-#victory-title{font-size:20px;font-weight:800;color:var(--gold);}
+#victory-header{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+#victory-title{font-size:17px;font-weight:800;color:var(--gold);}
 #victory-close{
   background:var(--surface2);border:1px solid var(--border);border-radius:8px;
-  color:var(--text);padding:4px 10px;font-size:14px;cursor:pointer;
+  color:var(--text);padding:4px 10px;font-size:14px;cursor:pointer;flex-shrink:0;
 }
-#victory-list{overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
-.v-item{padding:8px 10px;background:var(--surface2);border-radius:8px;}
-.v-head{display:flex;align-items:center;gap:8px;margin-bottom:2px;}
-.v-num{
-  width:24px;height:24px;border-radius:50%;
-  background:var(--green);color:#fff;
-  font-size:12px;font-weight:800;
-  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+#victory-list{overflow-y:auto;display:flex;flex-direction:column;gap:8px;}
+
+/* Tirage dans le récap */
+.v-item{padding:10px 12px;background:var(--surface2);border-radius:10px;border:1px solid var(--border);}
+.v-item.v-item-open{border-color:#6a3028;opacity:.85;}
+.v-header{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:7px;}
+.v-token{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:22px;height:26px;font-size:10px;font-weight:800;
+  border-radius:3px;background:var(--token-bg);color:var(--token-text);
 }
-.v-word{font-size:14px;font-weight:800;color:var(--green);letter-spacing:.5px;}
-.v-def{font-size:12px;color:var(--text-dim);line-height:1.4;}
+.v-solutions{display:flex;flex-direction:column;gap:4px;}
+.v-word-row{display:flex;flex-direction:column;gap:2px;}
+.v-word-row.v-found .v-word{color:var(--green);font-weight:700;}
+.v-word-row.v-missed .v-word{color:var(--text-dim);text-decoration:line-through;font-weight:600;}
+.v-word{font-size:13px;letter-spacing:.4px;}
+.v-def{font-size:11px;color:var(--text-dim);line-height:1.4;}
 
 .hidden{display:none!important;}
 </style>
 </head>
 <body>
 
-<!-- Header -->
 <header id="header">
   <div id="logo">♠ Black<span>Scrab</span></div>
-  <button id="btn-new">↺ Nouvelle</button>
+  <button id="btn-new" class="hdr-btn">↺ Nouvelle</button>
+  <button id="btn-abandon" class="hdr-btn">⚑ Abandon</button>
   <div id="score">0 / 21</div>
 </header>
 
-<!-- Tirages (vertical scroll) -->
 <main id="grid"></main>
 
-<!-- Input area (always visible) -->
 <div id="input-area">
   <div class="kb-top-row">
     <span id="word-display"></span>
     <span id="word-msg" class="word-msg"></span>
   </div>
-
-  <!-- Desktop -->
   <div class="desktop-row">
     <input id="dt-input" type="text"
       autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false"
       placeholder="Entrer un mot…">
     <button id="dt-ok">OK</button>
   </div>
-
-  <!-- Mobile keyboard -->
   <div id="bs-kb" class="keyboard">
     <div class="kb-rows">
       <div class="kb-row">
@@ -268,11 +241,10 @@ body{
   </div>
 </div>
 
-<!-- Victory modal -->
 <div id="victory-modal" class="hidden">
   <div id="victory-inner">
     <div id="victory-header">
-      <span id="victory-title">♠ BlackScrab · 21 / 21</span>
+      <span id="victory-title"></span>
       <button id="victory-close">Fermer</button>
     </div>
     <div id="victory-list"></div>
@@ -280,9 +252,10 @@ body{
 </div>
 
 <script src="../ods_data.js"></script>
+<script src="./data.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v101';
+  const CURRENT_CACHE = 'blackscrab-v103';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
