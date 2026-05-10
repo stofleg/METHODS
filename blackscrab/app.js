@@ -225,7 +225,7 @@ function submit() {
       kbBuf = ''; updateWordDisplay(); return;
     }
     if (!tirage.words.includes(word)) {
-      setMsg('mot hors jeu', 'error');
+      setMsg('mot invalide', 'error');
       kbBuf = ''; updateWordDisplay(); return;
     }
 
