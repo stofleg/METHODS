@@ -598,13 +598,6 @@ function openDef(canon, displayWord, defText, flechie){
   $d("#def-img").href   = "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(raw);
   $d("#def-links").style.display = "flex";
 
-  const anaEl = $d("#def-ana"); if(anaEl) anaEl.innerHTML="";
-  if(A && anaEl){
-    const tir = canon.split("").sort((a,b)=>a.localeCompare(b,"fr")).join("");
-    const lst = (A[tir]||[]).filter(x=>norm(x)!==canon).slice(0,60);
-    if(lst.length){ _renderWordLinks(anaEl, lst, "Anagrammes"); }
-  }
-
   const rallEl = $d("#def-rall"); if(rallEl) rallEl.innerHTML="";
   if(R && rallEl){
     const lst = R[canon]||[];
@@ -618,14 +611,8 @@ function openDef(canon, displayWord, defText, flechie){
   }
   const flechieEl = $d("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
   if(flechieToShow && flechieToShow !== canon && flechieEl){
-    const ftir = flechieToShow.split("").sort().join("");
-    const normToE = getNormToE();
-    const fAna = getDictArr()
-      .filter(w => w !== flechieToShow && w.split("").sort().join("") === ftir)
-      .slice(0, 60)
-      .map(w => normToE[w] || w);
     const fRal = R ? (R[flechieToShow]||[]) : [];
-    if(fAna.length || fRal.length){
+    if(fRal.length){
       const sep = document.createElement("hr");
       sep.style.cssText = "border:none;border-top:1px solid var(--border);margin:12px 0 4px";
       flechieEl.appendChild(sep);
@@ -638,14 +625,8 @@ function openDef(canon, displayWord, defText, flechie){
       fLink.addEventListener("click", e=>{ e.preventDefault(); openDef(flechieToShow, flechieToShow); });
       sub.appendChild(fLink);
       flechieEl.appendChild(sub);
-      if(fAna.length){
-        const sec = document.createElement("div"); sec.className="modal-sec";
-        _renderWordLinks(sec, fAna, "Anagrammes"); flechieEl.appendChild(sec);
-      }
-      if(fRal.length){
-        const sec = document.createElement("div"); sec.className="modal-sec";
-        _renderWordLinks(sec, fRal, "Rallonges"); flechieEl.appendChild(sec);
-      }
+      const sec = document.createElement("div"); sec.className="modal-sec";
+      _renderWordLinks(sec, fRal, "Rallonges"); flechieEl.appendChild(sec);
     }
   }
 
