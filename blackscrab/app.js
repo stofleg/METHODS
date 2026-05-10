@@ -1,10 +1,10 @@
 'use strict';
 
-/* ── State ──────────────────────────────────────────────── */
-let allTirages = [];   // [{sorted, word}]
-let seance     = [];   // [{sorted, word, letters[], foundOrder}]  0 = pas trouvé
-let score = 0;
-let kbBuf = '';
+/* ── State ─────────────────────────────────────────────── */
+let bsData  = [];   // [{sorted, words:[]}]  — chargé depuis BS_TIRAGES
+let seance  = [];   // [{sorted, words, foundWords[], done}]
+let score   = 0;    // total mots trouvés
+let kbBuf   = '';
 let msgTimer = null;
 
 /* ── Init ──────────────────────────────────────────────── */
@@ -17,23 +17,18 @@ async function init() {
     });
   }
 
-  try {
-    const resp = await fetch('../ODS9.txt');
-    const text = await resp.text();
-    allTirages = text.trim().split('\n').map(line => {
-      const sc = line.indexOf(';');
-      if (sc < 0) return null;
-      return { sorted: line.slice(0, sc).trim(), word: line.slice(sc + 1).trim() };
-    }).filter(Boolean);
-  } catch (err) {
+  // BS_TIRAGES est injecté par data.js (chargé avant app.js)
+  if (!window.BS_TIRAGES || !window.BS_TIRAGES.length) {
     document.getElementById('grid').innerHTML =
-      '<p style="color:var(--red);padding:20px">Erreur de chargement des données.</p>';
+      '<p style="color:var(--red);padding:20px">Données introuvables.</p>';
     return;
   }
+  bsData = window.BS_TIRAGES.map(arr => ({ sorted: arr[0], words: arr.slice(1) }));
 
   wireKeyboard();
   wireDesktopInput();
   document.getElementById('btn-new').addEventListener('click', onNewGame);
+  document.getElementById('btn-abandon').addEventListener('click', onAbandon);
   newGame();
 }
 
@@ -48,19 +43,30 @@ function shuffle(arr) {
   return a;
 }
 
+function buildSeance() {
+  const n3 = shuffle(bsData.filter(t => t.words.length === 3));
+  const n2 = shuffle(bsData.filter(t => t.words.length === 2));
+  const n1 = shuffle(bsData.filter(t => t.words.length === 1));
+
+  // Choisir aléatoirement le nombre de tirages à 3, 2 et 1 solutions
+  const use3 = Math.min(Math.floor(Math.random() * 5), n3.length); // 0-4 tirages × 3
+  const rem  = 21 - use3 * 3;
+  const max2 = Math.min(Math.floor(rem / 2), n2.length);
+  const use2 = Math.floor(Math.random() * (max2 + 1));
+  const use1 = rem - use2 * 2;
+
+  return shuffle([
+    ...n3.slice(0, use3),
+    ...n2.slice(0, use2),
+    ...n1.slice(0, use1),
+  ]).map(t => ({ sorted: t.sorted, words: t.words, foundWords: [], done: false }));
+}
+
 function newGame() {
   score = 0;
   kbBuf = '';
   clearTimeout(msgTimer);
-
-  seance = shuffle(allTirages).slice(0, 21).map(t => ({
-    sorted: t.sorted,
-    word: t.word,
-    letters: t.sorted.split(''),   // ordre alphabétique, pas mélangé
-    foundOrder: 0,
-    foundWord: '',                 // mot effectivement tapé par le joueur
-  }));
-
+  seance = buildSeance();
   renderGrid();
   updateScore();
   setMsg('');
@@ -68,49 +74,62 @@ function newGame() {
 }
 
 function onNewGame() {
-  if (score === 0 || score === 21 || confirm('Recommencer une nouvelle partie ?')) newGame();
+  if (score === 0 || confirm('Recommencer une nouvelle partie ?')) newGame();
 }
 
-/* ── Rendering ──────────────────────────────────────────────── */
+function onAbandon() {
+  if (confirm('Abandonner et voir le récapitulatif ?')) showRecap(true);
+}
+
+/* ── Rendering ─────────────────────────────────────────── */
 
 function renderGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  seance.forEach((t, i) => {
+  seance.filter(t => !t.done).forEach((t, i) => {
     const card = document.createElement('div');
-    card.className = 'card' + (t.foundOrder ? ' found' : '');
+    card.className = 'card';
+    card.dataset.sorted = t.sorted;
 
-    /* left: tokens + found word */
-    const main = document.createElement('div');
-    main.className = 'card-main';
+    /* tokens (lettres en ordre alphabétique) */
+    const tokWrap = document.createElement('div');
+    tokWrap.className = 'card-main';
 
     const tokens = document.createElement('div');
     tokens.className = 'card-tokens';
-    t.letters.forEach(l => {
+    t.sorted.split('').forEach(l => {
       const sp = document.createElement('span');
       sp.className = 'token';
       sp.textContent = l;
       tokens.appendChild(sp);
     });
-    main.appendChild(tokens);
+    tokWrap.appendChild(tokens);
 
-    const sub = document.createElement('div');
-    if (t.foundOrder) {
-      sub.className = 'card-word';
-      sub.textContent = t.foundWord;
+    /* mots trouvés / placeholder */
+    const info = document.createElement('div');
+    info.className = 'card-info';
+    if (t.foundWords.length) {
+      t.foundWords.forEach(w => {
+        const wd = document.createElement('span');
+        wd.className = 'found-word';
+        wd.textContent = w;
+        info.appendChild(wd);
+      });
     } else {
-      sub.className = 'card-dots';
-      sub.textContent = '· '.repeat(Math.min(t.word.length, 8)).trimEnd();
+      const dots = document.createElement('span');
+      dots.className = 'card-dots';
+      dots.textContent = '· '.repeat(Math.min(t.words[0].length, 8)).trimEnd();
+      info.appendChild(dots);
     }
-    main.appendChild(sub);
-    card.appendChild(main);
+    tokWrap.appendChild(info);
+    card.appendChild(tokWrap);
 
-    /* right: ordinal badge or empty circle */
+    /* badge */
     const badge = document.createElement('div');
-    if (t.foundOrder) {
+    if (t.foundWords.length > 0) {
       badge.className = 'card-badge';
-      badge.textContent = t.foundOrder;
+      badge.textContent = t.foundWords.length;
     } else {
       badge.className = 'card-circle';
     }
@@ -118,6 +137,13 @@ function renderGrid() {
 
     grid.appendChild(card);
   });
+}
+
+function flashAndRemove(sorted) {
+  const card = document.querySelector(`.card[data-sorted="${sorted}"]`);
+  if (!card) return;
+  card.classList.add('completing');
+  setTimeout(() => renderGrid(), 600);
 }
 
 function updateScore() {
@@ -136,54 +162,64 @@ function setMsg(text, cls) {
   if (text) msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'word-msg'; }, 2000);
 }
 
-/* ── Submission ──────────────────────────────────────────────── */
+/* ── Submission ────────────────────────────────────────── */
 
 function submit() {
   const word = kbBuf.trim().toUpperCase();
   if (!word) return;
 
-  /* trier les lettres du mot tapé pour comparer au sorted du tirage */
   const wordSorted = word.split('').sort().join('');
 
-  /* check against all unfound tirages */
-  const hit = seance.find(t => !t.foundOrder && t.sorted === wordSorted);
+  // Chercher un tirage non terminé avec cette clé triée
+  const tirage = seance.find(t => !t.done && t.sorted === wordSorted);
 
-  if (hit) {
+  if (tirage) {
+    if (tirage.foundWords.includes(word)) {
+      setMsg('déjà trouvé', 'warn');
+      kbBuf = ''; updateWordDisplay();
+      return;
+    }
+    if (!tirage.words.includes(word)) {
+      // Bonnes lettres mais mot non reconnu dans notre base
+      setMsg('mot hors jeu', 'error');
+      kbBuf = ''; updateWordDisplay();
+      return;
+    }
+
+    tirage.foundWords.push(word);
     score++;
-    hit.foundOrder = score;
-    hit.foundWord = word;          // on garde le mot tapé, pas le canonique
     kbBuf = '';
     updateWordDisplay();
     setMsg('');
-    renderGrid();
     updateScore();
 
-    /* scroll found card into view */
-    const cards = document.querySelectorAll('.card');
-    const idx = seance.indexOf(hit);
-    cards[idx]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-
-    if (score === 21) setTimeout(showVictory, 400);
+    if (tirage.foundWords.length === tirage.words.length) {
+      // Tirage complet → flash vert puis disparaît
+      tirage.done = true;
+      renderGrid(); // re-render pour afficher le badge final avant le flash
+      setTimeout(() => flashAndRemove(tirage.sorted), 50);
+      if (score === 21) { setTimeout(showRecap, 700); }
+    } else {
+      renderGrid();
+    }
     return;
   }
 
-  /* already found ? */
-  const already = seance.find(t => t.foundOrder && t.sorted === wordSorted);
-  if (already) {
-    setMsg('déjà trouvé', 'warn');
+  // Tirage déjà terminé avec ces lettres ?
+  const doneTirage = seance.find(t => t.done && t.sorted === wordSorted);
+  if (doneTirage) {
+    setMsg('déjà terminé', 'warn');
   } else {
     setMsg('mot hors jeu', 'error');
   }
-  kbBuf = '';
-  updateWordDisplay();
+  kbBuf = ''; updateWordDisplay();
 }
 
-/* ── Keyboard (mobile) ────────────────────────────────────────── */
+/* ── Keyboard ──────────────────────────────────────────── */
 
 function wireKeyboard() {
   const kb = document.getElementById('bs-kb');
   if (!kb) return;
-
   const press = k => {
     if (k === 'CLR')      { kbBuf = ''; }
     else if (k === 'DEL') { kbBuf = kbBuf.slice(0, -1); }
@@ -191,7 +227,6 @@ function wireKeyboard() {
     else                  { kbBuf += k; }
     updateWordDisplay();
   };
-
   kb.addEventListener('mousedown', e => {
     const key = e.target.closest('.kk'); if (!key) return;
     e.preventDefault(); press(key.dataset.k);
@@ -203,13 +238,10 @@ function wireKeyboard() {
   kb.addEventListener('click', e => { if (e.target.closest('.kk')) e.preventDefault(); });
 }
 
-/* ── Desktop input ──────────────────────────────────────────────── */
-
 function wireDesktopInput() {
   const input = document.getElementById('dt-input');
   const btn   = document.getElementById('dt-ok');
   if (!input) return;
-
   input.addEventListener('input', e => {
     kbBuf = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
     e.target.value = kbBuf;
@@ -219,7 +251,7 @@ function wireDesktopInput() {
   btn?.addEventListener('click', submit);
 }
 
-/* ── Victory ──────────────────────────────────────────────── */
+/* ── Récapitulatif ─────────────────────────────────────── */
 
 function findDef(word) {
   const TD = window.THEMODS_DATA;
@@ -227,28 +259,52 @@ function findDef(word) {
   for (let n = 9; n >= 1; n--) {
     const ed = TD[`ods${n}`];
     if (!ed) continue;
-    for (const g of ed) {
-      for (const e of (g.entries || [])) {
+    for (const g of ed)
+      for (const e of (g.entries || []))
         if (e.forms?.includes(word)) return e.def || '';
-      }
-    }
   }
   return '';
 }
 
-function showVictory() {
+function showRecap(abandoned = false) {
   const modal = document.getElementById('victory-modal');
+  const title = document.getElementById('victory-title');
   const list  = document.getElementById('victory-list');
+
+  title.textContent = abandoned
+    ? `♠ BlackScrab · ${score} / 21 — Abandon`
+    : '♠ BlackScrab · 21 / 21';
+
   list.innerHTML = '';
 
-  /* sort by discovery order */
-  [...seance].sort((a, b) => a.foundOrder - b.foundOrder).forEach(t => {
-    const def  = findDef(t.foundWord) || findDef(t.word);
+  seance.forEach(t => {
     const item = document.createElement('div');
-    item.className = 'v-item';
-    item.innerHTML =
-      `<div class="v-head"><span class="v-num">${t.foundOrder}</span><span class="v-word">${t.foundWord}</span></div>` +
-      (def ? `<span class="v-def">${def}</span>` : '');
+    item.className = 'v-item' + (t.done ? '' : ' v-item-open');
+
+    // Lettres du tirage
+    const header = document.createElement('div');
+    header.className = 'v-header';
+    t.sorted.split('').forEach(l => {
+      const sp = document.createElement('span');
+      sp.className = 'v-token';
+      sp.textContent = l;
+      header.appendChild(sp);
+    });
+    item.appendChild(header);
+
+    // Solutions
+    const sols = document.createElement('div');
+    sols.className = 'v-solutions';
+    t.words.forEach(w => {
+      const found = t.foundWords.includes(w);
+      const def = found ? findDef(w) : '';
+      const row = document.createElement('div');
+      row.className = 'v-word-row' + (found ? ' v-found' : ' v-missed');
+      row.innerHTML = `<span class="v-word">${w}</span>` +
+        (def ? `<span class="v-def">${def}</span>` : '');
+      sols.appendChild(row);
+    });
+    item.appendChild(sols);
     list.appendChild(item);
   });
 
@@ -259,5 +315,5 @@ document.getElementById('victory-close')?.addEventListener('click', () => {
   document.getElementById('victory-modal').classList.add('hidden');
 });
 
-/* ── Start ──────────────────────────────────────────────── */
+/* ── Start ─────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', init);
