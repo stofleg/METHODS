@@ -1,6 +1,6 @@
 'use strict';
 
-const CACHE_NAME = 'blackscrab-v102';
+const CACHE_NAME = 'blackscrab-v103';
 const BASE  = new URL('.', self.location).href;
 const ROOT  = new URL('..', self.location).href;
 
@@ -8,8 +8,8 @@ const ASSETS = [
   BASE,
   BASE + 'index.html',
   BASE + 'app.js',
+  BASE + 'data.js',
   BASE + 'manifest.json',
-  ROOT + 'ODS9.txt',
   ROOT + 'ods_data.js',
   ROOT + 'icon-192.png',
 ];
