@@ -55,7 +55,6 @@ body{
   white-space:nowrap;
 }
 .hdr-btn:active{opacity:.7;}
-#btn-abandon{color:#e07060;border-color:#6a3028;}
 
 /* ── Grid (vertical scroll) ───────────────────────────── */
 #grid{
@@ -90,6 +89,7 @@ body{
   border-radius:4px;background:var(--token-bg);color:var(--token-text);
   flex-shrink:0;
 }
+.token-joker{background:var(--gold);color:var(--bg);}
 
 /* found words inline */
 .card-info{display:flex;flex-wrap:wrap;gap:6px;align-items:center;}
@@ -115,7 +115,7 @@ body{
   padding:6px 14px 4px;min-height:34px;
 }
 #word-display{font-size:20px;font-weight:700;letter-spacing:3px;color:var(--text);min-width:40px;}
-.word-msg{font-size:13px;color:var(--text-dim);}
+.word-msg{font-size:13px;color:var(--text-dim);flex:1;}
 .word-msg.error{color:var(--red);font-weight:600;}
 .word-msg.warn{color:var(--warn);font-weight:600;}
 
@@ -214,6 +214,7 @@ body{
   width:22px;height:26px;font-size:10px;font-weight:800;
   border-radius:3px;background:var(--token-bg);color:var(--token-text);
 }
+.v-token-joker{background:var(--gold);color:var(--bg);}
 .v-solutions{display:flex;flex-direction:column;gap:4px;}
 .v-word-row{display:flex;flex-direction:column;gap:2px;}
 .v-word-row.v-found .v-word{color:var(--green);font-weight:700;}
@@ -222,6 +223,15 @@ body{
 .v-def{font-size:11px;color:var(--text-dim);line-height:1.4;}
 
 .hidden{display:none!important;}
+
+/* ── Abandon / Rejouer button ─────────────────────────── */
+.abandon-btn{
+  background:transparent;color:#e07060;
+  border:1px solid #6a3028;border-radius:8px;
+  padding:4px 10px;font-size:12px;cursor:pointer;flex-shrink:0;white-space:nowrap;
+}
+.abandon-btn:active{opacity:.7;}
+.abandon-btn.replay{color:var(--gold);border-color:var(--gold);}
 </style>
 </head>
 <body>
@@ -229,18 +239,14 @@ body{
 <header id="header">
   <div id="logo">♠ Black<span>Scrab</span></div>
   <button id="btn-new" class="hdr-btn">↺ Nouvelle</button>
-  <button id="btn-abandon" class="hdr-btn">⚑ Abandon</button>
   <button id="btn-settings" class="hdr-btn">⚙</button>
   <div id="score">0 / 21</div>
 </header>
 
 <div id="settings-panel" class="hidden">
   <div class="sett-row">
-    <span class="sett-label">Mode</span>
-    <div class="sett-toggle">
-      <button class="sett-btn active" id="sett-nc">Sans conjugaisons</button>
-      <button class="sett-btn" id="sett-all">Tous les mots</button>
-    </div>
+    <span class="sett-label">Joker</span>
+    <button class="sett-btn" id="sett-joker">Désactivé</button>
   </div>
   <div class="sett-row">
     <span class="sett-label">Lettres min</span>
@@ -267,6 +273,7 @@ body{
   <div class="kb-top-row">
     <span id="word-display"></span>
     <span id="word-msg" class="word-msg"></span>
+    <button id="btn-abandon" class="abandon-btn">⚑ Abandon</button>
   </div>
   <div class="desktop-row">
     <input id="dt-input" type="text"
@@ -316,7 +323,7 @@ body{
 <script src="./data.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v104';
+  const CURRENT_CACHE = 'blackscrab-v105';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
