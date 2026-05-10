@@ -159,7 +159,7 @@ function renderGrid() {
     const info = document.createElement('div');
     info.className = 'card-info';
     if (t.foundWords.length) {
-      t.foundWords.forEach(w => {
+      [...t.foundWords].sort().forEach(w => {
         const wd = document.createElement('span');
         wd.className = 'found-word';
         wd.textContent = w;
