@@ -152,6 +152,39 @@ body{
 .kk.clr{background:var(--kk-clr);}
 .kk.del{background:var(--kk-del);}
 
+/* ── Settings panel ───────────────────────────────────── */
+#settings-panel{
+  position:fixed;right:14px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:16px;z-index:150;width:min(300px,calc(100vw - 28px));
+  display:flex;flex-direction:column;gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+#settings-panel.hidden{display:none!important;}
+.sett-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sett-label{font-size:13px;color:var(--text-dim);flex-shrink:0;}
+.sett-toggle{display:flex;gap:4px;}
+.sett-btn{
+  background:var(--surface2);color:var(--text-dim);
+  border:1px solid var(--border);border-radius:6px;
+  padding:4px 10px;font-size:12px;cursor:pointer;white-space:nowrap;
+}
+.sett-btn.active{background:var(--gold);color:var(--bg);border-color:var(--gold);font-weight:700;}
+.sett-stepper{display:flex;align-items:center;gap:10px;}
+.sett-step{
+  background:var(--surface2);color:var(--text);
+  border:1px solid var(--border);border-radius:6px;
+  width:28px;height:28px;font-size:18px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
+}
+.sett-step:active{opacity:.7;}
+.sett-val{font-size:18px;font-weight:800;color:var(--gold);min-width:22px;text-align:center;}
+.sett-apply{
+  background:var(--kk-ok);color:#fff;border:none;border-radius:8px;
+  padding:10px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-top:2px;
+}
+.sett-apply:active{opacity:.8;}
+
 /* ── Récapitulatif modal ──────────────────────────────── */
 #victory-modal{
   position:fixed;inset:0;background:rgba(10,11,18,.93);
@@ -197,8 +230,36 @@ body{
   <div id="logo">♠ Black<span>Scrab</span></div>
   <button id="btn-new" class="hdr-btn">↺ Nouvelle</button>
   <button id="btn-abandon" class="hdr-btn">⚑ Abandon</button>
+  <button id="btn-settings" class="hdr-btn">⚙</button>
   <div id="score">0 / 21</div>
 </header>
+
+<div id="settings-panel" class="hidden">
+  <div class="sett-row">
+    <span class="sett-label">Mode</span>
+    <div class="sett-toggle">
+      <button class="sett-btn active" id="sett-nc">Sans conjugaisons</button>
+      <button class="sett-btn" id="sett-all">Tous les mots</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Lettres min</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-min">−</button>
+      <span class="sett-val" id="val-min">5</span>
+      <button class="sett-step" id="inc-min">+</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Lettres max</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-max">−</button>
+      <span class="sett-val" id="val-max">8</span>
+      <button class="sett-step" id="inc-max">+</button>
+    </div>
+  </div>
+  <button class="sett-apply" id="btn-sett-apply">Nouvelle partie →</button>
+</div>
 
 <main id="grid"></main>
 
@@ -255,7 +316,7 @@ body{
 <script src="./data.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v103';
+  const CURRENT_CACHE = 'blackscrab-v104';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
