@@ -1,12 +1,13 @@
 'use strict';
 
 /* ── State ─────────────────────────────────────────────── */
-let settings = { mode: 'nc', minLen: 5, maxLen: 8 };
-let pool    = [];   // tirages filtrés selon les réglages
-let seance  = [];   // [{sorted, words, foundWords[], done}]
-let score   = 0;
-let target  = 21;
-let kbBuf   = '';
+let settings = { minLen: 5, maxLen: 8, joker: false };
+let pool     = [];
+let seance   = [];
+let score    = 0;
+let target   = 21;
+let gameOver = false;
+let kbBuf    = '';
 let msgTimer = null;
 
 const SETTINGS_KEY = 'bs-settings';
@@ -16,12 +17,12 @@ const SETTINGS_KEY = 'bs-settings';
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) || '{}');
-    settings.mode   = s.mode === 'all' ? 'all' : 'nc';
     settings.minLen = Math.max(2, Math.min(15, +s.minLen || 5));
     settings.maxLen = Math.max(2, Math.min(15, +s.maxLen || 8));
     if (settings.minLen > settings.maxLen) settings.maxLen = settings.minLen;
+    settings.joker = !!s.joker;
   } catch(e) {
-    settings = { mode: 'nc', minLen: 5, maxLen: 8 };
+    settings = { minLen: 5, maxLen: 8, joker: false };
   }
 }
 
@@ -32,7 +33,7 @@ function saveSettings() {
 /* ── Pool ──────────────────────────────────────────────── */
 
 function buildPool() {
-  const src = settings.mode === 'all' ? window.BS_ALL : window.BS_NC;
+  const src = window.BS_ALL;
   if (!src?.length) { pool = []; return; }
   pool = src
     .filter(t => t[0].length >= settings.minLen && t[0].length <= settings.maxLen)
@@ -53,7 +54,6 @@ function shuffle(arr) {
 function buildSeance() {
   if (!pool.length) return [];
 
-  // Grouper par nombre de solutions, copies mélangées
   const groups = {};
   for (const t of pool) {
     const n = t.words.length;
@@ -64,7 +64,6 @@ function buildSeance() {
 
   const chosen = [];
   let remaining = 21;
-
   while (remaining > 0) {
     const available = Object.keys(shuffled)
       .map(Number)
@@ -75,13 +74,48 @@ function buildSeance() {
     remaining -= n;
   }
 
-  return shuffle(chosen).map(t => ({ sorted: t.sorted, words: t.words, foundWords: [], done: false }));
+  // Joker : ~1/3 des tirages ont une lettre cachée
+  if (settings.joker) {
+    chosen.forEach(t => {
+      if (Math.random() < 1 / 3) {
+        const letters = t.sorted.split('');
+        t.joker = letters[Math.floor(Math.random() * letters.length)];
+      }
+    });
+  }
+
+  return shuffle(chosen).map(t => ({
+    sorted: t.sorted,
+    words:  t.words,
+    foundWords: [],
+    done:   false,
+    joker:  t.joker || null,
+  }));
+}
+
+function tirageSortedDisplay(t) {
+  if (!t.joker) return t.sorted;
+  return t.sorted.replace(t.joker, '') + '?';
+}
+
+function setAbandonBtn(over) {
+  gameOver = over;
+  const btn = document.getElementById('btn-abandon');
+  if (!btn) return;
+  if (over) {
+    btn.textContent = '↺ Rejouer';
+    btn.classList.add('replay');
+  } else {
+    btn.textContent = '⚑ Abandon';
+    btn.classList.remove('replay');
+  }
 }
 
 function newGame() {
   score = 0;
   kbBuf = '';
   clearTimeout(msgTimer);
+  setAbandonBtn(false);
   seance = buildSeance();
   target = seance.reduce((s, t) => s + t.words.length, 0);
   renderGrid();
@@ -95,11 +129,7 @@ function newGame() {
 }
 
 function onNewGame() {
-  if (score === 0 || confirm('Recommencer une nouvelle partie ?')) newGame();
-}
-
-function onAbandon() {
-  if (confirm('Abandonner et voir le récapitulatif ?')) showRecap(true);
+  if (gameOver || score === 0 || confirm('Recommencer une nouvelle partie ?')) newGame();
 }
 
 /* ── Rendering ─────────────────────────────────────────── */
@@ -118,9 +148,9 @@ function renderGrid() {
 
     const tokens = document.createElement('div');
     tokens.className = 'card-tokens';
-    t.sorted.split('').forEach(l => {
+    tirageSortedDisplay(t).split('').forEach(l => {
       const sp = document.createElement('span');
-      sp.className = 'token';
+      sp.className = 'token' + (l === '?' ? ' token-joker' : '');
       sp.textContent = l;
       tokens.appendChild(sp);
     });
@@ -210,7 +240,7 @@ function submit() {
       tirage.done = true;
       renderGrid();
       setTimeout(() => flashAndRemove(tirage.sorted), 50);
-      if (score === target) { setTimeout(showRecap, 700); }
+      if (score === target) { setTimeout(() => showRecap(false), 700); }
     } else {
       renderGrid();
     }
@@ -261,14 +291,17 @@ function wireDesktopInput() {
 /* ── Settings UI ───────────────────────────────────────── */
 
 function refreshSettingsUI() {
-  document.getElementById('sett-nc').classList.toggle('active', settings.mode === 'nc');
-  document.getElementById('sett-all').classList.toggle('active', settings.mode === 'all');
   document.getElementById('val-min').textContent = settings.minLen;
   document.getElementById('val-max').textContent = settings.maxLen;
+  const jokerBtn = document.getElementById('sett-joker');
+  if (jokerBtn) {
+    jokerBtn.textContent = settings.joker ? 'Activé' : 'Désactivé';
+    jokerBtn.classList.toggle('active', settings.joker);
+  }
 }
 
 function wireSettings() {
-  const panel  = document.getElementById('settings-panel');
+  const panel   = document.getElementById('settings-panel');
   const btnOpen = document.getElementById('btn-settings');
 
   btnOpen.addEventListener('click', e => {
@@ -288,13 +321,6 @@ function wireSettings() {
       panel.classList.add('hidden');
   });
 
-  document.getElementById('sett-nc').addEventListener('click', () => {
-    settings.mode = 'nc'; refreshSettingsUI();
-  });
-  document.getElementById('sett-all').addEventListener('click', () => {
-    settings.mode = 'all'; refreshSettingsUI();
-  });
-
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
   document.getElementById('dec-min').addEventListener('click', () => {
     settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen);
@@ -311,6 +337,11 @@ function wireSettings() {
   });
   document.getElementById('inc-max').addEventListener('click', () => {
     settings.maxLen = clamp(settings.maxLen + 1, 2, 15);
+    refreshSettingsUI();
+  });
+
+  document.getElementById('sett-joker')?.addEventListener('click', () => {
+    settings.joker = !settings.joker;
     refreshSettingsUI();
   });
 
@@ -338,6 +369,7 @@ function findDef(word) {
 }
 
 function showRecap(abandoned = false) {
+  setAbandonBtn(true);
   const modal = document.getElementById('victory-modal');
   const title = document.getElementById('victory-title');
   const list  = document.getElementById('victory-list');
@@ -353,9 +385,10 @@ function showRecap(abandoned = false) {
 
     const header = document.createElement('div');
     header.className = 'v-header';
-    t.sorted.split('').forEach(l => {
+    tirageSortedDisplay(t).split('').forEach(l => {
       const sp = document.createElement('span');
-      sp.className = 'v-token'; sp.textContent = l;
+      sp.className = 'v-token' + (l === '?' ? ' v-token-joker' : '');
+      sp.textContent = l;
       header.appendChild(sp);
     });
     item.appendChild(header);
@@ -392,7 +425,7 @@ async function init() {
     });
   }
 
-  if (!window.BS_NC && !window.BS_ALL) {
+  if (!window.BS_ALL) {
     document.getElementById('grid').innerHTML =
       '<p style="color:var(--red);padding:20px">Données introuvables.</p>';
     return;
@@ -403,8 +436,13 @@ async function init() {
   wireKeyboard();
   wireDesktopInput();
   wireSettings();
+
   document.getElementById('btn-new').addEventListener('click', onNewGame);
-  document.getElementById('btn-abandon').addEventListener('click', onAbandon);
+  document.getElementById('btn-abandon').addEventListener('click', () => {
+    if (gameOver) { newGame(); }
+    else if (confirm('Abandonner et voir le récapitulatif ?')) showRecap(true);
+  });
+
   newGame();
 }
 
