@@ -19,6 +19,7 @@ const SETTINGS_KEY   = 'bs-settings';
 const SRS_KEY        = 'bs-srs';
 const SRS_DONE_DAYS  = 30;
 const SRS_INTERVALS  = [3, 7, 14, 30, 60, 90, 180];
+const SESSION_KEY    = 'bs-session';
 
 /* ── Settings persistence ────────────────────────────────── */
 
@@ -49,6 +50,30 @@ function loadSRS() {
 
 function saveSRS() {
   try { localStorage.setItem(SRS_KEY, JSON.stringify(srsData)); } catch(e) {}
+}
+
+/* ── Session persistence ─────────────────────────────────── */
+
+function saveSession() {
+  try {
+    localStorage.setItem(SESSION_KEY, JSON.stringify(seance.map(t => ({
+      sorted: t.sorted, words: t.words, foundWords: t.foundWords,
+      done: t.done, isJoker: t.isJoker,
+    }))));
+  } catch(e) {}
+}
+
+function loadSession() {
+  try {
+    const s = localStorage.getItem(SESSION_KEY);
+    if (!s) return null;
+    const arr = JSON.parse(s);
+    return Array.isArray(arr) && arr.length ? arr : null;
+  } catch(e) { return null; }
+}
+
+function clearSession() {
+  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
 
 function srsMarkDone(key) {
@@ -229,19 +254,63 @@ function showStartScreen() {
   grid.innerHTML = '';
   const prompt = document.createElement('div');
   prompt.className = 'start-prompt';
-  const sub = document.createElement('p');
-  sub.className = 'start-sub';
-  sub.textContent = 'Trouvez tous les anagrammes';
-  const btn = document.createElement('button');
-  btn.className = 'start-btn';
-  btn.textContent = '♠ Jouer';
-  btn.addEventListener('click', newGame);
-  prompt.appendChild(sub);
-  prompt.appendChild(btn);
+
+  const saved = loadSession();
+  if (saved && saved.some(t => !t.done)) {
+    const scoreDone  = saved.reduce((s, t) => s + t.foundWords.length, 0);
+    const scoreTotal = saved.reduce((s, t) => s + t.words.length, 0);
+    const sub = document.createElement('p');
+    sub.className = 'start-sub';
+    sub.textContent = `Session en cours · ${scoreDone} / ${scoreTotal}`;
+    prompt.appendChild(sub);
+    const btnContinue = document.createElement('button');
+    btnContinue.className = 'start-btn';
+    btnContinue.textContent = '→ Continuer';
+    btnContinue.addEventListener('click', resumeGame);
+    prompt.appendChild(btnContinue);
+    const btnNew = document.createElement('button');
+    btnNew.className = 'start-btn start-btn-secondary';
+    btnNew.textContent = '♠ Nouvelle partie';
+    btnNew.addEventListener('click', newGame);
+    prompt.appendChild(btnNew);
+  } else {
+    const sub = document.createElement('p');
+    sub.className = 'start-sub';
+    sub.textContent = 'Trouvez tous les anagrammes';
+    prompt.appendChild(sub);
+    const btn = document.createElement('button');
+    btn.className = 'start-btn';
+    btn.textContent = '♠ Jouer';
+    btn.addEventListener('click', newGame);
+    prompt.appendChild(btn);
+  }
+
   grid.appendChild(prompt);
 }
 
+function resumeGame() {
+  const saved = loadSession();
+  if (!saved) { newGame(); return; }
+  gameActive = true;
+  score = 0;
+  kbBuf = '';
+  clearTimeout(msgTimer);
+  stopChrono();
+  document.getElementById('solution-view').classList.add('hidden');
+  document.getElementById('grid').classList.remove('hidden');
+  document.getElementById('input-area').classList.remove('hidden');
+  seance = saved;
+  score  = seance.reduce((s, t) => s + t.foundWords.length, 0);
+  target = seance.reduce((s, t) => s + t.words.length, 0);
+  renderGrid();
+  updateScore();
+  setMsg('');
+  updateWordDisplay();
+  startChrono();
+}
+
 function newGame() {
+  clearSession();
   buildPool();
   gameActive = true;
   score = 0;
@@ -253,6 +322,7 @@ function newGame() {
   document.getElementById('input-area').classList.remove('hidden');
   seance = buildSeance();
   target = seance.reduce((s, t) => s + t.words.length, 0);
+  saveSession();
   renderGrid();
   updateScore();
   setMsg('');
@@ -373,6 +443,7 @@ function submit() {
     updateWordDisplay();
     setMsg('');
     updateScore();
+    saveSession();
 
     if (tirage.foundWords.length === tirage.words.length) {
       tirage.done = true;
@@ -522,6 +593,7 @@ function wireSettings() {
 function showRecap(abandoned = false) {
   stopChrono();
   gameActive = false;
+  clearSession();
 
   seance.forEach(t => {
     const key = t.isJoker ? t.sorted + '?' : t.sorted;
@@ -570,6 +642,20 @@ function showRecap(abandoned = false) {
       sols.appendChild(row);
     });
     item.appendChild(sols);
+    if (t.done) {
+      const revoir = document.createElement('button');
+      revoir.className = 'revoir-btn';
+      revoir.textContent = '↺ Revoir';
+      revoir.addEventListener('click', () => {
+        const key = t.isJoker ? t.sorted + '?' : t.sorted;
+        delete srsData[key];
+        saveSRS();
+        revoir.textContent = '✓';
+        revoir.classList.add('done');
+        revoir.disabled = true;
+      });
+      item.appendChild(revoir);
+    }
     list.appendChild(item);
   });
 
