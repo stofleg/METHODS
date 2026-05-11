@@ -1,6 +1,6 @@
 'use strict';
 
-/* ── State ─────────────────────────────────────────────── */
+/* ── State ──────────────────────────────────────────────────── */
 let settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
 let pool      = [];
 let jokerPool = [];
@@ -20,7 +20,7 @@ const SRS_KEY        = 'bs-srs';
 const SRS_DONE_DAYS  = 30;
 const SRS_INTERVALS  = [3, 7, 14, 30, 60, 90, 180];
 
-/* ── Settings persistence ──────────────────────────────── */
+/* ── Settings persistence ────────────────────────────────── */
 
 function loadSettings() {
   try {
@@ -30,7 +30,7 @@ function loadSettings() {
     settings.maxWords  = Math.max(1, Math.min(21, +s.maxWords  || 5));
     settings.joker     = !!s.joker;
     settings.chrono    = !!s.chrono;
-    settings.chronoMin = Math.max(5, Math.min(60, +s.chronoMin || 10));
+    settings.chronoMin = Math.max(1, Math.min(21, +s.chronoMin || 10));
     if (settings.minLen > settings.maxLen) settings.maxLen = settings.minLen;
   } catch(e) {
     settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
@@ -41,7 +41,7 @@ function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
 }
 
-/* ── SRS ───────────────────────────────────────────────── */
+/* ── SRS ──────────────────────────────────────────────────── */
 
 function loadSRS() {
   try { srsData = JSON.parse(localStorage.getItem(SRS_KEY) || '{}'); } catch(e) { srsData = {}; }
@@ -66,7 +66,7 @@ function srsMarkPartial(key) {
   srsData[key] = { due: Date.now() + days * 86400000, interval: days };
 }
 
-/* ── Pool ──────────────────────────────────────────────── */
+/* ── Pool ────────────────────────────────────────────────────── */
 
 function computeJokerWords(baseSorted) {
   if (!bsAllMap) return [];
@@ -107,19 +107,21 @@ function buildPool() {
 
   jokerPool = [];
   if (settings.joker) {
-    for (const entry of pool) {
-      const jokerKey = entry.sorted + '?';
+    for (const t of src) {
+      const sLen = t[0].length;
+      if (sLen + 1 < settings.minLen || sLen + 1 > settings.maxLen) continue;
+      const jokerKey = t[0] + '?';
       const srs = srsData[jokerKey];
       if (srs && srs.due > now) continue;
-      const words = computeJokerWords(entry.sorted);
+      const words = computeJokerWords(t[0]);
       if (words.length >= 2 && words.length <= settings.maxWords) {
-        jokerPool.push({ sorted: entry.sorted, words, isJoker: true });
+        jokerPool.push({ sorted: t[0], words, isJoker: true });
       }
     }
   }
 }
 
-/* ── Game ──────────────────────────────────────────────── */
+/* ── Game ────────────────────────────────────────────────────── */
 
 function shuffle(arr) {
   const a = [...arr];
@@ -183,7 +185,7 @@ function tirageSortedDisplay(t) {
   return t.isJoker ? t.sorted + '?' : t.sorted;
 }
 
-/* ── Chrono ────────────────────────────────────────────── */
+/* ── Chrono ──────────────────────────────────────────────────── */
 
 function startChrono() {
   if (!settings.chrono) return;
@@ -215,7 +217,7 @@ function updateChronoDisplay() {
   el.classList.toggle('chrono-warn', chronoRemaining <= 60);
 }
 
-/* ── Views ─────────────────────────────────────────────── */
+/* ── Views ───────────────────────────────────────────────────── */
 
 function showStartScreen() {
   gameActive = false;
@@ -262,7 +264,7 @@ function newGame() {
   }
 }
 
-/* ── Rendering ─────────────────────────────────────────── */
+/* ── Rendering ───────────────────────────────────────────────────── */
 
 function renderGrid() {
   const grid = document.getElementById('grid');
@@ -337,7 +339,7 @@ function setMsg(text, cls) {
   if (text) msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'word-msg'; }, 2000);
 }
 
-/* ── Submission ────────────────────────────────────────── */
+/* ── Submission ──────────────────────────────────────────────────── */
 
 function findTirage(done, wordSorted) {
   for (const t of seance) {
@@ -388,7 +390,7 @@ function submit() {
   kbBuf = ''; updateWordDisplay();
 }
 
-/* ── Keyboard ──────────────────────────────────────────── */
+/* ── Keyboard ───────────────────────────────────────────────────── */
 
 function wireKeyboard() {
   const kb = document.getElementById('bs-kb');
@@ -424,7 +426,7 @@ function wireDesktopInput() {
   btn?.addEventListener('click', submit);
 }
 
-/* ── Settings UI ───────────────────────────────────────── */
+/* ── Settings UI ──────────────────────────────────────────────────── */
 
 function refreshSettingsUI() {
   document.getElementById('val-min').textContent    = settings.minLen;
@@ -493,10 +495,10 @@ function wireSettings() {
     settings.maxWords = clamp(settings.maxWords + 1, 1, 21); refreshSettingsUI();
   });
   document.getElementById('dec-chrono').addEventListener('click', () => {
-    settings.chronoMin = clamp(settings.chronoMin - 5, 5, 60); refreshSettingsUI();
+    settings.chronoMin = clamp(settings.chronoMin - 1, 1, 21); refreshSettingsUI();
   });
   document.getElementById('inc-chrono').addEventListener('click', () => {
-    settings.chronoMin = clamp(settings.chronoMin + 5, 5, 60); refreshSettingsUI();
+    settings.chronoMin = clamp(settings.chronoMin + 1, 1, 21); refreshSettingsUI();
   });
 
   document.getElementById('sett-joker')?.addEventListener('click', () => {
@@ -515,7 +517,7 @@ function wireSettings() {
   });
 }
 
-/* ── Solution view ─────────────────────────────────────── */
+/* ── Solution view ──────────────────────────────────────────────────── */
 
 function showRecap(abandoned = false) {
   stopChrono();
@@ -582,14 +584,12 @@ function showRecap(abandoned = false) {
   view.classList.remove('hidden');
 }
 
-/* ── Init ──────────────────────────────────────────────── */
+/* ── Init ────────────────────────────────────────────────────────────── */
 
 async function init() {
   if ('serviceWorker' in navigator) {
-    await navigator.serviceWorker.register('./sw.js');
-    navigator.serviceWorker.addEventListener('message', e => {
-      if (e.data === 'update') location.reload();
-    });
+    await navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
   }
 
   if (!window.BS_ALL) {
