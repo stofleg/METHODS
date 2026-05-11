@@ -5,6 +5,7 @@
 - Safari iOS traite les PWA home-screen comme une app native avec cache isolé
 - Pour forcer la mise à jour : il faut impérativement bumper `CACHE_NAME` dans `sw.js` ET `CURRENT_CACHE` dans le bloc `<script>` en bas de `index.html` — les deux ensemble, même valeur
 - Le service worker supprime tous les caches `methods-*` sauf le courant, puis force un reload via `controllerchange`
+- **GitHub Pages sert depuis la branche `main`** — toujours merger sur `main` pour déployer
 
 ## Architecture
 - SPA pure : une seule page `index.html`, pas de serveur backend
@@ -19,6 +20,16 @@
 - Badge version : `#version-badge` dans index.html
 - CACHE_NAME suit le schéma `methods-v{majeur*100+mineur}` (ex. v4.0 → methods-v400)
 - À chaque release : bumper `CACHE_NAME` dans `sw.js` + `CURRENT_CACHE` + `#version-badge` dans `index.html`
+
+## BlackScrab (sous-app)
+- PWA dans `blackscrab/` avec son propre `sw.js` et `manifest.json`
+- Dépendances partagées depuis le parent : `../data.js` (SEQODS_DATA pour les définitions), `../ods_data.js`
+- Icônes propres : `blackscrab/icon-192.png`, `blackscrab/icon-512.png` (générées depuis `icon.svg`)
+- Version courante : **v1.14**
+- Badge version : `#version-badge` dans `blackscrab/index.html`
+- CACHE_NAME suit le schéma `blackscrab-v{majeur*100+mineur}` (ex. v1.14 → blackscrab-v114)
+- À chaque release : bumper `CACHE_NAME` dans `blackscrab/sw.js` + `CURRENT_CACHE` + `#version-badge` dans `blackscrab/index.html`
+- **GitHub Pages sert depuis `main`** — merger sur `main` via PR GitHub pour déployer
 
 ## Points clés
 - `openDef()` dans `common.js` = lookup dictionnaire depuis les jeux (ouvre `#def-modal`)
