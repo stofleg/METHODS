@@ -2,12 +2,13 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="BlackScrab">
 <title>BlackScrab</title>
 <link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./icon-192.png">
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 :root{
@@ -30,7 +31,7 @@
   --kk-clr:#6a2838;
   --kk-del:#363a58;
 }
-html,body{height:100%;height:100dvh;}
+html,body{height:100%;height:100dvh;touch-action:manipulation;}
 body{
   background:var(--bg);color:var(--text);
   font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
@@ -38,15 +39,17 @@ body{
   padding-bottom:env(safe-area-inset-bottom);
 }
 
-/* ── Header ───────────────────────────────────────────── */
+/* ── Header ────────────────────────────────────────────────────── */
 #header{
   display:flex;align-items:center;justify-content:space-between;
   padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;
   background:var(--bg);flex-shrink:0;
   border-bottom:1px solid var(--border);gap:8px;
 }
-#logo{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--gold);}
-#logo span{color:var(--text-dim);font-weight:400;}
+#logo{display:flex;flex-direction:column;line-height:1;}
+#logo .logo-title{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--gold);}
+#logo .logo-title span{color:var(--text-dim);font-weight:400;}
+#version-badge{font-size:9px;color:var(--text-dim);font-weight:400;letter-spacing:.5px;margin-top:2px;}
 #score{font-size:18px;font-weight:800;color:var(--gold);min-width:56px;text-align:right;}
 .hdr-btn{
   background:var(--surface2);color:var(--text);
@@ -56,13 +59,13 @@ body{
 }
 .hdr-btn:active{opacity:.7;}
 
-/* ── Grid (vertical scroll) ───────────────────────────── */
+/* ── Grid (vertical scroll) ─────────────────────────────────────────────── */
 #grid{
   flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
   display:flex;flex-direction:column;gap:7px;padding:10px;
 }
 
-/* ── Card ─────────────────────────────────────────────── */
+/* ── Card ────────────────────────────────────────────────────────────── */
 .card{
   background:var(--surface);border:2px solid var(--border);
   border-radius:10px;padding:10px 12px;
@@ -85,7 +88,7 @@ body{
 .card-tokens{display:flex;flex-wrap:wrap;gap:3px;}
 .token{
   display:inline-flex;align-items:center;justify-content:center;
-  width:28px;height:32px;font-size:13px;font-weight:800;
+  width:28px;height:32px;font-size:15px;font-weight:800;
   border-radius:4px;background:var(--token-bg);color:var(--token-text);
   flex-shrink:0;
 }
@@ -108,7 +111,7 @@ body{
   border:2px solid var(--border);flex-shrink:0;
 }
 
-/* ── Input area ───────────────────────────────────────── */
+/* ── Input area ───────────────────────────────────────────────────────── */
 #input-area{flex-shrink:0;background:var(--kb);border-top:1px solid var(--border);}
 .kb-top-row{
   display:flex;align-items:center;justify-content:space-between;
@@ -152,7 +155,7 @@ body{
 .kk.clr{background:var(--kk-clr);}
 .kk.del{background:var(--kk-del);}
 
-/* ── Settings panel ───────────────────────────────────── */
+/* ── Settings panel ───────────────────────────────────────────────────── */
 #settings-panel{
   position:fixed;right:14px;
   background:var(--surface);border:1px solid var(--border);border-radius:12px;
@@ -185,7 +188,7 @@ body{
 }
 .sett-apply:active{opacity:.8;}
 
-/* ── Solution view ────────────────────────────────────── */
+/* ── Solution view ───────────────────────────────────────────────────────────────── */
 #solution-view{
   position:fixed;inset:0;z-index:100;
   background:var(--bg);
@@ -215,7 +218,7 @@ body{
 .v-header{display:flex;flex-wrap:wrap;gap:2px;margin-bottom:7px;}
 .v-token{
   display:inline-flex;align-items:center;justify-content:center;
-  width:22px;height:26px;font-size:10px;font-weight:800;
+  width:22px;height:26px;font-size:12px;font-weight:800;
   border-radius:3px;background:var(--token-bg);color:var(--token-text);
 }
 .v-token-joker{background:var(--gold);color:var(--bg);}
@@ -228,7 +231,7 @@ body{
 
 .hidden{display:none!important;}
 
-/* ── Abandon / Rejouer button ─────────────────────────── */
+/* ── Abandon / Rejouer button ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
 .abandon-btn{
   background:transparent;color:#e07060;
   border:1px solid #6a3028;border-radius:8px;
@@ -237,7 +240,7 @@ body{
 .abandon-btn:active{opacity:.7;}
 .abandon-btn.replay{color:var(--gold);border-color:var(--gold);}
 
-/* ── Modale définition ─────────────────────────────────── */
+/* ── Modale définition ──────────────────────────────────────────────────────────────────────── */
 #def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
 #def-modal.open{display:flex;}
 #def-bd{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
@@ -262,11 +265,11 @@ a.def-link:hover{text-decoration:underline;}
 .found-word{cursor:pointer;}
 .found-word:hover{text-decoration:underline;}
 
-/* ── Chrono ──────────────────────────────────────────── */
+/* ── Chrono ──────────────────────────────────────────────────────────────────────── */
 .chrono{font-size:18px;font-weight:800;color:var(--text);min-width:48px;text-align:center;flex-shrink:0;}
 .chrono.chrono-warn{color:var(--red);}
 
-/* ── Start screen ────────────────────────────────────── */
+/* ── Start screen ──────────────────────────────────────────────────────────────────────────────── */
 .start-prompt{
   flex:1;display:flex;flex-direction:column;align-items:center;
   justify-content:center;gap:18px;padding:20px;
@@ -283,7 +286,10 @@ a.def-link:hover{text-decoration:underline;}
 <body>
 
 <header id="header">
-  <div id="logo">♠ Black<span>Scrab</span></div>
+  <div id="logo">
+    <div class="logo-title">♠ Black<span>Scrab</span></div>
+    <span id="version-badge">v1.14</span>
+  </div>
   <span id="chrono-display" class="hidden chrono"></span>
   <button id="btn-settings" class="hdr-btn">⚙</button>
   <div id="score">0 / 21</div>
@@ -403,11 +409,12 @@ a.def-link:hover{text-decoration:underline;}
 </div>
 
 <script src="../ods_data.js"></script>
+<script src="../data.js"></script>
 <script src="./data.js"></script>
 <script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v109';
+  const CURRENT_CACHE = 'blackscrab-v114';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
