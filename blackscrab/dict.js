@@ -558,17 +558,18 @@ function openDef(canon, displayWord, defText, flechie){
   const idx = allIdxs[0] ?? -1;
   const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
 
+  const _CP = /^-->\s+([A-Z]+)\s+\d+\./;
   const defs = defText !== undefined
     ? [{label:null, text:defText}]
-    : allIdxs.map(i=>({label:null, text:F?.[i]||""}));
+    : allIdxs.map(i=>{ const f=F?.[i]||''; const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], text:ci!==undefined?(F?.[ci]||''):''}; } return {label:null, text:f}; });
 
   if(allIdxs.length>0 && defText===undefined){
-    const cl = _findConjLemma(canon);
+    const cl = _getConjMap().get(canon) || _findConjLemma(canon);
     if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
   }
 
   const wSlash = _wantsSlash(canon) && !title.includes('/');
-  $d("#def-title").textContent = wSlash ? title+' /' : title;
+  $d("#def-title").textContent = wSlash ? title+' /' : title;
   const bodyEl = $d("#def-body");
   if(defs.length <= 1){
     bodyEl.textContent = defs[0]?.text || "(définition absente)";

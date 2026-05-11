@@ -234,7 +234,7 @@ function showStartScreen() {
   sub.textContent = 'Trouvez tous les anagrammes';
   const btn = document.createElement('button');
   btn.className = 'start-btn';
-  btn.textContent = '▶ Jouer';
+  btn.textContent = '♠ Jouer';
   btn.addEventListener('click', newGame);
   prompt.appendChild(sub);
   prompt.appendChild(btn);
