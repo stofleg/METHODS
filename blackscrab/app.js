@@ -14,13 +14,12 @@ let msgTimer  = null;
 let chronoTimer     = null;
 let chronoRemaining = 0;
 let gameActive      = false;
-let currentSessionId = null;
 
 const SETTINGS_KEY  = 'bs-settings';
 const SRS_KEY       = 'bs-srs';
 const SRS_DONE_DAYS = 30;
 const SRS_INTERVALS = [3, 7, 14, 30, 60, 90, 180];
-const SESSIONS_KEY  = 'bs-sessions';
+const PRESETS_KEY   = 'bs-presets';
 
 /* ── Settings persistence ─────────────────────────────────── */
 
@@ -68,39 +67,22 @@ function srsMarkPartial(key) {
   srsData[key] = { due: Date.now() + days * 86400000, interval: days };
 }
 
-/* ── Sessions multiples ─────────────────────────────────────────── */
+/* ── Profils (presets de critères) ─────────────────────────────────────────── */
 
-function loadSessions() {
+function loadPresets() {
   try {
-    const s = localStorage.getItem(SESSIONS_KEY);
+    const s = localStorage.getItem(PRESETS_KEY);
     return s ? JSON.parse(s) : [];
   } catch(e) { return []; }
 }
 
-function saveSessions(sessions) {
-  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch(e) {}
+function savePresets(presets) {
+  try { localStorage.setItem(PRESETS_KEY, JSON.stringify(presets)); } catch(e) {}
 }
 
-function saveCurrentSession() {
-  if (!currentSessionId) return;
-  const sessions = loadSessions();
-  const idx = sessions.findIndex(s => s.id === currentSessionId);
-  const entry = {
-    id: currentSessionId,
-    seance: seance.map(t => ({
-      sorted: t.sorted, words: t.words, foundWords: t.foundWords,
-      done: t.done, isJoker: t.isJoker,
-    })),
-  };
-  if (idx >= 0) sessions[idx] = entry;
-  else sessions.push(entry);
-  saveSessions(sessions);
-}
-
-function deleteCurrentSession() {
-  if (!currentSessionId) return;
-  saveSessions(loadSessions().filter(s => s.id !== currentSessionId));
-  currentSessionId = null;
+function presetLabel(p) {
+  const len = p.minLen === p.maxLen ? `${p.minLen} L` : `${p.minLen}–${p.maxLen} L`;
+  return `${len} · max ${p.maxWords}${p.joker ? ' · joker ♠' : ''}`;
 }
 
 /* ── Pool ─────────────────────────────────────────────────────────────────── */
@@ -334,56 +316,86 @@ function showStartScreen() {
     document.getElementById('hs-val-mw').textContent = settings.maxWords;
   });
 
-  // ── Bouton nouvelle partie ──
+  // ── Boutons action ──
+  const btnRow = document.createElement('div');
+  btnRow.style.cssText = 'width:100%;max-width:360px;display:flex;gap:8px;';
+
   const btnNew = document.createElement('button');
   btnNew.className = 'start-btn';
-  btnNew.style.cssText = 'width:100%;max-width:360px;';
-  btnNew.textContent = '♠ Nouvelle partie';
+  btnNew.style.cssText = 'flex:1;';
+  btnNew.textContent = '♠ Jouer';
   btnNew.addEventListener('click', () => {
     saveSettings();
     bsAllMap = null;
     buildPool();
     newGame();
   });
-  wrap.appendChild(btnNew);
+  btnRow.appendChild(btnNew);
 
-  // ── Sessions en cours ──
-  const sessions = loadSessions();
-  if (sessions.length) {
+  const btnSave = document.createElement('button');
+  btnSave.className = 'start-btn-secondary';
+  btnSave.style.cssText = 'flex-shrink:0;padding:10px 14px;font-size:18px;';
+  btnSave.textContent = '＋';
+  btnSave.title = 'Enregistrer ces critères comme profil';
+  btnSave.addEventListener('click', () => {
+    saveSettings();
+    const preset = {
+      id: Date.now(),
+      minLen: settings.minLen, maxLen: settings.maxLen,
+      maxWords: settings.maxWords, joker: settings.joker,
+    };
+    const presets = loadPresets();
+    const dup = presets.some(p =>
+      p.minLen === preset.minLen && p.maxLen === preset.maxLen &&
+      p.maxWords === preset.maxWords && p.joker === preset.joker
+    );
+    if (!dup) { presets.push(preset); savePresets(presets); }
+    showStartScreen();
+  });
+  btnRow.appendChild(btnSave);
+  wrap.appendChild(btnRow);
+
+  // ── Profils sauvegardés ──
+  const presets = loadPresets();
+  if (presets.length) {
     const sep = document.createElement('p');
     sep.className = 'home-sep';
-    sep.textContent = 'Sessions en cours';
+    sep.textContent = 'Mes profils';
     wrap.appendChild(sep);
 
-    for (const sess of [...sessions].reverse()) {
-      const scoreDone  = sess.seance.reduce((s, t) => s + t.foundWords.length, 0);
-      const scoreTotal = sess.seance.reduce((s, t) => s + t.words.length, 0);
-
+    for (const preset of [...presets].reverse()) {
       const card = document.createElement('div');
       card.className = 'session-card';
 
       const info = document.createElement('div');
       info.className = 'session-info';
-      const d = new Date(sess.id);
-      const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
-      info.innerHTML = `<span class="session-date">${dateStr}</span><span class="session-score">${scoreDone}&thinsp;/&thinsp;${scoreTotal}</span>`;
+      info.innerHTML = `<span class="preset-label">${presetLabel(preset)}</span>`;
       card.appendChild(info);
 
       const actions = document.createElement('div');
       actions.className = 'session-actions';
 
-      const btnCont = document.createElement('button');
-      btnCont.className = 'start-btn-secondary';
-      btnCont.textContent = '→ Continuer';
-      btnCont.addEventListener('click', () => resumeGame(sess.id));
-      actions.appendChild(btnCont);
+      const btnPlay = document.createElement('button');
+      btnPlay.className = 'start-btn-secondary';
+      btnPlay.textContent = '▶ Jouer';
+      btnPlay.addEventListener('click', () => {
+        settings.minLen   = preset.minLen;
+        settings.maxLen   = preset.maxLen;
+        settings.maxWords = preset.maxWords;
+        settings.joker    = preset.joker;
+        saveSettings();
+        bsAllMap = null;
+        buildPool();
+        newGame();
+      });
+      actions.appendChild(btnPlay);
 
       const btnDel = document.createElement('button');
       btnDel.className = 'session-del-btn';
       btnDel.textContent = '✕';
-      btnDel.title = 'Supprimer cette session';
+      btnDel.title = 'Supprimer ce profil';
       btnDel.addEventListener('click', () => {
-        saveSessions(loadSessions().filter(s => s.id !== sess.id));
+        savePresets(loadPresets().filter(p => p.id !== preset.id));
         showStartScreen();
       });
       actions.appendChild(btnDel);
@@ -394,33 +406,7 @@ function showStartScreen() {
   }
 }
 
-function resumeGame(id) {
-  const sessions = loadSessions();
-  const sess = sessions.find(s => s.id === id);
-  if (!sess) { showStartScreen(); return; }
-  currentSessionId = id;
-  gameActive = true;
-  score = 0;
-  kbBuf = '';
-  clearTimeout(msgTimer);
-  stopChrono();
-  document.getElementById('solution-view').classList.add('hidden');
-  document.getElementById('grid').classList.remove('hidden');
-  document.getElementById('input-area').classList.remove('hidden');
-  seance = sess.seance;
-  score  = seance.reduce((s, t) => s + t.foundWords.length, 0);
-  target = seance.reduce((s, t) => s + t.words.length, 0);
-  renderGrid();
-  updateScore();
-  setMsg('');
-  updateWordDisplay();
-  startChrono();
-  focusDesktopInput();
-}
-
 function newGame() {
-  deleteCurrentSession();
-  currentSessionId = Date.now();
   gameActive = true;
   score = 0;
   kbBuf = '';
@@ -431,7 +417,6 @@ function newGame() {
   document.getElementById('input-area').classList.remove('hidden');
   seance = buildSeance();
   target = seance.reduce((s, t) => s + t.words.length, 0);
-  saveCurrentSession();
   renderGrid();
   updateScore();
   setMsg('');
@@ -553,7 +538,6 @@ function submit() {
     updateWordDisplay();
     setMsg('');
     updateScore();
-    saveCurrentSession();
 
     if (tirage.foundWords.length === tirage.words.length) {
       tirage.done = true;
@@ -713,7 +697,6 @@ function wireSettings() {
 function showRecap(abandoned = false) {
   stopChrono();
   gameActive = false;
-  deleteCurrentSession();
 
   seance.forEach(t => {
     const key = t.isJoker ? t.sorted + '?' : t.sorted;
@@ -819,7 +802,6 @@ async function init() {
   });
 
   document.getElementById('btn-home').addEventListener('click', () => {
-    if (gameActive) saveCurrentSession();
     gameActive = false;
     stopChrono();
     document.getElementById('input-area').classList.add('hidden');
