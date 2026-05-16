@@ -1,6 +1,6 @@
 'use strict';
 
-/* ── State ──────────────────────────────────────────────────── */
+/* ── State ────────────────────────────────────────────────────────────── */
 let settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
 let pool      = [];
 let jokerPool = [];
@@ -14,14 +14,15 @@ let msgTimer  = null;
 let chronoTimer     = null;
 let chronoRemaining = 0;
 let gameActive      = false;
+let currentSessionId = null;
 
-const SETTINGS_KEY   = 'bs-settings';
-const SRS_KEY        = 'bs-srs';
-const SRS_DONE_DAYS  = 30;
-const SRS_INTERVALS  = [3, 7, 14, 30, 60, 90, 180];
-const SESSION_KEY    = 'bs-session';
+const SETTINGS_KEY  = 'bs-settings';
+const SRS_KEY       = 'bs-srs';
+const SRS_DONE_DAYS = 30;
+const SRS_INTERVALS = [3, 7, 14, 30, 60, 90, 180];
+const SESSIONS_KEY  = 'bs-sessions';
 
-/* ── Settings persistence ────────────────────────────────── */
+/* ── Settings persistence ─────────────────────────────────── */
 
 function loadSettings() {
   try {
@@ -42,7 +43,7 @@ function saveSettings() {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch(e) {}
 }
 
-/* ── SRS ──────────────────────────────────────────────────── */
+/* ── SRS ─────────────────────────────────────────────────────────────────── */
 
 function loadSRS() {
   try { srsData = JSON.parse(localStorage.getItem(SRS_KEY) || '{}'); } catch(e) { srsData = {}; }
@@ -50,30 +51,6 @@ function loadSRS() {
 
 function saveSRS() {
   try { localStorage.setItem(SRS_KEY, JSON.stringify(srsData)); } catch(e) {}
-}
-
-/* ── Session persistence ─────────────────────────────────── */
-
-function saveSession() {
-  try {
-    localStorage.setItem(SESSION_KEY, JSON.stringify(seance.map(t => ({
-      sorted: t.sorted, words: t.words, foundWords: t.foundWords,
-      done: t.done, isJoker: t.isJoker,
-    }))));
-  } catch(e) {}
-}
-
-function loadSession() {
-  try {
-    const s = localStorage.getItem(SESSION_KEY);
-    if (!s) return null;
-    const arr = JSON.parse(s);
-    return Array.isArray(arr) && arr.length ? arr : null;
-  } catch(e) { return null; }
-}
-
-function clearSession() {
-  try { localStorage.removeItem(SESSION_KEY); } catch(e) {}
 }
 
 function srsMarkDone(key) {
@@ -91,7 +68,42 @@ function srsMarkPartial(key) {
   srsData[key] = { due: Date.now() + days * 86400000, interval: days };
 }
 
-/* ── Pool ────────────────────────────────────────────────────── */
+/* ── Sessions multiples ─────────────────────────────────────────── */
+
+function loadSessions() {
+  try {
+    const s = localStorage.getItem(SESSIONS_KEY);
+    return s ? JSON.parse(s) : [];
+  } catch(e) { return []; }
+}
+
+function saveSessions(sessions) {
+  try { localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions)); } catch(e) {}
+}
+
+function saveCurrentSession() {
+  if (!currentSessionId) return;
+  const sessions = loadSessions();
+  const idx = sessions.findIndex(s => s.id === currentSessionId);
+  const entry = {
+    id: currentSessionId,
+    seance: seance.map(t => ({
+      sorted: t.sorted, words: t.words, foundWords: t.foundWords,
+      done: t.done, isJoker: t.isJoker,
+    })),
+  };
+  if (idx >= 0) sessions[idx] = entry;
+  else sessions.push(entry);
+  saveSessions(sessions);
+}
+
+function deleteCurrentSession() {
+  if (!currentSessionId) return;
+  saveSessions(loadSessions().filter(s => s.id !== currentSessionId));
+  currentSessionId = null;
+}
+
+/* ── Pool ─────────────────────────────────────────────────────────────────── */
 
 function computeJokerWords(baseSorted) {
   if (!bsAllMap) return [];
@@ -146,7 +158,7 @@ function buildPool() {
   }
 }
 
-/* ── Game ────────────────────────────────────────────────────── */
+/* ── Game ─────────────────────────────────────────────────────────────────── */
 
 function shuffle(arr) {
   const a = [...arr];
@@ -158,42 +170,24 @@ function shuffle(arr) {
 }
 
 function buildSeance() {
-  if (!pool.length && !jokerPool.length) return [];
+  // joker activé = 100 % tirages joker ; sinon tirages normaux uniquement
+  const src = settings.joker ? jokerPool : pool;
+  if (!src.length) return [];
 
   const groups = {};
-  for (const t of pool) { const n = t.words.length; (groups[n] || (groups[n] = [])).push(t); }
+  for (const t of src) { const n = t.words.length; (groups[n] || (groups[n] = [])).push(t); }
   const shuffled = {};
   for (const n in groups) shuffled[n] = shuffle(groups[n]);
-
-  const jGroups = {};
-  for (const t of jokerPool) { const n = t.words.length; (jGroups[n] || (jGroups[n] = [])).push(t); }
-  const jShuffled = {};
-  for (const n in jGroups) jShuffled[n] = shuffle(jGroups[n]);
 
   const chosen = [];
   let remaining = 21;
 
   while (remaining > 0) {
-    const available = new Set([
-      ...Object.keys(shuffled).map(Number).filter(n => n <= remaining && shuffled[n].length > 0),
-      ...Object.keys(jShuffled).map(Number).filter(n => n <= remaining && jShuffled[n].length > 0),
-    ]);
-    if (!available.size) break;
-    const keys = [...available];
-    const n = keys[Math.floor(Math.random() * keys.length)];
-
-    const canReg   = shuffled[n]?.length  > 0;
-    const canJoker = jShuffled[n]?.length > 0;
-    let entry;
-    if (canReg && canJoker) {
-      entry = Math.random() < 0.4 ? jShuffled[n].pop() : shuffled[n].pop();
-    } else if (canJoker) {
-      entry = jShuffled[n].pop();
-    } else {
-      entry = shuffled[n].pop();
-    }
-
-    chosen.push(entry);
+    const available = Object.keys(shuffled).map(Number)
+      .filter(n => n <= remaining && shuffled[n].length > 0);
+    if (!available.length) break;
+    const n = available[Math.floor(Math.random() * available.length)];
+    chosen.push(shuffled[n].pop());
     remaining -= n;
   }
 
@@ -210,7 +204,7 @@ function tirageSortedDisplay(t) {
   return t.isJoker ? t.sorted + '?' : t.sorted;
 }
 
-/* ── Chrono ──────────────────────────────────────────────────── */
+/* ── Chrono ─────────────────────────────────────────────────────────────────── */
 
 function startChrono() {
   if (!settings.chrono) return;
@@ -242,55 +236,169 @@ function updateChronoDisplay() {
   el.classList.toggle('chrono-warn', chronoRemaining <= 60);
 }
 
-/* ── Views ───────────────────────────────────────────────────── */
+/* ── Desktop focus ───────────────────────────────────────────────────────── */
+
+function focusDesktopInput() {
+  if (window.matchMedia('(min-width: 641px)').matches) {
+    const inp = document.getElementById('dt-input');
+    if (inp) inp.focus();
+  }
+}
+
+/* ── Écran d'accueil ───────────────────────────────────────────────────────── */
 
 function showStartScreen() {
   gameActive = false;
   stopChrono();
   document.getElementById('solution-view').classList.add('hidden');
   document.getElementById('input-area').classList.add('hidden');
+  document.getElementById('score').textContent = '';
   const grid = document.getElementById('grid');
   grid.classList.remove('hidden');
   grid.innerHTML = '';
-  const prompt = document.createElement('div');
-  prompt.className = 'start-prompt';
 
-  const saved = loadSession();
-  if (saved && saved.some(t => !t.done)) {
-    const scoreDone  = saved.reduce((s, t) => s + t.foundWords.length, 0);
-    const scoreTotal = saved.reduce((s, t) => s + t.words.length, 0);
-    const sub = document.createElement('p');
-    sub.className = 'start-sub';
-    sub.textContent = `Session en cours · ${scoreDone} / ${scoreTotal}`;
-    prompt.appendChild(sub);
-    const btnContinue = document.createElement('button');
-    btnContinue.className = 'start-btn';
-    btnContinue.textContent = '→ Continuer';
-    btnContinue.addEventListener('click', resumeGame);
-    prompt.appendChild(btnContinue);
-    const btnNew = document.createElement('button');
-    btnNew.className = 'start-btn start-btn-secondary';
-    btnNew.textContent = '♠ Nouvelle partie';
-    btnNew.addEventListener('click', newGame);
-    prompt.appendChild(btnNew);
-  } else {
-    const sub = document.createElement('p');
-    sub.className = 'start-sub';
-    sub.textContent = 'Trouvez tous les anagrammes';
-    prompt.appendChild(sub);
-    const btn = document.createElement('button');
-    btn.className = 'start-btn';
-    btn.textContent = '♠ Jouer';
-    btn.addEventListener('click', newGame);
-    prompt.appendChild(btn);
+  const wrap = document.createElement('div');
+  wrap.className = 'home-wrap';
+
+  // ── Réglages inline (tous sauf chrono) ──
+  const settBox = document.createElement('div');
+  settBox.className = 'home-settings';
+  settBox.innerHTML = `
+    <div class="sett-row">
+      <span class="sett-label">Joker</span>
+      <button class="sett-btn${settings.joker ? ' active' : ''}" id="hs-joker">${settings.joker ? 'Activé' : 'Désactivé'}</button>
+    </div>
+    <div class="sett-row">
+      <span class="sett-label">Lettres min</span>
+      <div class="sett-stepper">
+        <button class="sett-step" id="hs-dec-min">−</button>
+        <span class="sett-val" id="hs-val-min">${settings.minLen}</span>
+        <button class="sett-step" id="hs-inc-min">+</button>
+      </div>
+    </div>
+    <div class="sett-row">
+      <span class="sett-label">Lettres max</span>
+      <div class="sett-stepper">
+        <button class="sett-step" id="hs-dec-max">−</button>
+        <span class="sett-val" id="hs-val-max">${settings.maxLen}</span>
+        <button class="sett-step" id="hs-inc-max">+</button>
+      </div>
+    </div>
+    <div class="sett-row">
+      <span class="sett-label">Solutions max</span>
+      <div class="sett-stepper">
+        <button class="sett-step" id="hs-dec-mw">−</button>
+        <span class="sett-val" id="hs-val-mw">${settings.maxWords}</span>
+        <button class="sett-step" id="hs-inc-mw">+</button>
+      </div>
+    </div>
+  `;
+  wrap.appendChild(settBox);
+
+  const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+  document.getElementById('hs-joker').addEventListener('click', () => {
+    settings.joker = !settings.joker;
+    const btn = document.getElementById('hs-joker');
+    btn.textContent = settings.joker ? 'Activé' : 'Désactivé';
+    btn.classList.toggle('active', settings.joker);
+  });
+  document.getElementById('hs-dec-min').addEventListener('click', () => {
+    settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen);
+    document.getElementById('hs-val-min').textContent = settings.minLen;
+  });
+  document.getElementById('hs-inc-min').addEventListener('click', () => {
+    settings.minLen = clamp(settings.minLen + 1, 2, 15);
+    if (settings.minLen > settings.maxLen) {
+      settings.maxLen = settings.minLen;
+      document.getElementById('hs-val-max').textContent = settings.maxLen;
+    }
+    document.getElementById('hs-val-min').textContent = settings.minLen;
+  });
+  document.getElementById('hs-dec-max').addEventListener('click', () => {
+    settings.maxLen = clamp(settings.maxLen - 1, settings.minLen, 15);
+    document.getElementById('hs-val-max').textContent = settings.maxLen;
+  });
+  document.getElementById('hs-inc-max').addEventListener('click', () => {
+    settings.maxLen = clamp(settings.maxLen + 1, 2, 15);
+    document.getElementById('hs-val-max').textContent = settings.maxLen;
+  });
+  document.getElementById('hs-dec-mw').addEventListener('click', () => {
+    settings.maxWords = clamp(settings.maxWords - 1, 1, 21);
+    document.getElementById('hs-val-mw').textContent = settings.maxWords;
+  });
+  document.getElementById('hs-inc-mw').addEventListener('click', () => {
+    settings.maxWords = clamp(settings.maxWords + 1, 1, 21);
+    document.getElementById('hs-val-mw').textContent = settings.maxWords;
+  });
+
+  // ── Bouton nouvelle partie ──
+  const btnNew = document.createElement('button');
+  btnNew.className = 'start-btn';
+  btnNew.style.cssText = 'width:100%;max-width:360px;';
+  btnNew.textContent = '♠ Nouvelle partie';
+  btnNew.addEventListener('click', () => {
+    saveSettings();
+    bsAllMap = null;
+    buildPool();
+    newGame();
+  });
+  wrap.appendChild(btnNew);
+
+  // ── Sessions en cours ──
+  const sessions = loadSessions();
+  if (sessions.length) {
+    const sep = document.createElement('p');
+    sep.className = 'home-sep';
+    sep.textContent = 'Sessions en cours';
+    wrap.appendChild(sep);
+
+    for (const sess of [...sessions].reverse()) {
+      const scoreDone  = sess.seance.reduce((s, t) => s + t.foundWords.length, 0);
+      const scoreTotal = sess.seance.reduce((s, t) => s + t.words.length, 0);
+
+      const card = document.createElement('div');
+      card.className = 'session-card';
+
+      const info = document.createElement('div');
+      info.className = 'session-info';
+      const d = new Date(sess.id);
+      const dateStr = d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+      info.innerHTML = `<span class="session-date">${dateStr}</span><span class="session-score">${scoreDone}&thinsp;/&thinsp;${scoreTotal}</span>`;
+      card.appendChild(info);
+
+      const actions = document.createElement('div');
+      actions.className = 'session-actions';
+
+      const btnCont = document.createElement('button');
+      btnCont.className = 'start-btn-secondary';
+      btnCont.textContent = '→ Continuer';
+      btnCont.addEventListener('click', () => resumeGame(sess.id));
+      actions.appendChild(btnCont);
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'session-del-btn';
+      btnDel.textContent = '✕';
+      btnDel.title = 'Supprimer cette session';
+      btnDel.addEventListener('click', () => {
+        saveSessions(loadSessions().filter(s => s.id !== sess.id));
+        showStartScreen();
+      });
+      actions.appendChild(btnDel);
+
+      card.appendChild(actions);
+      wrap.appendChild(card);
+    }
   }
 
-  grid.appendChild(prompt);
+  grid.appendChild(wrap);
 }
 
-function resumeGame() {
-  const saved = loadSession();
-  if (!saved) { newGame(); return; }
+function resumeGame(id) {
+  const sessions = loadSessions();
+  const sess = sessions.find(s => s.id === id);
+  if (!sess) { showStartScreen(); return; }
+  currentSessionId = id;
   gameActive = true;
   score = 0;
   kbBuf = '';
@@ -299,7 +407,7 @@ function resumeGame() {
   document.getElementById('solution-view').classList.add('hidden');
   document.getElementById('grid').classList.remove('hidden');
   document.getElementById('input-area').classList.remove('hidden');
-  seance = saved;
+  seance = sess.seance;
   score  = seance.reduce((s, t) => s + t.foundWords.length, 0);
   target = seance.reduce((s, t) => s + t.words.length, 0);
   renderGrid();
@@ -307,11 +415,12 @@ function resumeGame() {
   setMsg('');
   updateWordDisplay();
   startChrono();
+  focusDesktopInput();
 }
 
 function newGame() {
-  clearSession();
-  buildPool();
+  deleteCurrentSession();
+  currentSessionId = Date.now();
   gameActive = true;
   score = 0;
   kbBuf = '';
@@ -322,19 +431,20 @@ function newGame() {
   document.getElementById('input-area').classList.remove('hidden');
   seance = buildSeance();
   target = seance.reduce((s, t) => s + t.words.length, 0);
-  saveSession();
+  saveCurrentSession();
   renderGrid();
   updateScore();
   setMsg('');
   updateWordDisplay();
   startChrono();
+  focusDesktopInput();
   if (!target) {
     document.getElementById('grid').innerHTML =
       '<p class="no-pool-msg">Aucun tirage disponible.<br>Modifiez les réglages ou attendez que des tirages redeviennent disponibles (répétition espacée).</p>';
   }
 }
 
-/* ── Rendering ───────────────────────────────────────────────────── */
+/* ── Rendering ─────────────────────────────────────────────────────────────────── */
 
 function renderGrid() {
   const grid = document.getElementById('grid');
@@ -409,7 +519,7 @@ function setMsg(text, cls) {
   if (text) msgTimer = setTimeout(() => { el.textContent = ''; el.className = 'word-msg'; }, 2000);
 }
 
-/* ── Submission ──────────────────────────────────────────────────── */
+/* ── Submission ─────────────────────────────────────────────────────────────────── */
 
 function findTirage(done, wordSorted) {
   for (const t of seance) {
@@ -443,7 +553,7 @@ function submit() {
     updateWordDisplay();
     setMsg('');
     updateScore();
-    saveSession();
+    saveCurrentSession();
 
     if (tirage.foundWords.length === tirage.words.length) {
       tirage.done = true;
@@ -461,7 +571,7 @@ function submit() {
   kbBuf = ''; updateWordDisplay();
 }
 
-/* ── Keyboard ───────────────────────────────────────────────────── */
+/* ── Keyboard ─────────────────────────────────────────────────────────────────── */
 
 function wireKeyboard() {
   const kb = document.getElementById('bs-kb');
@@ -493,11 +603,22 @@ function wireDesktopInput() {
     e.target.value = kbBuf;
     updateWordDisplay();
   });
-  input.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
-  btn?.addEventListener('click', submit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      submit();
+      e.target.value = kbBuf; // kbBuf est '' après submit
+      e.target.focus();
+    }
+  });
+  btn?.addEventListener('click', () => {
+    submit();
+    input.value = kbBuf;
+    input.focus();
+  });
 }
 
-/* ── Settings UI ──────────────────────────────────────────────────── */
+/* ── Settings UI ─────────────────────────────────────────────────────────────────── */
 
 function refreshSettingsUI() {
   document.getElementById('val-min').textContent    = settings.minLen;
@@ -571,7 +692,6 @@ function wireSettings() {
   document.getElementById('inc-chrono').addEventListener('click', () => {
     settings.chronoMin = clamp(settings.chronoMin + 1, 1, 21); refreshSettingsUI();
   });
-
   document.getElementById('sett-joker')?.addEventListener('click', () => {
     settings.joker = !settings.joker; refreshSettingsUI();
   });
@@ -581,19 +701,19 @@ function wireSettings() {
 
   document.getElementById('btn-sett-apply').addEventListener('click', () => {
     saveSettings();
-    bsAllMap = null; // force rebuild
+    bsAllMap = null;
     buildPool();
     panel.classList.add('hidden');
     if (gameActive) newGame(); else showStartScreen();
   });
 }
 
-/* ── Solution view ──────────────────────────────────────────────────── */
+/* ── Solution view ─────────────────────────────────────────────────────────────────── */
 
 function showRecap(abandoned = false) {
   stopChrono();
   gameActive = false;
-  clearSession();
+  deleteCurrentSession();
 
   seance.forEach(t => {
     const key = t.isJoker ? t.sorted + '?' : t.sorted;
@@ -642,35 +762,37 @@ function showRecap(abandoned = false) {
       sols.appendChild(row);
     });
     item.appendChild(sols);
+
     if (t.done) {
       const revoir = document.createElement('button');
       revoir.className = 'revoir-btn';
       revoir.textContent = '↺ Revoir';
+      revoir.title = 'Reproposer dans 15 jours';
       revoir.addEventListener('click', () => {
         const key = t.isJoker ? t.sorted + '?' : t.sorted;
-        delete srsData[key];
+        srsData[key] = { due: Date.now() + 15 * 86400000, interval: 15 };
         saveSRS();
-        revoir.textContent = '✓';
+        revoir.textContent = '✓ 15j';
         revoir.classList.add('done');
         revoir.disabled = true;
       });
       item.appendChild(revoir);
     }
+
     list.appendChild(item);
   });
 
-  // Bottom replay button
   const replayBottom = document.createElement('button');
   replayBottom.className = 'start-btn';
   replayBottom.style.cssText = 'margin:8px 0 4px;width:100%;';
   replayBottom.textContent = '↺ Rejouer';
-  replayBottom.addEventListener('click', newGame);
+  replayBottom.addEventListener('click', () => { buildPool(); newGame(); });
   list.appendChild(replayBottom);
 
   view.classList.remove('hidden');
 }
 
-/* ── Init ────────────────────────────────────────────────────────────── */
+/* ── Init ─────────────────────────────────────────────────────────────────── */
 
 async function init() {
   if ('serviceWorker' in navigator) {
@@ -693,9 +815,18 @@ async function init() {
   wireDefModal();
 
   document.getElementById('btn-abandon').addEventListener('click', () => {
-    if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
+    if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
   });
-  document.getElementById('solution-replay').addEventListener('click', newGame);
+
+  document.getElementById('btn-home').addEventListener('click', () => {
+    if (gameActive) saveCurrentSession();
+    gameActive = false;
+    stopChrono();
+    document.getElementById('input-area').classList.add('hidden');
+    showStartScreen();
+  });
+
+  document.getElementById('solution-replay').addEventListener('click', showStartScreen);
 
   showStartScreen();
 }

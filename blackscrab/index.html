@@ -232,14 +232,13 @@ body{
 
 .hidden{display:none!important;}
 
-/* ── Abandon / Rejouer button ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────── */
+/* ── Abandon button ────────────────────────────────────────────────────────── */
 .abandon-btn{
   background:transparent;color:#e07060;
   border:1px solid #6a3028;border-radius:8px;
   padding:4px 10px;font-size:12px;cursor:pointer;flex-shrink:0;white-space:nowrap;
 }
 .abandon-btn:active{opacity:.7;}
-.abandon-btn.replay{color:var(--gold);border-color:var(--gold);}
 
 /* ── Modale définition ─────────────────────────────────────────────────────────────────────── */
 #def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
@@ -270,12 +269,7 @@ a.def-link:hover{text-decoration:underline;}
 .chrono{font-size:18px;font-weight:800;color:var(--text);min-width:48px;text-align:center;flex-shrink:0;}
 .chrono.chrono-warn{color:var(--red);}
 
-/* ── Start screen ──────────────────────────────────────────────────────────────────────────────── */
-.start-prompt{
-  flex:1;display:flex;flex-direction:column;align-items:center;
-  justify-content:center;gap:18px;padding:20px;
-}
-.start-sub{font-size:14px;color:var(--text-dim);text-align:center;}
+/* ── Boutons start/revoir ────────────────────────────────────────────────────────────── */
 .start-btn{
   background:var(--gold);color:var(--bg);border:none;border-radius:12px;
   padding:14px 36px;font-size:17px;font-weight:800;cursor:pointer;
@@ -283,7 +277,7 @@ a.def-link:hover{text-decoration:underline;}
 .start-btn:active{opacity:.8;}
 .start-btn-secondary{
   background:transparent;color:var(--text-dim);border:1px solid var(--border);
-  border-radius:12px;padding:10px 28px;font-size:14px;font-weight:600;cursor:pointer;
+  border-radius:12px;padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;
 }
 .start-btn-secondary:active{opacity:.7;}
 .revoir-btn{
@@ -294,6 +288,36 @@ a.def-link:hover{text-decoration:underline;}
 .revoir-btn:active{opacity:.7;}
 .revoir-btn.done{color:var(--green);border-color:var(--green);}
 .no-pool-msg{color:var(--text-dim);padding:30px 20px;text-align:center;line-height:1.6;}
+
+/* ── Home screen ───────────────────────────────────────────────────────────────── */
+.home-wrap{
+  width:100%;display:flex;flex-direction:column;align-items:center;gap:14px;padding-top:6px;
+}
+.home-settings{
+  width:100%;max-width:360px;
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:12px 16px;display:flex;flex-direction:column;gap:10px;
+}
+.home-sep{
+  font-size:11px;color:var(--text-dim);text-transform:uppercase;letter-spacing:1px;
+  width:100%;max-width:360px;padding-top:4px;border-top:1px solid var(--border);
+}
+.session-card{
+  width:100%;max-width:360px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface2);border:1px solid var(--border);border-radius:10px;
+  padding:10px 14px;gap:10px;
+}
+.session-info{display:flex;flex-direction:column;gap:3px;flex:1;}
+.session-date{font-size:11px;color:var(--text-dim);}
+.session-score{font-size:16px;font-weight:700;color:var(--gold);}
+.session-actions{display:flex;gap:6px;align-items:center;}
+.session-del-btn{
+  background:transparent;color:var(--text-dim);border:1px solid var(--border);
+  border-radius:6px;width:28px;height:28px;font-size:13px;cursor:pointer;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.session-del-btn:active{opacity:.7;}
 </style>
 </head>
 <body>
@@ -301,11 +325,12 @@ a.def-link:hover{text-decoration:underline;}
 <header id="header">
   <div id="logo">
     <div class="logo-title">♠ Black<span>Scrab</span></div>
-    <span id="version-badge">v1.17</span>
+    <span id="version-badge">v1.18</span>
   </div>
   <span id="chrono-display" class="hidden chrono"></span>
+  <button id="btn-home" class="hdr-btn" aria-label="Accueil">⌂</button>
   <button id="btn-settings" class="hdr-btn" aria-label="Réglages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="9"/><circle cx="10" cy="10" r="5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/><line x1="10" y1="1" x2="10" y2="5"/><line x1="10" y1="15" x2="10" y2="19"/><line x1="1" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="19" y2="10"/><line x1="3.64" y1="3.64" x2="6.46" y2="6.46"/><line x1="13.54" y1="13.54" x2="16.36" y2="16.36"/><line x1="16.36" y1="3.64" x2="13.54" y2="6.46"/><line x1="6.46" y1="13.54" x2="3.64" y2="16.36"/></svg></button>
-  <div id="score">0 / 21</div>
+  <div id="score"></div>
 </header>
 
 <div id="settings-panel" class="hidden">
@@ -349,12 +374,12 @@ a.def-link:hover{text-decoration:underline;}
       <button class="sett-step" id="inc-chrono">+</button>
     </div>
   </div>
-  <button class="sett-apply" id="btn-sett-apply">Nouvelle partie →</button>
+  <button class="sett-apply" id="btn-sett-apply">Appliquer →</button>
 </div>
 
 <main id="grid"></main>
 
-<div id="input-area">
+<div id="input-area" class="hidden">
   <div class="kb-top-row">
     <span id="word-display"></span>
     <span id="word-msg" class="word-msg"></span>
@@ -398,7 +423,7 @@ a.def-link:hover{text-decoration:underline;}
   <div id="solution-header">
     <span id="solution-title"></span>
     <button class="hdr-btn" id="btn-settings-sol" aria-label="Réglages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="9"/><circle cx="10" cy="10" r="5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/><line x1="10" y1="1" x2="10" y2="5"/><line x1="10" y1="15" x2="10" y2="19"/><line x1="1" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="19" y2="10"/><line x1="3.64" y1="3.64" x2="6.46" y2="6.46"/><line x1="13.54" y1="13.54" x2="16.36" y2="16.36"/><line x1="16.36" y1="3.64" x2="13.54" y2="6.46"/><line x1="6.46" y1="13.54" x2="3.64" y2="16.36"/></svg></button>
-    <button id="solution-replay" class="hdr-btn">↺ Rejouer</button>
+    <button id="solution-replay" class="hdr-btn">⌂ Accueil</button>
   </div>
   <div id="solution-list"></div>
 </div>
@@ -427,7 +452,7 @@ a.def-link:hover{text-decoration:underline;}
 <script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v117';
+  const CURRENT_CACHE = 'blackscrab-v118';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
