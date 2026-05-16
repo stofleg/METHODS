@@ -564,7 +564,7 @@ function wireKeyboard() {
     if (k === 'CLR')      { kbBuf = ''; }
     else if (k === 'DEL') { kbBuf = kbBuf.slice(0, -1); }
     else if (k === 'OK')  { submit(); return; }
-    else                  { kbBuf += k; }
+    else                  { kbBuf += k; setMsg(''); }
     updateWordDisplay();
   };
   kb.addEventListener('mousedown', e => {
@@ -585,6 +585,7 @@ function wireDesktopInput() {
   input.addEventListener('input', e => {
     kbBuf = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
     e.target.value = kbBuf;
+    setMsg('');
     updateWordDisplay();
   });
   input.addEventListener('keydown', e => {
