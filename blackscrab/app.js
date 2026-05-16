@@ -606,16 +606,7 @@ function wireDesktopInput() {
 /* ── Settings UI ─────────────────────────────────────────────────────────────────── */
 
 function refreshSettingsUI() {
-  document.getElementById('val-min').textContent    = settings.minLen;
-  document.getElementById('val-max').textContent    = settings.maxLen;
-  document.getElementById('val-mw').textContent     = settings.maxWords;
   document.getElementById('val-chrono').textContent = settings.chronoMin + ' min';
-
-  const jokerBtn = document.getElementById('sett-joker');
-  if (jokerBtn) {
-    jokerBtn.textContent = settings.joker ? 'Activé' : 'Désactivé';
-    jokerBtn.classList.toggle('active', settings.joker);
-  }
   const chronoBtn = document.getElementById('sett-chrono');
   if (chronoBtn) {
     chronoBtn.textContent = settings.chrono ? 'Activé' : 'Désactivé';
@@ -651,34 +642,11 @@ function wireSettings() {
   });
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
-  document.getElementById('dec-min').addEventListener('click', () => {
-    settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen); refreshSettingsUI();
-  });
-  document.getElementById('inc-min').addEventListener('click', () => {
-    settings.minLen = clamp(settings.minLen + 1, 2, 15);
-    if (settings.minLen > settings.maxLen) settings.maxLen = settings.minLen;
-    refreshSettingsUI();
-  });
-  document.getElementById('dec-max').addEventListener('click', () => {
-    settings.maxLen = clamp(settings.maxLen - 1, settings.minLen, 15); refreshSettingsUI();
-  });
-  document.getElementById('inc-max').addEventListener('click', () => {
-    settings.maxLen = clamp(settings.maxLen + 1, 2, 15); refreshSettingsUI();
-  });
-  document.getElementById('dec-mw').addEventListener('click', () => {
-    settings.maxWords = clamp(settings.maxWords - 1, 1, 21); refreshSettingsUI();
-  });
-  document.getElementById('inc-mw').addEventListener('click', () => {
-    settings.maxWords = clamp(settings.maxWords + 1, 1, 21); refreshSettingsUI();
-  });
   document.getElementById('dec-chrono').addEventListener('click', () => {
     settings.chronoMin = clamp(settings.chronoMin - 1, 1, 21); refreshSettingsUI();
   });
   document.getElementById('inc-chrono').addEventListener('click', () => {
     settings.chronoMin = clamp(settings.chronoMin + 1, 1, 21); refreshSettingsUI();
-  });
-  document.getElementById('sett-joker')?.addEventListener('click', () => {
-    settings.joker = !settings.joker; refreshSettingsUI();
   });
   document.getElementById('sett-chrono')?.addEventListener('click', () => {
     settings.chrono = !settings.chrono; refreshSettingsUI();
@@ -686,10 +654,8 @@ function wireSettings() {
 
   document.getElementById('btn-sett-apply').addEventListener('click', () => {
     saveSettings();
-    bsAllMap = null;
-    buildPool();
     panel.classList.add('hidden');
-    if (gameActive) newGame(); else showStartScreen();
+    if (gameActive) { stopChrono(); startChrono(); }
   });
 }
 

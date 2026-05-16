@@ -324,43 +324,15 @@ a.def-link:hover{text-decoration:underline;}
 <header id="header">
   <div id="logo">
     <div class="logo-title">♠ Black<span>Scrab</span></div>
-    <span id="version-badge">v1.21</span>
+    <span id="version-badge">v1.22</span>
   </div>
   <span id="chrono-display" class="hidden chrono"></span>
   <button id="btn-home" class="hdr-btn" aria-label="Accueil">⌂</button>
-  <button id="btn-settings" class="hdr-btn" aria-label="Réglages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="9"/><circle cx="10" cy="10" r="5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/><line x1="10" y1="1" x2="10" y2="5"/><line x1="10" y1="15" x2="10" y2="19"/><line x1="1" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="19" y2="10"/><line x1="3.64" y1="3.64" x2="6.46" y2="6.46"/><line x1="13.54" y1="13.54" x2="16.36" y2="16.36"/><line x1="16.36" y1="3.64" x2="13.54" y2="6.46"/><line x1="6.46" y1="13.54" x2="3.64" y2="16.36"/></svg></button>
+  <button id="btn-settings" class="hdr-btn" aria-label="Chrono"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="12" r="7"/><line x1="8" y1="2" x2="12" y2="2"/><line x1="10" y1="2" x2="10" y2="5"/><line x1="10" y1="12" x2="10" y2="8.5"/><line x1="10" y1="12" x2="13" y2="12"/></svg></button>
   <div id="score"></div>
 </header>
 
 <div id="settings-panel" class="hidden">
-  <div class="sett-row">
-    <span class="sett-label">Joker</span>
-    <button class="sett-btn" id="sett-joker">Désactivé</button>
-  </div>
-  <div class="sett-row">
-    <span class="sett-label">Lettres min</span>
-    <div class="sett-stepper">
-      <button class="sett-step" id="dec-min">−</button>
-      <span class="sett-val" id="val-min">5</span>
-      <button class="sett-step" id="inc-min">+</button>
-    </div>
-  </div>
-  <div class="sett-row">
-    <span class="sett-label">Lettres max</span>
-    <div class="sett-stepper">
-      <button class="sett-step" id="dec-max">−</button>
-      <span class="sett-val" id="val-max">8</span>
-      <button class="sett-step" id="inc-max">+</button>
-    </div>
-  </div>
-  <div class="sett-row">
-    <span class="sett-label">Solutions max</span>
-    <div class="sett-stepper">
-      <button class="sett-step" id="dec-mw">−</button>
-      <span class="sett-val" id="val-mw">5</span>
-      <button class="sett-step" id="inc-mw">+</button>
-    </div>
-  </div>
   <div class="sett-row">
     <span class="sett-label">Chrono</span>
     <button class="sett-btn" id="sett-chrono">Désactivé</button>
@@ -373,7 +345,7 @@ a.def-link:hover{text-decoration:underline;}
       <button class="sett-step" id="inc-chrono">+</button>
     </div>
   </div>
-  <button class="sett-apply" id="btn-sett-apply">Appliquer →</button>
+  <button class="sett-apply" id="btn-sett-apply">OK</button>
 </div>
 
 <main id="grid"></main>
@@ -421,7 +393,7 @@ a.def-link:hover{text-decoration:underline;}
 <div id="solution-view" class="hidden">
   <div id="solution-header">
     <span id="solution-title"></span>
-    <button class="hdr-btn" id="btn-settings-sol" aria-label="Réglages"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="10" r="9"/><circle cx="10" cy="10" r="5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/><line x1="10" y1="1" x2="10" y2="5"/><line x1="10" y1="15" x2="10" y2="19"/><line x1="1" y1="10" x2="5" y2="10"/><line x1="15" y1="10" x2="19" y2="10"/><line x1="3.64" y1="3.64" x2="6.46" y2="6.46"/><line x1="13.54" y1="13.54" x2="16.36" y2="16.36"/><line x1="16.36" y1="3.64" x2="13.54" y2="6.46"/><line x1="6.46" y1="13.54" x2="3.64" y2="16.36"/></svg></button>
+    <button class="hdr-btn" id="btn-settings-sol" aria-label="Chrono"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="10" cy="12" r="7"/><line x1="8" y1="2" x2="12" y2="2"/><line x1="10" y1="2" x2="10" y2="5"/><line x1="10" y1="12" x2="10" y2="8.5"/><line x1="10" y1="12" x2="13" y2="12"/></svg></button>
     <button id="solution-replay" class="hdr-btn">⌂ Accueil</button>
   </div>
   <div id="solution-list"></div>
@@ -451,7 +423,7 @@ a.def-link:hover{text-decoration:underline;}
 <script src="./dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = 'blackscrab-v121';
+  const CURRENT_CACHE = 'blackscrab-v122';
   if ('serviceWorker' in navigator) navigator.serviceWorker.ready.then(r => r.update());
 </script>
 </body>
