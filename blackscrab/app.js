@@ -170,7 +170,7 @@ function shuffle(arr) {
 }
 
 function buildSeance() {
-  // joker activé = 100 % tirages joker ; sinon tirages normaux uniquement
+  // joker activé = 100 % tirages joker ; sinon tirages normaux uniquement
   const src = settings.joker ? jokerPool : pool;
   if (!src.length) return [];
 
@@ -259,6 +259,7 @@ function showStartScreen() {
 
   const wrap = document.createElement('div');
   wrap.className = 'home-wrap';
+  grid.appendChild(wrap); // dans le DOM dès maintenant pour que getElementById fonctionne
 
   // ── Réglages inline (tous sauf chrono) ──
   const settBox = document.createElement('div');
@@ -297,6 +298,7 @@ function showStartScreen() {
 
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
+  // Les éléments sont maintenant dans le DOM (via wrap > grid)
   document.getElementById('hs-joker').addEventListener('click', () => {
     settings.joker = !settings.joker;
     const btn = document.getElementById('hs-joker');
@@ -390,8 +392,6 @@ function showStartScreen() {
       wrap.appendChild(card);
     }
   }
-
-  grid.appendChild(wrap);
 }
 
 function resumeGame(id) {
@@ -815,7 +815,7 @@ async function init() {
   wireDefModal();
 
   document.getElementById('btn-abandon').addEventListener('click', () => {
-    if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
+    if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
   });
 
   document.getElementById('btn-home').addEventListener('click', () => {
