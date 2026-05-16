@@ -762,7 +762,8 @@ function openDef(canon, displayWord, defText, flechie){
     }
   }
   const idx = allIdxs[0] ?? -1;
-  const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
+  const rawDisplay = (displayWord || (idx>=0 ? E[idx] : canon)).replace(/\*/g,"").trim();
+  const title = rawDisplay.split(",")[0].trim(); // base form, pour les liens externes
 
   // Build list of {label, text} for each definition to display.
   // label is non-null only for a related verb (e.g. BRASQUER for BRASQUE).
@@ -779,8 +780,8 @@ function openDef(canon, displayWord, defText, flechie){
     if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
   }
 
-  const wSlash=_wantsSlash(canon)&&!title.includes('/');
-  $("#def-title").textContent = wSlash ? title+' /' : title;
+  const wSlash=_wantsSlash(canon)&&!rawDisplay.includes('/');
+  $("#def-title").textContent = wSlash ? rawDisplay+' /' : rawDisplay;
   const bodyEl=$("#def-body");
   if(defs.length<=1){
     bodyEl.textContent = defs[0]?.text||"(définition absente)";
