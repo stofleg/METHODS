@@ -316,28 +316,12 @@ function showStartScreen() {
     document.getElementById('hs-val-mw').textContent = settings.maxWords;
   });
 
-  // ── Boutons action ──
-  const btnRow = document.createElement('div');
-  btnRow.style.cssText = 'width:100%;max-width:360px;display:flex;gap:8px;';
-
+  // ── Bouton principal ──
   const btnNew = document.createElement('button');
   btnNew.className = 'start-btn';
-  btnNew.style.cssText = 'flex:1;';
-  btnNew.textContent = '♠ Jouer';
+  btnNew.style.cssText = 'width:100%;max-width:360px;';
+  btnNew.textContent = 'Nouveaux paramètres';
   btnNew.addEventListener('click', () => {
-    saveSettings();
-    bsAllMap = null;
-    buildPool();
-    newGame();
-  });
-  btnRow.appendChild(btnNew);
-
-  const btnSave = document.createElement('button');
-  btnSave.className = 'start-btn-secondary';
-  btnSave.style.cssText = 'flex-shrink:0;padding:10px 14px;font-size:18px;';
-  btnSave.textContent = '＋';
-  btnSave.title = 'Enregistrer ces critères comme profil';
-  btnSave.addEventListener('click', () => {
     saveSettings();
     const preset = {
       id: Date.now(),
@@ -350,10 +334,11 @@ function showStartScreen() {
       p.maxWords === preset.maxWords && p.joker === preset.joker
     );
     if (!dup) { presets.push(preset); savePresets(presets); }
-    showStartScreen();
+    bsAllMap = null;
+    buildPool();
+    newGame();
   });
-  btnRow.appendChild(btnSave);
-  wrap.appendChild(btnRow);
+  wrap.appendChild(btnNew);
 
   // ── Profils sauvegardés ──
   const presets = loadPresets();
@@ -376,8 +361,9 @@ function showStartScreen() {
       actions.className = 'session-actions';
 
       const btnPlay = document.createElement('button');
-      btnPlay.className = 'start-btn-secondary';
-      btnPlay.textContent = '▶ Jouer';
+      btnPlay.className = 'start-btn';
+      btnPlay.style.cssText = 'padding:9px 16px;font-size:14px;';
+      btnPlay.textContent = '♠ Jouer';
       btnPlay.addEventListener('click', () => {
         settings.minLen   = preset.minLen;
         settings.maxLen   = preset.maxLen;
