@@ -422,6 +422,12 @@ function findLemma(w){
 
   // Strips
   const ER_FUTURE = new Set(['ERAI','ERAS','ERA','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERENT']);
+  const VERB_SFXS = new Set([
+    'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
+    'USSENT','USSIEZ','USSIONS','USSES','USSE',
+    'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
+    'AIENT','ERENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
+  ]);
   const strips = [
     // Subjonctif imparfait
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
@@ -445,6 +451,11 @@ function findLemma(w){
       if(cm.has(stem+'IR')) return stem+'IR';
       if(cm.has(stem+'RE')) return stem+'RE';
       if(cm.has(stem+'E'))  return stem+'E';
+    }
+    if(VERB_SFXS.has(s)){
+      if(cm.has(stem+'ER')) return stem+'ER';
+      if(cm.has(stem+'IR')) return stem+'IR';
+      if(cm.has(stem+'RE')) return stem+'RE';
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
