@@ -126,7 +126,9 @@ function initAuth(){
 
 /* ── Après login ── */
 async function afterLogin(){
-  await Promise.all([loadThemodsState(), loadEntreModsState()]);
+  // Charger l'état local (sync) puis afficher immédiatement — pas d'attente réseau
+  loadThemodsState().catch(()=>{});
+  loadEntreModsState().catch(()=>{});
   ["tm-user-chip","em-user-chip"].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.textContent=currentUser.pseudo;

@@ -569,7 +569,10 @@ function fromFs(doc){ if(!doc?.fields) return null; return Object.fromEntries(Ob
 
 async function fbGet(col, id){
   try{
-    const r = await fetch(`${FB_BASE}/${col}/${id}`);
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(), 8000);
+    const r = await fetch(`${FB_BASE}/${col}/${id}`, {signal:ctrl.signal});
+    clearTimeout(tid);
     if(r.status===404) return {ok:false, err:"not_found"};
     if(!r.ok) return {ok:false, err:"error"};
     return {ok:true, data:fromFs(await r.json())};
