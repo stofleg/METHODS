@@ -1165,7 +1165,8 @@ function dictSelectWord(w, idx){
 function _dictRenderSugg(prefix){
   const sugg=document.getElementById("dict-sugg"); if(!sugg) return;
   if(!prefix){ sugg.innerHTML=""; return; }
-  const DATA=window.SEQODS_DATA; if(!DATA?.c) return;
+  const DATA=window.SEQODS_DATA;
+  if(!DATA?.c){ sugg.innerHTML="<li class='dict-no-result'>Données non chargées — rechargez l'application.</li>"; return; }
   const C=DATA.c, E=DATA.e||[], F=DATA.f||[];
   const start=_dictBisect(C, prefix);
   const _conjM=_getConjMap();
@@ -1365,8 +1366,8 @@ function openDictModal(){
   if(inp){ inp.value=""; }
   const disp=document.getElementById("rech-kb-disp");
   if(disp) disp.textContent="";
-  document.getElementById("dict-sugg").innerHTML="";
-  document.getElementById("dict-result").style.display="none";
+  const _suggEl=document.getElementById("dict-sugg"); if(_suggEl) _suggEl.innerHTML="";
+  const _resEl=document.getElementById("dict-result"); if(_resEl) _resEl.style.display="none";
   dictUpdateLinks("");
   inp?.focus();
 }
@@ -1416,7 +1417,7 @@ function wireDictModal(){
       if(_rechActiveTab==="search"){
         _rechTriggerSearch(e.target.value);
       } else {
-        document.getElementById("dict-result").style.display="none";
+        document.getElementById("dict-result")?.style.setProperty("display","none");
         dictUpdateLinks(e.target.value);
         _dictRenderSugg(norm(e.target.value));
       }
@@ -1481,7 +1482,7 @@ function wireDictModal(){
         return;
       } else { i.value+=k; }
       if(d) d.textContent=i.value;
-      document.getElementById("dict-result").style.display="none";
+      document.getElementById("dict-result")?.style.setProperty("display","none");
       dictUpdateLinks(i.value);
       _dictRenderSugg(norm(i.value));
     };
