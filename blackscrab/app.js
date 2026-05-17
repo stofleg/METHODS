@@ -85,6 +85,52 @@ function presetLabel(p) {
   return `${len} · max ${p.maxWords}${p.joker ? ' · joker ♠' : ''}`;
 }
 
+/* ── Swipe-to-delete ─────────────────────────────────────────────────────── */
+
+function wireSwipeDel(wrap, contentEl, onDelete) {
+  let startX = 0, startY = 0, curX = 0, isDragging = false, isOpen = false;
+  const REVEAL = 90;
+
+  wrap._closeSwipe = () => {
+    contentEl.style.transition = 'transform .2s';
+    contentEl.style.transform = 'translateX(0)';
+    isOpen = false;
+  };
+
+  contentEl.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+    isDragging = true;
+    contentEl.style.transition = 'none';
+  }, { passive: true });
+
+  contentEl.addEventListener('touchmove', e => {
+    if (!isDragging) return;
+    const dx = e.touches[0].clientX - startX;
+    const dy = e.touches[0].clientY - startY;
+    if (Math.abs(dy) > Math.abs(dx) + 5) { isDragging = false; return; }
+    e.preventDefault();
+    curX = Math.max(-REVEAL, Math.min(0, (isOpen ? -REVEAL : 0) + dx));
+    contentEl.style.transform = `translateX(${curX}px)`;
+  }, { passive: false });
+
+  contentEl.addEventListener('touchend', () => {
+    isDragging = false;
+    contentEl.style.transition = 'transform .2s';
+    isOpen = curX < -REVEAL / 2;
+    contentEl.style.transform = isOpen ? `translateX(-${REVEAL}px)` : 'translateX(0)';
+  });
+
+  // Si la carte est ouverte, un tap dessus la referme sans déclencher les boutons internes
+  contentEl.addEventListener('click', e => {
+    if (isOpen) { e.stopPropagation(); wrap._closeSwipe(); }
+  }, true);
+
+  wrap.querySelector('.swipe-del-btn').addEventListener('click', () => {
+    if (confirm('Supprimer ce profil ?')) onDelete();
+  });
+}
+
 /* ── Pool ─────────────────────────────────────────────────────────────────── */
 
 function computeJokerWords(baseSorted) {
@@ -152,7 +198,6 @@ function shuffle(arr) {
 }
 
 function buildSeance() {
-  // joker activé = 100 % tirages joker ; sinon tirages normaux uniquement
   const src = settings.joker ? jokerPool : pool;
   if (!src.length) return [];
 
@@ -235,13 +280,14 @@ function showStartScreen() {
   document.getElementById('solution-view').classList.add('hidden');
   document.getElementById('input-area').classList.add('hidden');
   document.getElementById('score').textContent = '';
+  document.getElementById('game-counters')?.classList.add('hidden');
   const grid = document.getElementById('grid');
   grid.classList.remove('hidden');
   grid.innerHTML = '';
 
   const wrap = document.createElement('div');
   wrap.className = 'home-wrap';
-  grid.appendChild(wrap); // dans le DOM dès maintenant pour que getElementById fonctionne
+  grid.appendChild(wrap);
 
   // ── Réglages inline (tous sauf chrono) ──
   const settBox = document.createElement('div');
@@ -278,18 +324,41 @@ function showStartScreen() {
   `;
   wrap.appendChild(settBox);
 
+  // ── Compteur de tirages disponibles (mis à jour en direct) ──
+  const poolCountEl = document.createElement('div');
+  poolCountEl.className = 'pool-count';
+  wrap.appendChild(poolCountEl);
+
+  function refreshPoolCount() {
+    if (!window.BS_ALL) { poolCountEl.textContent = ''; return; }
+    const now = Date.now();
+    let tirages = 0, mots = 0;
+    for (const t of window.BS_ALL) {
+      if (t[0].length < settings.minLen || t[0].length > settings.maxLen) continue;
+      if (t.length - 1 > settings.maxWords) continue;
+      const srs = srsData[t[0]];
+      if (srs && srs.due > now) continue;
+      tirages++; mots += t.length - 1;
+    }
+    poolCountEl.textContent = tirages
+      ? `${tirages} tirages · ${mots} mots disponibles`
+      : 'Aucun tirage disponible avec ces critères';
+  }
+  refreshPoolCount();
+
   const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
-  // Les éléments sont maintenant dans le DOM (via wrap > grid)
   document.getElementById('hs-joker').addEventListener('click', () => {
     settings.joker = !settings.joker;
     const btn = document.getElementById('hs-joker');
     btn.textContent = settings.joker ? 'Activé' : 'Désactivé';
     btn.classList.toggle('active', settings.joker);
+    refreshPoolCount();
   });
   document.getElementById('hs-dec-min').addEventListener('click', () => {
     settings.minLen = clamp(settings.minLen - 1, 2, settings.maxLen);
     document.getElementById('hs-val-min').textContent = settings.minLen;
+    refreshPoolCount();
   });
   document.getElementById('hs-inc-min').addEventListener('click', () => {
     settings.minLen = clamp(settings.minLen + 1, 2, 15);
@@ -298,22 +367,27 @@ function showStartScreen() {
       document.getElementById('hs-val-max').textContent = settings.maxLen;
     }
     document.getElementById('hs-val-min').textContent = settings.minLen;
+    refreshPoolCount();
   });
   document.getElementById('hs-dec-max').addEventListener('click', () => {
     settings.maxLen = clamp(settings.maxLen - 1, settings.minLen, 15);
     document.getElementById('hs-val-max').textContent = settings.maxLen;
+    refreshPoolCount();
   });
   document.getElementById('hs-inc-max').addEventListener('click', () => {
     settings.maxLen = clamp(settings.maxLen + 1, 2, 15);
     document.getElementById('hs-val-max').textContent = settings.maxLen;
+    refreshPoolCount();
   });
   document.getElementById('hs-dec-mw').addEventListener('click', () => {
     settings.maxWords = clamp(settings.maxWords - 1, 1, 21);
     document.getElementById('hs-val-mw').textContent = settings.maxWords;
+    refreshPoolCount();
   });
   document.getElementById('hs-inc-mw').addEventListener('click', () => {
     settings.maxWords = clamp(settings.maxWords + 1, 1, 21);
     document.getElementById('hs-val-mw').textContent = settings.maxWords;
+    refreshPoolCount();
   });
 
   // ── Bouton principal ──
@@ -349,6 +423,9 @@ function showStartScreen() {
     wrap.appendChild(sep);
 
     for (const preset of [...presets].reverse()) {
+      const swipeWrap = document.createElement('div');
+      swipeWrap.className = 'swipe-wrap';
+
       const card = document.createElement('div');
       card.className = 'session-card';
 
@@ -359,7 +436,6 @@ function showStartScreen() {
 
       const actions = document.createElement('div');
       actions.className = 'session-actions';
-
       const btnPlay = document.createElement('button');
       btnPlay.className = 'start-btn';
       btnPlay.style.cssText = 'padding:9px 16px;font-size:14px;';
@@ -375,19 +451,19 @@ function showStartScreen() {
         newGame();
       });
       actions.appendChild(btnPlay);
-
-      const btnDel = document.createElement('button');
-      btnDel.className = 'session-del-btn';
-      btnDel.textContent = '✕';
-      btnDel.title = 'Supprimer ce profil';
-      btnDel.addEventListener('click', () => {
-        savePresets(loadPresets().filter(p => p.id !== preset.id));
-        showStartScreen();
-      });
-      actions.appendChild(btnDel);
-
       card.appendChild(actions);
-      wrap.appendChild(card);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'swipe-del-btn';
+      delBtn.textContent = 'Supprimer';
+      swipeWrap.appendChild(card);
+      swipeWrap.appendChild(delBtn);
+
+      wireSwipeDel(swipeWrap, card, () => {
+        savePresets(loadPresets().filter(p => p.id !== preset.id));
+        swipeWrap.remove();
+      });
+      wrap.appendChild(swipeWrap);
     }
   }
 }
@@ -476,6 +552,18 @@ function flashAndRemove(sorted) {
 
 function updateScore() {
   document.getElementById('score').textContent = score + ' / ' + target;
+  let validated = 0, partial = 0;
+  for (const t of seance) {
+    if (t.done) validated += t.words.length;
+    else partial += t.foundWords.length;
+  }
+  const cEl = document.getElementById('game-counters');
+  if (cEl && target > 0) {
+    cEl.classList.remove('hidden');
+    cEl.querySelector('[data-cnt="v"]').textContent = '✓' + validated;
+    cEl.querySelector('[data-cnt="p"]').textContent = '↺' + partial;
+    cEl.querySelector('[data-cnt="r"]').textContent = '○' + (target - validated - partial);
+  }
 }
 
 function updateWordDisplay() {
@@ -578,7 +666,7 @@ function wireDesktopInput() {
     if (e.key === 'Enter') {
       e.preventDefault();
       submit();
-      e.target.value = kbBuf; // kbBuf est '' après submit
+      e.target.value = kbBuf;
       e.target.focus();
     }
   });
@@ -674,6 +762,10 @@ function showRecap(abandoned = false) {
     const item = document.createElement('div');
     item.className = 'sol-item';
 
+    // ── En-tête : tirage + bouton "↺ Revoir" alignés ──
+    const top = document.createElement('div');
+    top.className = 'sol-item-top';
+
     const hdr = document.createElement('div');
     hdr.className = 'v-header';
     tirageSortedDisplay(t).split('').forEach(l => {
@@ -682,7 +774,33 @@ function showRecap(abandoned = false) {
       sp.textContent = l;
       hdr.appendChild(sp);
     });
-    item.appendChild(hdr);
+    top.appendChild(hdr);
+
+    if (t.done) {
+      const key = t.isJoker ? t.sorted + '?' : t.sorted;
+      let marked = false;
+      const revoir = document.createElement('button');
+      revoir.className = 'revoir-btn';
+      revoir.textContent = '↺ Revoir';
+      revoir.addEventListener('click', () => {
+        if (!marked) {
+          srsData[key] = { due: Date.now() + 15 * 86400000, interval: 15 };
+          saveSRS();
+          revoir.textContent = '✓ 15j';
+          revoir.classList.add('done');
+          marked = true;
+        } else {
+          srsMarkDone(key);
+          saveSRS();
+          revoir.textContent = '↺ Revoir';
+          revoir.classList.remove('done');
+          marked = false;
+        }
+      });
+      top.appendChild(revoir);
+    }
+
+    item.appendChild(top);
 
     const sols = document.createElement('div');
     sols.className = 'v-solutions';
@@ -698,22 +816,6 @@ function showRecap(abandoned = false) {
       sols.appendChild(row);
     });
     item.appendChild(sols);
-
-    if (t.done) {
-      const revoir = document.createElement('button');
-      revoir.className = 'revoir-btn';
-      revoir.textContent = '↺ Revoir';
-      revoir.title = 'Reproposer dans 15 jours';
-      revoir.addEventListener('click', () => {
-        const key = t.isJoker ? t.sorted + '?' : t.sorted;
-        srsData[key] = { due: Date.now() + 15 * 86400000, interval: 15 };
-        saveSRS();
-        revoir.textContent = '✓ 15j';
-        revoir.classList.add('done');
-        revoir.disabled = true;
-      });
-      item.appendChild(revoir);
-    }
 
     list.appendChild(item);
   });
@@ -749,6 +851,13 @@ async function init() {
   wireDesktopInput();
   wireSettings();
   wireDefModal();
+
+  // Referme les swipe cards ouvertes quand on touche ailleurs
+  document.addEventListener('touchstart', e => {
+    document.querySelectorAll('.swipe-wrap').forEach(w => {
+      if (!w.contains(e.target)) w._closeSwipe?.();
+    });
+  }, { passive: true });
 
   document.getElementById('btn-abandon').addEventListener('click', () => {
     if (confirm('Abandonner et voir les solutions ?')) showRecap(true);
