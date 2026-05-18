@@ -567,21 +567,23 @@ function openDef(canon, displayWord, defText, flechie){
       else{ openDef(conjM.get(canon)); return; }
     }
   }
-  const idx = allIdxs[0] ?? -1;
-  const title = ((displayWord || (idx>=0 ? E[idx] : canon)).split(",")[0].trim()).replace(/\*/g,"");
-
   const _CP = /^-->\s+([A-Z]+)\s+\d+\./;
+  // Prefer non-redirect entry for title (dual-nature words like FEUTRANT: adj FEUTRANT,E over participle redirect)
+  const titleIdx = allIdxs.find(i => !_CP.test(F?.[i]||'')) ?? (allIdxs[0] ?? -1);
+  const rawDisplay = (displayWord || (titleIdx>=0 ? E[titleIdx] : canon)).replace(/\*/g,"").trim();
+  const title = rawDisplay.split(",")[0].trim(); // base form for external links
+
   const defs = defText !== undefined
-    ? [{label:null, text:defText}]
-    : allIdxs.map(i=>{ const f=F?.[i]||''; const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], text:ci!==undefined?(F?.[ci]||''):''}; } return {label:null, text:f}; });
+    ? [{label:null, entryLabel:null, text:defText}]
+    : allIdxs.map(i=>{ const f=F?.[i]||''; const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], entryLabel:null, text:ci!==undefined?(F?.[ci]||''):''}; } const el=E?.[i]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
 
   if(allIdxs.length>0 && defText===undefined){
     const cl = _getConjMap().get(canon) || _findConjLemma(canon);
-    if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, text:F?.[ci]||""}); }
+    if(cl){ const ci=_getCMap().get(cl); if(ci!==undefined) defs.push({label:cl, entryLabel:null, text:F?.[ci]||""}); }
   }
 
-  const wSlash = _wantsSlash(canon) && !title.includes('/');
-  $d("#def-title").textContent = wSlash ? title+' /' : title;
+  const wSlash = _wantsSlash(canon) && !rawDisplay.includes('/');
+  $d("#def-title").textContent = wSlash ? rawDisplay+' /' : rawDisplay;
   const bodyEl = $d("#def-body");
   if(defs.length <= 1){
     bodyEl.textContent = defs[0]?.text || "(définition absente)";
@@ -599,6 +601,11 @@ function openDef(canon, displayWord, defText, flechie){
         lnk.addEventListener("click",ev=>{ev.preventDefault();openDef(d.label,d.label);});
         bodyEl.appendChild(lnk);
         bodyEl.appendChild(document.createTextNode(" "));
+      } else if(d.entryLabel){
+        const lbl=document.createElement("span");
+        lbl.style.cssText="font-size:11px;font-weight:700;color:var(--text-dim);display:block;margin-bottom:1px";
+        lbl.textContent=d.entryLabel;
+        bodyEl.appendChild(lbl);
       }
       const p=document.createElement("p"); p.style.margin="0";
       p.textContent=d.text||(d.label?"":"(définition absente)");
@@ -606,7 +613,7 @@ function openDef(canon, displayWord, defText, flechie){
     });
   }
 
-  const raw = title.split(",")[0].trim().toLowerCase();
+  const raw = title.toLowerCase();
   $d("#def-wikt").href  = "https://fr.wiktionary.org/wiki/" + encodeURIComponent(raw);
   $d("#def-img").href   = "https://www.google.com/search?tbm=isch&q=" + encodeURIComponent(raw);
   $d("#def-links").style.display = "flex";
