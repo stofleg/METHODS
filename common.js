@@ -849,8 +849,8 @@ function openDef(canon, displayWord, defText, flechie){
 
   // Section forme fléchie : soit redirect depuis conjugaison, soit entrée avec virgule (ex: PERLANT, E)
   let flechieToShow = flechie || null;
-  if(!flechieToShow && idx >= 0 && E?.[idx]?.includes(',')){
-    const resolved = resolveInflectedCanon(canon, E[idx].split(',')[1]);
+  if(!flechieToShow && titleIdx >= 0 && E?.[titleIdx]?.includes(',')){
+    const resolved = resolveInflectedCanon(canon, E[titleIdx].split(',')[1]);
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";

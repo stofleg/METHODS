@@ -625,8 +625,8 @@ function openDef(canon, displayWord, defText, flechie){
   }
 
   let flechieToShow = flechie || null;
-  if(!flechieToShow && idx >= 0 && E?.[idx]?.includes(',')){
-    const resolved = resolveInflectedCanon(canon, E[idx].split(',')[1]);
+  if(!flechieToShow && titleIdx >= 0 && E?.[titleIdx]?.includes(',')){
+    const resolved = resolveInflectedCanon(canon, E[titleIdx].split(',')[1]);
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $d("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
