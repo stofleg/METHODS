@@ -427,7 +427,7 @@ function findLemma(w){
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ERENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
-    'ANT','ONS','ENT','EZ','IT','AI','AS','A',
+    'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES',
   ]);
   const strips = [
     // Subjonctif imparfait
@@ -471,9 +471,9 @@ function findLemma(w){
   // Présent 1s/3s -ER et futurs -RE (CHANTE→CHANTER, COMMETTRA→COMMETTRE)
   if(w.endsWith('E') && w.length > 3){
     const st = w.slice(0,-1);
-    if(cm.has(st))        return st;
     if(cm.has(st+'ER'))   return st+'ER';
     if(cm.has(st+'RE'))   return st+'RE';
+    if(cm.has(st))        return st;
   }
 
   // Participes passés masc. en -U (ABSTENU→ABSTENIR, VAINCU→VAINCRE, VENDU→VENDRE)
