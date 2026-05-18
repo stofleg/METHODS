@@ -449,6 +449,7 @@ function findLemma(w){
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ERENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
+    'ANT','ONS','ENT','EZ','IT','AI','AS','A',
   ]);
   const strips = [
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
