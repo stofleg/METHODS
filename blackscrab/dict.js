@@ -466,14 +466,14 @@ function findLemma(w){
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
-    'AIENT','ERENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
+    'AIENT','ERENT','IRENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
     'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES','IMES','ITES',
   ]);
   const strips = [
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
-    'AIENT','ANT','ERENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
+    'AIENT','ANT','ERENT','IRENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
     'ATES','AMES','AT','IMES','ITES',
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
     'IT','EAUX','AUX',
@@ -493,6 +493,8 @@ function findLemma(w){
       if(cm.has(stem+'IR'))   return stem+'IR';
       if(cm.has(stem+'RE'))   return stem+'RE';
       if(cm.has(stem+'ITRE')) return stem+'ITRE'; // CONNAITRE, NAITRE, APPARAITRE…
+      if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
@@ -504,13 +506,15 @@ function findLemma(w){
     if(cm.has(stem+'E'))  return stem+'E';
   }
 
-  // Formes féminines : EUSE→EUR, RICE→EUR, IVE→IF, ELLE→EL, IENNE→IEN
+  // Formes féminines
   for(const [sfx,add] of [
+    ['EUSES','EUX'],['EUSE','EUX'],
     ['EUSES','EUR'],['EUSE','EUR'],
     ['RICES','EUR'],['RICE','EUR'],
     ['IVES','IF'],['IVE','IF'],
     ['ELLES','EL'],['ELLE','EL'],
     ['IENNES','IEN'],['IENNE','IEN'],
+    ['ONNES','ON'],['ONNE','ON'],
   ]){
     if(w.endsWith(sfx)&&w.length>sfx.length+1){
       const st=w.slice(0,-sfx.length);
