@@ -409,7 +409,7 @@ function getNormToE(){
 }
 
 /* ── Préfixes de verbes composés ── */
-const _VERB_PREFIXES = ['ENTRE','CONTRE','INTER','TRANS','SOUS','TRES','SATIS','PAR','SUR','CON','COM','PRE','PRO','DIS','MES','RE','DE','EN','AD','AB'];
+const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','AD','AB'];
 
 /* ── Lemme parent pour une forme fléchie ou conjuguée ── */
 function findLemma(w){
@@ -465,14 +465,14 @@ function findLemma(w){
   const VERB_SFXS = new Set([
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
-    'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
+    'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ERENT','IRENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
     'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES','IMES','ITES',
   ]);
   const strips = [
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
-    'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
+    'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ANT','ERENT','IRENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
     'ATES','AMES','AT','IMES','ITES',
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
@@ -487,6 +487,12 @@ function findLemma(w){
       if(cm.has(stem+'IR')) return stem+'IR';
       if(cm.has(stem+'RE')) return stem+'RE';
       if(cm.has(stem+'E'))  return stem+'E';
+      if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
+      if(stem.endsWith('AIE')&&cm.has(stem.slice(0,-3)+'AYER')) return stem.slice(0,-3)+'AYER';
+      if(stem.endsWith('UIE')&&cm.has(stem.slice(0,-3)+'UYER')) return stem.slice(0,-3)+'UYER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
+      if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'RE')) return stem.slice(0,-1)+'RE';
     }
     if(VERB_SFXS.has(s)){
       if(cm.has(stem+'ER'))   return stem+'ER';
@@ -495,6 +501,14 @@ function findLemma(w){
       if(cm.has(stem+'ITRE')) return stem+'ITRE'; // CONNAITRE, NAITRE, APPARAITRE…
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
+      if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
+      if(stem.endsWith('AIE')&&cm.has(stem.slice(0,-3)+'AYER')) return stem.slice(0,-3)+'AYER';
+      if(stem.endsWith('UIE')&&cm.has(stem.slice(0,-3)+'UYER')) return stem.slice(0,-3)+'UYER';
+      if(stem.endsWith('OI')&&cm.has(stem.slice(0,-2)+'OYER')) return stem.slice(0,-2)+'OYER';
+      if(stem.endsWith('AI')&&cm.has(stem.slice(0,-2)+'AYER')) return stem.slice(0,-2)+'AYER';
+      if(stem.endsWith('UI')&&cm.has(stem.slice(0,-2)+'UYER')) return stem.slice(0,-2)+'UYER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
@@ -527,6 +541,10 @@ function findLemma(w){
     if(cm.has(st+'ER'))   return st+'ER';
     if(cm.has(st+'RE'))   return st+'RE';
     if(cm.has(st))        return st;
+    if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';
+    if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
+    if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
+    if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
   }
 
   if(w.endsWith('U') && w.length > 3){
