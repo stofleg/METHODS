@@ -409,7 +409,7 @@ function getNormToE(){
 }
 
 /* ── Préfixes de verbes composés ── */
-const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','AD','AB'];
+const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
 
 /* ── Lemme parent pour une forme fléchie ou conjuguée ── */
 function findLemma(w){
