@@ -417,6 +417,25 @@ function findLemma(w){
     }
   }
 
+  // Formes irrégulières -EINDRE/-OINDRE/-AINDRE (part. passés, présent 1s/2s)
+  // et passé simple -TENIR/-VENIR (INT/INTS/INS)
+  // Doit précéder le test endsWith('S') pour éviter PEINS→PEINE, ATTEINS→ATTEINDRE, etc.
+  for(const [sfx,add] of [
+    ['EINTS','EINDRE'],['EINT','EINDRE'],['EINS','EINDRE'],
+    ['OINTS','OINDRE'],['OINT','OINDRE'],['OINS','OINDRE'],
+    ['AINTS','AINDRE'],['AINT','AINDRE'],['AINS','AINDRE'],
+    ['INTS',null],['INT',null],['INS','ENIR'],
+  ]){
+    if(!w.endsWith(sfx)||w.length<=sfx.length) continue;
+    const st=w.slice(0,-sfx.length);
+    if(add){ if(cm.has(st+add)) return st+add; }
+    else{
+      if(cm.has(st+'ENIR'))   return st+'ENIR';
+      if(cm.has(st+'EINDRE')) return st+'EINDRE';
+      if(cm.has(st+'INDRE'))  return st+'INDRE';
+    }
+  }
+
   // Pluriel simple en -S : ARAS→ARA avant de tomber dans les strips
   if(w.endsWith('S') && w.length>2){ const bare=w.slice(0,-1); if(cm.has(bare)) return bare; }
 
@@ -427,7 +446,7 @@ function findLemma(w){
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ERENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
-    'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES',
+    'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES','IMES','ITES',
   ]);
   const strips = [
     // Subjonctif imparfait
@@ -438,7 +457,7 @@ function findLemma(w){
     // Conditionnel / futur
     'AIENT','ANT','ERENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
     // Passé simple manquants + subj. imp. 3s
-    'ATES','AMES','AT',
+    'ATES','AMES','AT','IMES','ITES',
     // Présent / imparfait courant
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
     'IT','EAUX','AUX',
@@ -454,9 +473,10 @@ function findLemma(w){
       if(cm.has(stem+'E'))  return stem+'E';
     }
     if(VERB_SFXS.has(s)){
-      if(cm.has(stem+'ER')) return stem+'ER';
-      if(cm.has(stem+'IR')) return stem+'IR';
-      if(cm.has(stem+'RE')) return stem+'RE';
+      if(cm.has(stem+'ER'))   return stem+'ER';
+      if(cm.has(stem+'IR'))   return stem+'IR';
+      if(cm.has(stem+'RE'))   return stem+'RE';
+      if(cm.has(stem+'ITRE')) return stem+'ITRE'; // CONNAITRE, NAITRE, APPARAITRE…
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
@@ -466,6 +486,20 @@ function findLemma(w){
     if(cm.has(stem+'IR')) return stem+'IR';
     if(cm.has(stem+'RE')) return stem+'RE';
     if(cm.has(stem+'E'))  return stem+'E';
+  }
+
+  // Formes féminines : EUSE→EUR, RICE→EUR, IVE→IF, ELLE→EL, IENNE→IEN
+  for(const [sfx,add] of [
+    ['EUSES','EUR'],['EUSE','EUR'],
+    ['RICES','EUR'],['RICE','EUR'],
+    ['IVES','IF'],['IVE','IF'],
+    ['ELLES','EL'],['ELLE','EL'],
+    ['IENNES','IEN'],['IENNE','IEN'],
+  ]){
+    if(w.endsWith(sfx)&&w.length>sfx.length+1){
+      const st=w.slice(0,-sfx.length);
+      if(cm.has(st+add)) return st+add;
+    }
   }
 
   // Présent 1s/3s -ER et futurs -RE (CHANTE→CHANTER, COMMETTRA→COMMETTRE)
@@ -783,9 +817,10 @@ function openDef(canon, displayWord, defText, flechie){
   const title = rawDisplay.split(",")[0].trim(); // base form, pour les liens externes
 
   // Build list of {label, entryLabel, text} for each definition to display.
+  const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
-    ? [{label:null, entryLabel:null, text:defText}]
-    : allIdxs.map(i=>{ const f=F?.[i]||''; const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], entryLabel:null, text:ci!==undefined?(F?.[ci]||''):''}; } const el=E?.[i]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    ? [{label:null, entryLabel:null, text:_cf(defText)}]
+    : allIdxs.map(i=>{ const f=_cf(F?.[i]||''); const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], entryLabel:null, text:ci!==undefined?_cf(F?.[ci]||''):''}; } const el=E?.[i]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
