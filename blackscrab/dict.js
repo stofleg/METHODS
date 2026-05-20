@@ -152,7 +152,7 @@ function _getIrregMap(){
     'VIENDRAI','VIENDRAS','VIENDRA','VIENDRONS','VIENDREZ','VIENDRONT',
     'VIENDRAIS','VIENDRAIT','VIENDRIONS','VIENDRIEZ','VIENDRAIENT',
     'VIENNE','VIENNES','VIENNENT',
-    'VINSSE','VENU','VENANT']);
+    'VINSSE','VINSSES','VINSSIONS','VINSSIEZ','VINSSENT','VENU','VENANT']);
 
   add('TENIR',['TIENS','TIENT','TENONS','TENEZ','TIENNENT',
     'TENAIS','TENAIT','TENIONS','TENIEZ','TENAIENT',
@@ -160,7 +160,7 @@ function _getIrregMap(){
     'TIENDRAI','TIENDRAS','TIENDRA','TIENDRONS','TIENDREZ','TIENDRONT',
     'TIENDRAIS','TIENDRAIT','TIENDRIONS','TIENDRIEZ','TIENDRAIENT',
     'TIENNE','TIENNES','TIENNENT',
-    'TINSSE','TENU','TENANT']);
+    'TINSSE','TINSSES','TINSSIONS','TINSSIEZ','TINSSENT','TENU','TENANT']);
 
   add('PRENDRE',['PRENDS','PREND','PRENONS','PRENEZ','PRENNENT',
     'PRENAIS','PRENAIT','PRENIONS','PRENIEZ','PRENAIENT',
@@ -176,14 +176,14 @@ function _getIrregMap(){
     'METTRAI','METTRAS','METTRA','METTRONS','METTREZ','METTRONT',
     'METTRAIS','METTRAIT','METTRIONS','METTRIEZ','METTRAIENT',
     'METTE','METTES','METTENT',
-    'MISSE','METTANT']);
+    'MISSE','MISSES','MISSIONS','MISSIEZ','MISSENT','METTANT']);
 
   add('DIRE',['DISONS','DITES','DISENT',
     'DISAIS','DISAIT','DISIONS','DISIEZ','DISAIENT',
     'DIRAI','DIRAS','DIRA','DIRONS','DIREZ','DIRONT',
     'DIRAIS','DIRAIT','DIRIONS','DIRIEZ','DIRAIENT',
     'DISE','DISES','DISENT',
-    'DISSE','DISANT']);
+    'DISSE','DISSES','DISSIONS','DISSIEZ','DISSENT','DISANT']);
 
   add('LIRE',['LISONS','LISEZ','LISENT',
     'LISAIS','LISAIT','LISIONS','LISIEZ','LISAIENT',
@@ -272,7 +272,7 @@ function _getIrregMap(){
     'VIVRAI','VIVRAS','VIVRA','VIVRONS','VIVREZ','VIVRONT',
     'VIVRAIS','VIVRAIT','VIVRIONS','VIVRIEZ','VIVRAIENT',
     'VIVE','VIVES','VIVENT',
-    'VECUSSE','VECU','VIVANT']);
+    'VECUSSE','VECUSSES','VECUSSIONS','VECUSSIEZ','VECUSSENT','VECU','VIVANT']);
 
   add('SUIVRE',['SUIT','SUIVONS','SUIVEZ','SUIVENT',
     'SUIVAIS','SUIVAIT','SUIVIONS','SUIVIEZ','SUIVAIENT',
@@ -281,6 +281,9 @@ function _getIrregMap(){
     'SUIVRAIS','SUIVRAIT','SUIVRIONS','SUIVRIEZ','SUIVRAIENT',
     'SUIVE','SUIVES','SUIVENT',
     'SUIVISSE','SUIVI','SUIVANT']);
+
+  add('ENVOYER',['ENVERRAI','ENVERRAS','ENVERRA','ENVERRONS','ENVERREZ','ENVERRONT',
+    'ENVERRAIS','ENVERRAIT','ENVERRIONS','ENVERRIEZ','ENVERRAIENT']);
 
   add('CONNAITRE',['CONNAIS','CONNAIT',
     'CONNUS','CONNUT','CONNUMES','CONNUTES','CONNURENT',
@@ -292,7 +295,9 @@ function _getIrregMap(){
     'NAQUIS','NAQUIT','NAQUIMES','NAQUITES','NAQUIRENT',
     'NAITRAI','NAITRAS','NAITRA','NAITRONS','NAITREZ','NAITRONT',
     'NAITRAIS','NAITRAIT','NAITRIONS','NAITRIEZ','NAITRAIENT',
-    'NAISSE','NAISSES','NAISSENT','NE','NAISSANT']);
+    'NAISSE','NAISSES','NAISSENT',
+    'NAQUISSE','NAQUISSES','NAQUISSIONS','NAQUISSIEZ','NAQUISSENT',
+    'NE','NAISSANT']);
 
   add('SURSEOIR',['SURSISE']);
 
@@ -411,6 +416,28 @@ function getNormToE(){
 /* ── Préfixes de verbes composés ── */
 const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
 
+function _xchk(stem,cm){
+  if(stem.endsWith('IGN')&&stem.length>3){const c=stem.slice(0,-3)+'INDRE';if(cm.has(c))return c;}
+  if(stem.endsWith('IGNI')&&stem.length>5){const c=stem.slice(0,-4)+'INDRE';if(cm.has(c))return c;}
+  if(stem.endsWith('S')&&stem.length>2){const c=stem.slice(0,-1)+'RE';if(cm.has(c))return c;}
+  if(stem.endsWith('T')&&stem.length>2){const c=stem.slice(0,-1)+'RE';if(cm.has(c))return c;}
+  if(stem.endsWith('TE')&&stem.length>3){const c=stem.slice(0,-2)+'RE';if(cm.has(c))return c;}
+  if(stem.endsWith('V')&&stem.length>2){const c=stem.slice(0,-1)+'RE';if(cm.has(c))return c;}
+  if(stem.endsWith('R')&&stem.length>2){const c=stem.slice(0,-1)+'OIR';if(cm.has(c))return c;}
+  if(stem.endsWith('RI')&&stem.length>3){const c=stem.slice(0,-2)+'OIR';if(cm.has(c))return c;}
+  if(stem.endsWith('I')&&stem.length>3){const c=stem.slice(0,-2)+'RE';if(cm.has(c))return c;}
+  if(cm.has(stem+'ENDRE'))return stem+'ENDRE';
+  if(cm.has(stem+'DRE'))return stem+'DRE';
+  if(stem.endsWith('NN')&&stem.length>2){const c=stem.slice(0,-1)+'DRE';if(cm.has(c))return c;}
+  if(cm.has(stem+'URE'))return stem+'URE';
+  if(stem.endsWith('L')&&stem.length>2){const c=stem.slice(0,-1)+'UDRE';if(cm.has(c))return c;}
+  if(cm.has(stem+'ERIR'))return stem+'ERIR';
+  if(cm.has(stem+'OIR'))return stem+'OIR';
+  if(cm.has(stem+'AITRE'))return stem+'AITRE';
+  if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)))return stem.slice(0,-1);
+  return null;
+}
+
 /* ── Lemme parent pour une forme fléchie ou conjuguée ── */
 function findLemma(w){
   if(!w) return null;
@@ -468,6 +495,7 @@ function findLemma(w){
     'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ERENT','IRENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
     'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES','IMES','ITES',
+    'URENT',
   ]);
   const strips = [
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
@@ -477,7 +505,8 @@ function findLemma(w){
     'ATES','AMES','AT','IMES','ITES',
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
     'IT','EAUX','AUX',
-    'AS','A','ERA','ERAS','ES','S','X'];
+    'AS','A','ERA','ERAS','ES','S','X',
+    'URENT'];
   for(const s of strips){
     if(!w.endsWith(s)) continue;
     const stem = w.slice(0,-s.length);
@@ -496,13 +525,14 @@ function findLemma(w){
       if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'RE')) return stem.slice(0,-1)+'RE';
+      {const r=_xchk(stem,cm);if(r)return r;}
       if(cm.has(stem+'E'))  return stem+'E';
     }
     if(VERB_SFXS.has(s)){
       if(cm.has(stem+'ER'))   return stem+'ER';
       if(cm.has(stem+'IR'))   return stem+'IR';
       if(cm.has(stem+'RE'))   return stem+'RE';
-      if(cm.has(stem+'ITRE')) return stem+'ITRE'; // CONNAITRE, NAITRE, APPARAITRE…
+      if(cm.has(stem+'ITRE')) return stem+'ITRE';
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
       if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
@@ -516,6 +546,7 @@ function findLemma(w){
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
       if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
+      {const r=_xchk(stem,cm);if(r)return r;}
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
@@ -527,6 +558,8 @@ function findLemma(w){
     if(cm.has(stem+'E'))  return stem+'E';
     if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
     if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
+    if(stem.endsWith('RR')&&stem.length>2){if(cm.has(stem.slice(0,-1)+'IR'))return stem.slice(0,-1)+'IR';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
+    {const r=_xchk(stem,cm);if(r)return r;}
   }
 
   // Formes féminines
@@ -557,6 +590,7 @@ function findLemma(w){
     if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
     if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
     if(st.endsWith('U')&&st.length>2){const su2=st.slice(0,-1);if(cm.has(su2+'IR'))return su2+'IR';if(cm.has(su2+'RE'))return su2+'RE';}
+    {const r=_xchk(st,cm);if(r)return r;}
   }
 
   if(w.endsWith('U') && w.length > 3){
