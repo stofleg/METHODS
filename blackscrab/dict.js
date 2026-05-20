@@ -449,6 +449,79 @@ function _getIrregMap(){
 
   add('COUDRE',['COUSIS','COUSIT','COUSITES']);
 
+  // DISSOUDRE passé simple → AUTODISSOUDRE via AUTO prefix compound
+  add('DISSOUDRE',['DISSOLUS','DISSOLUT','DISSOLUMES','DISSOLUTES','DISSOLURENT',
+    'DISSOLUSE','DISSOLUSES','DISSOLUSIONS','DISSOLUSIEZ','DISSOLUSSENT']);
+
+  // PLAIRE subj impf manquant (COMPLUSSES/DEPLUSSES via boucle préfixes)
+  add('PLAIRE',['PLUSSES']);
+
+  // LIRE pp fém/plur
+  add('LIRE',['LUE','LUES','LUS']);
+
+  // VALOIR pp (VALUE→VALOIR, PREVALUE/REVALUE via boucle préfixes)
+  add('VALOIR',['VALU','VALUE','VALUES','VALUS']);
+
+  // AVOIR pp fém plur
+  add('AVOIR',['EUES']);
+
+  // OINDRE passé simple manquant
+  add('OINDRE',['OIGNIS','OIGNIT','OIGNIMES','OIGNITES','OIGNIRENT']);
+
+  // ACCROITRE subj impf manquant
+  add('ACCROITRE',['ACCRUSSE','ACCRUSSES','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS']);
+
+  // ASSEOIR 3p présent manquant
+  add('ASSEOIR',['ASSEYENT']);
+
+  // PERCEVOIR conjugaison complète (ENTRAPERCEVOIR via ENTRA prefix compound)
+  add('PERCEVOIR',['PERCOIS','PERCOIT','PERCEVONS','PERCEVEZ','PERCOIVENT',
+    'PERCEVAIS','PERCEVAIT','PERCEVIONS','PERCEVIEZ','PERCEVAIENT',
+    'PERCU','PERCUE','PERCUES','PERCUS',
+    'PERCUSSE','PERCUSSES','PERCUSSENT','PERCUSSIEZ','PERCUSSIONS',
+    'PERCUTES','PERCOIVE','PERCOIVES','PERCEVANT']);
+
+  // CONCEVOIR subj imparfait manquant (PRECONCEVOIR via PRE prefix compound)
+  add('CONCEVOIR',['CONCUSSE','CONCUSSES','CONCUSSENT','CONCUSSIEZ','CONCUSSIONS']);
+
+  // EQUIVALOIR passé simple manquant
+  add('EQUIVALOIR',['EQUIVALUT','EQUIVALUS']);
+
+  // SECOURIR conjugaison partielle
+  add('SECOURIR',['SECOURUS','SECOURUT','SECOURUMES','SECOURUTES','SECOURURENT']);
+
+  // ECHOIR passé simple
+  add('ECHOIR',['ECHUT','ECHUMES','ECHUTES','ECHURENT']);
+
+  // POURVOIR passé simple
+  add('POURVOIR',['POURVUT','POURVUMES','POURVUTES','POURVURENT']);
+
+  // REPLAIRE passé simple
+  add('PLAIRE',['REPLURENT']);
+
+  add('VOIR',['VIS','VIT']);
+  add('RESOUDRE',['RESOLUS','RESOLUT','RESOLUMES','RESOLUTES','RESOLURENT']);
+  add('POURVOIR',['POURVUE','POURVUES','POURVUS']);
+  add('COUDRE',['COUSU','COUSUE','COUSUES','COUSUS']);
+  add('ENQUERIR',['ENQUIS','ENQUISE','ENQUISES']);
+  add('CONQUERIR',['CONQUIS','CONQUISE','CONQUISES']);
+  add('PERCEVOIR',['PERCURENT']);
+  add('DECROITRE',['DECRU']);
+  add('EMOUDRE',['EMOULUT']);
+  add('PROMOUVOIR',['PROMEUVENT','PROMEUVES']);
+  add('RESSORTIR',['RESSORS','RESSORT']);
+  add('ROUVRIR',['ROUVERT','ROUVERTE','ROUVERTES','ROUVERTS']);
+  add('ENTROUVRIR',['ENTROUVERT','ENTROUVERTE','ENTROUVERTES','ENTROUVERTS']);
+  add('PRESSENTIR',['PRESSENS','PRESSENTE']);
+  add('POLICEWOMAN',['POLICEWOMEN']);
+  add('POURSUIVRE',['POURSUIS']);
+  add('RECROITRE',['RECRUT','RECRUS']);
+  add('DECHOIR',['DECHERREZ','DECHERRONT','DECHERRAS','DECHERRONS']);
+  add('BAS',['BASSE','BASSES']);
+  add('SURGRAS',['SURGRASSE','SURGRASSES']);
+  add('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES']);
+  add('COACQUEREUR',['COACQUERESSE','COACQUERESSES']);
+
   return _irregMap;
 }
 
@@ -565,7 +638,7 @@ function getNormToE(){
 }
 
 /* ── Préfixes de verbes composés ── */
-const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
+const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','ENTRA','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','DES','EN','EM','AD','AB'];
 
 function _xchk(stem,cm){
   if(stem.endsWith('IGN')&&stem.length>3){const c=stem.slice(0,-3)+'INDRE';if(cm.has(c))return c;}
@@ -744,6 +817,7 @@ function findLemma(w){
     if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
     if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
     if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
+    if(cm.has(st+'IR'))   return st+'IR';
     if(cm.has(st))        return st;
     if(cm.has(st+'RE'))   return st+'RE';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';

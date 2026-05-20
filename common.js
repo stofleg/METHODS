@@ -493,6 +493,112 @@ function _getIrregMap(){
   // COUDRE passé simple manquants
   add('COUDRE',['COUSIS','COUSIT','COUSITES']);
 
+  // DISSOUDRE passé simple → AUTODISSOUDRE via AUTO prefix compound
+  add('DISSOUDRE',['DISSOLUS','DISSOLUT','DISSOLUMES','DISSOLUTES','DISSOLURENT',
+    'DISSOLUSE','DISSOLUSES','DISSOLUSIONS','DISSOLUSIEZ','DISSOLUSSENT']);
+
+  // PLAIRE subj impf manquant (COMPLUSSES/DEPLUSSES via boucle préfixes)
+  add('PLAIRE',['PLUSSES']);
+
+  // LIRE pp fém/plur
+  add('LIRE',['LUE','LUES','LUS']);
+
+  // VALOIR pp (VALUE→VALOIR, PREVALUE/REVALUE via boucle préfixes)
+  add('VALOIR',['VALU','VALUE','VALUES','VALUS']);
+
+  // AVOIR pp fém plur
+  add('AVOIR',['EUES']);
+
+  // OINDRE passé simple manquant
+  add('OINDRE',['OIGNIS','OIGNIT','OIGNIMES','OIGNITES','OIGNIRENT']);
+
+  // ACCROITRE subj impf manquant
+  add('ACCROITRE',['ACCRUSSE','ACCRUSSES','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS']);
+
+  // ASSEOIR 3p présent manquant
+  add('ASSEOIR',['ASSEYENT']);
+
+  // PERCEVOIR conjugaison complète (ENTRAPERCEVOIR via ENTRA prefix compound)
+  add('PERCEVOIR',['PERCOIS','PERCOIT','PERCEVONS','PERCEVEZ','PERCOIVENT',
+    'PERCEVAIS','PERCEVAIT','PERCEVIONS','PERCEVIEZ','PERCEVAIENT',
+    'PERCU','PERCUE','PERCUES','PERCUS',
+    'PERCUSSE','PERCUSSES','PERCUSSENT','PERCUSSIEZ','PERCUSSIONS',
+    'PERCUTES','PERCOIVE','PERCOIVES','PERCEVANT']);
+
+  // CONCEVOIR subj imparfait manquant (PRECONCEVOIR via PRE prefix compound)
+  add('CONCEVOIR',['CONCUSSE','CONCUSSES','CONCUSSENT','CONCUSSIEZ','CONCUSSIONS']);
+
+  // EQUIVALOIR passé simple manquant
+  add('EQUIVALOIR',['EQUIVALUT','EQUIVALUS']);
+
+  // SECOURIR conjugaison partielle
+  add('SECOURIR',['SECOURUS','SECOURUT','SECOURUMES','SECOURUTES','SECOURURENT']);
+
+  // ECHOIR passé simple
+  add('ECHOIR',['ECHUT','ECHUMES','ECHUTES','ECHURENT']);
+
+  // POURVOIT → POURVOIR (passé simple)
+  add('POURVOIR',['POURVUT','POURVUMES','POURVUTES','POURVURENT']);
+
+  // REPLAIRE (RE+PLAIRE) passé simple via irr_map directs
+  add('PLAIRE',['REPLURENT']);
+
+  // VOIR passé simple 1s/2s (ENTREVIS via ENTRE+VIS compound)
+  add('VOIR',['VIS','VIT']);
+
+  // RESOUDRE passé simple
+  add('RESOUDRE',['RESOLUS','RESOLUT','RESOLUMES','RESOLUTES','RESOLURENT']);
+
+  // POURVOIR pp fém → REPOURVUE etc. via RE compound
+  add('POURVOIR',['POURVUE','POURVUES','POURVUS']);
+
+  // COUDRE pp → RECOUSU etc. via RE compound
+  add('COUDRE',['COUSU','COUSUE','COUSUES','COUSUS']);
+
+  // ENQUERIR/CONQUERIR pp → composés via boucle préfixes
+  add('ENQUERIR',['ENQUIS','ENQUISE','ENQUISES']);
+  add('CONQUERIR',['CONQUIS','CONQUISE','CONQUISES']);
+
+  // PERCEVOIR passé simple 3pl (ENTRAPERCEVOIR via ENTRA prefix)
+  add('PERCEVOIR',['PERCURENT']);
+
+  // DECROITRE pp masc; EMOUDRE passé simple 3sg
+  add('DECROITRE',['DECRU']);
+  add('EMOUDRE',['EMOULUT']);
+
+  // PROMOUVOIR présent 3pl et subj manquants
+  add('PROMOUVOIR',['PROMEUVENT','PROMEUVES']);
+
+  // RESSORTIR présent 1s/2s (non décomposable par boucle préfixes)
+  add('RESSORTIR',['RESSORS','RESSORT']);
+
+  // ROUVRIR/ENTROUVRIR pp (préfixes ROU-/ENTR- non standard)
+  add('ROUVRIR',['ROUVERT','ROUVERTE','ROUVERTES','ROUVERTS']);
+  add('ENTROUVRIR',['ENTROUVERT','ENTROUVERTE','ENTROUVERTES','ENTROUVERTS']);
+
+  // PRESSENTIR présent 1s/2s (PRES+SENTIR non décomposable)
+  add('PRESSENTIR',['PRESSENS','PRESSENTE']);
+
+  // POLICEWOMAN pluriel anglais
+  add('POLICEWOMAN',['POLICEWOMEN']);
+
+  // POURSUIVRE présent 1s/2s (POUR+SUIS→ETRE incorrect)
+  add('POURSUIVRE',['POURSUIS']);
+
+  // RECROITRE passé simple
+  add('RECROITRE',['RECRUT','RECRUS']);
+
+  // DECHOIR futur manquant
+  add('DECHOIR',['DECHERREZ','DECHERRONT','DECHERRAS','DECHERRONS']);
+
+  // Féminins d'adjectifs à double consonne
+  add('BAS',['BASSE','BASSES']);
+  add('SURGRAS',['SURGRASSE','SURGRASSES']);
+
+  // Féminins en -ERESSE
+  add('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES']);
+  add('COACQUEREUR',['COACQUERESSE','COACQUERESSES']);
+
   return _irregMap;
 }
 
@@ -556,7 +662,7 @@ function _getConjMap(){
 }
 
 /* ── Préfixes de verbes composés ── */
-const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
+const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','ENTRA','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','DES','EN','EM','AD','AB'];
 
 /* ── Checks supplémentaires pour radicaux irréguliers ── */
 function _xchk(stem,cm){
@@ -772,6 +878,7 @@ function findLemma(w){
     if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
     if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
     if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
+    if(cm.has(st+'IR'))   return st+'IR';
     if(cm.has(st))        return st;
     if(cm.has(st+'RE'))   return st+'RE';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';

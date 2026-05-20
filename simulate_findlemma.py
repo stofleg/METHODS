@@ -400,6 +400,90 @@ add_irr('SUIVRE',['SUIT','SUIVI','SUIVIE','SUIVIES','SUIVIS'])
 
 add_irr('ACCOURIR',['ACCOURE','ACCOURES','ACCOURUT','ACCOURUIT'])
 
+# Entries added in v4.21 batch (sync with common.js)
+add_irr('PARAITRE',['PARUS','PARUT','PARUMES','PARUTES','PARURENT','PARUSSENT','PARUSSIEZ','PARUSSIONS'])
+add_irr('APPARAITRE',['APPARU','APPARUS','APPARUT','APPARUMES','APPARUTES','APPARURENT','APPARUSSENT','APPARUSSIEZ'])
+add_irr('PLAIRE',['PLU','PLUS','PLUT'])
+add_irr('CONCEVOIR',['CONCOIS','CONCOIT','CONCEVONS','CONCEVEZ','CONCOIVENT',
+  'CONCEVAIS','CONCEVAIT','CONCEVIONS','CONCEVIEZ','CONCEVAIENT',
+  'CONCUS','CONCUT','CONCUMES','CONCUTES','CONCURENT',
+  'CONCOIVE','CONCOIVES','CONCEVANT','CONCU','CONCUE','CONCUES'])
+add_irr('DECEVOIR',['DECOIS','DECOIT','DECEVONS','DECEVEZ','DECOIVENT',
+  'DECEVAIS','DECEVAIT','DECEVIONS','DECEVIEZ','DECEVAIENT',
+  'DECUS','DECUT','DECUMES','DECUTES','DECURENT',
+  'DECOIVE','DECOIVES','DECEVANT','DECU','DECUE','DECUES'])
+add_irr('COUVRIR',['COUVERT','COUVERTE','COUVERTES','COUVERTS'])
+add_irr('OUVRIR',['OUVERT','OUVERTE','OUVERTES','OUVERTS'])
+add_irr('OFFRIR',['OFFERT','OFFERTE','OFFERTES','OFFERTS'])
+add_irr('SOUFFRIR',['SOUFFERT','SOUFFERTE','SOUFFERTES','SOUFFERTS'])
+add_irr('DISSOUDRE',['DISSOLVE','DISSOLVES','DISSOLVENT',
+  'DISSOLVAIS','DISSOLVAIT','DISSOLVIONS','DISSOLVIEZ','DISSOLVAIENT',
+  'DISSOLVONS','DISSOLVEZ','DISSOLVANT','DISSOUTE','DISSOUTES','DISSOUTS'])
+add_irr('DORMIR',['DORS','DORME','DORMES','DORMENT'])
+add_irr('RENDORMIR',['RENDORS','RENDORT','RENDORME','RENDORMES','RENDORMENT'])
+add_irr('RELIRE',['RELU','RELUE','RELUES','RELUS'])
+add_irr('ELIRE',['ELU','ELUE','ELUES','ELUS'])
+add_irr('DEVOIR',['DUSSENT','DUSSES','DUSSIEZ','DUSSIONS'])
+add_irr('POUVOIR',['PUSSENT','PUSSES','PUSSIEZ','PUSSIONS'])
+add_irr('VIVRE',['VECU','VECUE','VECUES','VECUS'])
+add_irr('VOULOIR',['VOULUE','VOULUES'])
+add_irr('EQUIVALOIR',['EQUIVALUE','EQUIVALUES','EQUIVALUS'])
+add_irr('APERCEVOIR',['APERCUSSE','APERCUSSES','APERCUSSENT','APERCUSSIONS','APERCUSSIEZ'])
+add_irr('ACQUERIR',['ACQUIERS','ACQUIERT','ACQUIERENT','ACQUIERE','ACQUIERES','ACQUIT','ACQUIRENT'])
+add_irr('CONQUERIR',['CONQUIERS','CONQUIERT','CONQUIERENT','CONQUIERE','CONQUIERES','CONQUIT','CONQUIRENT'])
+add_irr('REQUERIR',['REQUIERS','REQUIERT','REQUIERENT','REQUIERE','REQUIERES','REQUIT','REQUIRENT'])
+add_irr('ENQUERIR',['ENQUIERS','ENQUIERT','ENQUIERENT','ENQUIERE','ENQUIERES','ENQUIT','ENQUIRENT'])
+add_irr('SERVIR',['SERS','SERT','SERVE','SERVES','SERVENT'])
+add_irr('SENTIR',['SENS','SENT','SENTE','SENTES','SENTENT'])
+add_irr('PARTIR',['PARS','PART','PARTE','PARTES','PARTENT'])
+add_irr('RESSENTIR',['RESSENS','RESSENT','RESSENTE','RESSENTENT'])
+add_irr('REMOUDRE',['REMOULU','REMOULUE','REMOULUES','REMOULUS'])
+add_irr('EMOUDRE',['EMOULU','EMOULUE','EMOULUES','EMOULUS'])
+add_irr('COUDRE',['COUSIS','COUSIT','COUSITES'])
+
+add_irr('DISSOUDRE',['DISSOLUS','DISSOLUT','DISSOLUMES','DISSOLUTES','DISSOLURENT',
+  'DISSOLUSE','DISSOLUSES','DISSOLUSIONS','DISSOLUSIEZ','DISSOLUSSENT'])
+add_irr('PLAIRE',['PLUSSES','REPLURENT'])
+add_irr('LIRE',['LUE','LUES','LUS'])
+add_irr('VALOIR',['VALU','VALUE','VALUES','VALUS'])
+add_irr('AVOIR',['EUES'])
+add_irr('OINDRE',['OIGNIS','OIGNIT','OIGNIMES','OIGNITES','OIGNIRENT'])
+add_irr('ACCROITRE',['ACCRUSSE','ACCRUSSES','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS'])
+add_irr('ASSEOIR',['ASSEYENT'])
+add_irr('PERCEVOIR',['PERCOIS','PERCOIT','PERCEVONS','PERCEVEZ','PERCOIVENT',
+  'PERCEVAIS','PERCEVAIT','PERCEVIONS','PERCEVIEZ','PERCEVAIENT',
+  'PERCU','PERCUE','PERCUES','PERCUS',
+  'PERCUSSE','PERCUSSES','PERCUSSENT','PERCUSSIEZ','PERCUSSIONS',
+  'PERCUTES','PERCOIVE','PERCOIVES','PERCEVANT'])
+add_irr('CONCEVOIR',['CONCUSSE','CONCUSSES','CONCUSSENT','CONCUSSIEZ','CONCUSSIONS'])
+add_irr('EQUIVALOIR',['EQUIVALUT','EQUIVALUS'])
+add_irr('SECOURIR',['SECOURUS','SECOURUT','SECOURUMES','SECOURUTES','SECOURURENT'])
+add_irr('ECHOIR',['ECHUT','ECHUMES','ECHUTES','ECHURENT'])
+add_irr('POURVOIR',['POURVUT','POURVUMES','POURVUTES','POURVURENT'])
+
+add_irr('VOIR',['VIS','VIT'])
+add_irr('RESOUDRE',['RESOLUS','RESOLUT','RESOLUMES','RESOLUTES','RESOLURENT'])
+add_irr('POURVOIR',['POURVUE','POURVUES','POURVUS'])
+add_irr('COUDRE',['COUSU','COUSUE','COUSUES','COUSUS'])
+add_irr('ENQUERIR',['ENQUIS','ENQUISE','ENQUISES'])
+add_irr('CONQUERIR',['CONQUIS','CONQUISE','CONQUISES'])
+add_irr('PERCEVOIR',['PERCURENT'])
+add_irr('DECROITRE',['DECRU'])
+add_irr('EMOUDRE',['EMOULUT'])
+add_irr('PROMOUVOIR',['PROMEUVENT','PROMEUVES'])
+add_irr('RESSORTIR',['RESSORS','RESSORT'])
+add_irr('ROUVRIR',['ROUVERT','ROUVERTE','ROUVERTES','ROUVERTS'])
+add_irr('ENTROUVRIR',['ENTROUVERT','ENTROUVERTE','ENTROUVERTES','ENTROUVERTS'])
+add_irr('PRESSENTIR',['PRESSENS','PRESSENTE'])
+add_irr('POLICEWOMAN',['POLICEWOMEN'])
+add_irr('POURSUIVRE',['POURSUIS'])
+add_irr('RECROITRE',['RECRUT','RECRUS'])
+add_irr('DECHOIR',['DECHERREZ','DECHERRONT','DECHERRAS','DECHERRONS'])
+add_irr('BAS',['BASSE','BASSES'])
+add_irr('SURGRAS',['SURGRASSE','SURGRASSES'])
+add_irr('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES'])
+add_irr('COACQUEREUR',['COACQUERESSE','COACQUERESSES'])
+
 # ── Step 4: Build _conjMap (adds to BOTH conjMap and irr) ────────────────────
 conj = {}
 
@@ -461,7 +545,7 @@ add_conj('VALOIR',['VAILLE'])
 print(f"  irregMap: {len(irr)} entries, conjMap: {len(conj)} entries", flush=True)
 
 # ── Step 5: _VERB_PREFIXES ────────────────────────────────────────────────────
-VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB']
+VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','ENTRA','AUTO','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','DES','EN','EM','AD','AB']
 
 # ── Step 6: _xchk ────────────────────────────────────────────────────────────
 def _xchk(stem, cm_set):
@@ -621,9 +705,9 @@ def findLemma(w):
                     return st + v
     # 6. -EINDRE/-OINDRE/-AINDRE/-TENIR/-VENIR block
     for sfx, add in [
-        ('EINTS','EINDRE'),('EINT','EINDRE'),('EINS','EINDRE'),
-        ('OINTS','OINDRE'),('OINT','OINDRE'),('OINS','OINDRE'),
-        ('AINTS','AINDRE'),('AINT','AINDRE'),('AINS','AINDRE'),
+        ('EINTS','EINDRE'),('EINT','EINDRE'),('EINS','EINDRE'),('EINTES','EINDRE'),('EINTE','EINDRE'),
+        ('OINTS','OINDRE'),('OINT','OINDRE'),('OINS','OINDRE'),('OINTES','OINDRE'),('OINTE','OINDRE'),
+        ('AINTS','AINDRE'),('AINT','AINDRE'),('AINS','AINDRE'),('AINTES','AINDRE'),('AINTE','AINDRE'),
         ('INTS',None),('INT',None),('INS','ENIR'),
     ]:
         if not w.endswith(sfx) or len(w) <= len(sfx):
@@ -700,6 +784,7 @@ def findLemma(w):
         if stem + 'ER' in cm_set: return stem + 'ER'
         if stem + 'IR' in cm_set: return stem + 'IR'
         if stem + 'RE' in cm_set: return stem + 'RE'
+        if stem + 'TRE' in cm_set: return stem + 'TRE'
         if stem + 'E' in cm_set:  return stem + 'E'
         if stem.endswith('I') and len(stem) > 2:
             if stem + 'R' in cm_set: return stem + 'R'
@@ -737,6 +822,7 @@ def findLemma(w):
         if st.endswith('OI') and st[:-2] + 'OYER' in cm_set: return st[:-2] + 'OYER'
         if st.endswith('AI') and st[:-2] + 'AYER' in cm_set: return st[:-2] + 'AYER'
         if st.endswith('UI') and st[:-2] + 'UYER' in cm_set: return st[:-2] + 'UYER'
+        if st + 'IR' in cm_set:   return st + 'IR'
         if st in cm_set:        return st
         if st + 'RE' in cm_set: return st + 'RE'
         if (st.endswith('LL') or st.endswith('TT')) and st[:-1] + 'ER' in cm_set: return st[:-1] + 'ER'
@@ -756,9 +842,10 @@ def findLemma(w):
         r = _xchk(st, cm_set)
         if r: return r
     # 12. endsWith I
-    if w.endswith('I') and len(w) > 3:
+    if w.endswith('I') and len(w) > 2:
         st = w[:-1]
-        if st + 'IR' in cm_set: return st + 'IR'
+        if st + 'IR' in cm_set:  return st + 'IR'
+        if st + 'IRE' in cm_set: return st + 'IRE'
     # 13. w.length > 3: w+RE, w+TRE, w+IR
     if len(w) > 3:
         if w + 'RE' in cm_set:  return w + 'RE'
