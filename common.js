@@ -422,6 +422,77 @@ function _getIrregMap(){
 
   add('ACCOURIR',['ACCOURE','ACCOURES','ACCOURUT','ACCOURUIT']);
 
+  // PARAITRE passé simple → fix faux positifs PARUT→PARURE et COMPARUMES→COMPARER
+  add('PARAITRE',['PARUS','PARUT','PARUMES','PARUTES','PARURENT','PARUSSENT','PARUSSIEZ','PARUSSIONS']);
+  add('APPARAITRE',['APPARU','APPARUS','APPARUT','APPARUMES','APPARUTES','APPARURENT','APPARUSSENT','APPARUSSIEZ']);
+
+  // PLAIRE passé simple complets (PLU/PLUS/PLUT → COMPLAIRE/DEPLAIRE via boucle préfixes)
+  add('PLAIRE',['PLU','PLUS','PLUT']);
+
+  // CONCEVOIR / DECEVOIR conjugaison complète
+  add('CONCEVOIR',['CONCOIS','CONCOIT','CONCEVONS','CONCEVEZ','CONCOIVENT',
+    'CONCEVAIS','CONCEVAIT','CONCEVIONS','CONCEVIEZ','CONCEVAIENT',
+    'CONCUS','CONCUT','CONCUMES','CONCUTES','CONCURENT',
+    'CONCOIVE','CONCOIVES','CONCEVANT','CONCU','CONCUE','CONCUES']);
+  add('DECEVOIR',['DECOIS','DECOIT','DECEVONS','DECEVEZ','DECOIVENT',
+    'DECEVAIS','DECEVAIT','DECEVIONS','DECEVIEZ','DECEVAIENT',
+    'DECUS','DECUT','DECUMES','DECUTES','DECURENT',
+    'DECOIVE','DECOIVES','DECEVANT','DECU','DECUE','DECUES']);
+
+  // COUVRIR/OUVRIR/OFFRIR/SOUFFRIR pp → DECOUVRIR/RECOUVRIR/ENTROUVERT via boucle préfixes
+  add('COUVRIR',['COUVERT','COUVERTE','COUVERTES','COUVERTS']);
+  add('OUVRIR',['OUVERT','OUVERTE','OUVERTES','OUVERTS']);
+  add('OFFRIR',['OFFERT','OFFERTE','OFFERTES','OFFERTS']);
+  add('SOUFFRIR',['SOUFFERT','SOUFFERTE','SOUFFERTES','SOUFFERTS']);
+
+  // DISSOUDRE : formes en DISSOLV-
+  add('DISSOUDRE',['DISSOLVE','DISSOLVES','DISSOLVENT',
+    'DISSOLVAIS','DISSOLVAIT','DISSOLVIONS','DISSOLVIEZ','DISSOLVAIENT',
+    'DISSOLVONS','DISSOLVEZ','DISSOLVANT','DISSOUTE','DISSOUTES','DISSOUTS']);
+
+  // DORMIR présent → ENDORMIR/RENDORMIR via boucle préfixes
+  add('DORMIR',['DORS','DORME','DORMES','DORMENT']);
+  add('RENDORMIR',['RENDORS','RENDORT','RENDORME','RENDORMES','RENDORMENT']);
+
+  // RELIRE/ELIRE pp (RELU→RELIRE, ELU→RE+ELIRE=REELIRE)
+  add('RELIRE',['RELU','RELUE','RELUES','RELUS']);
+  add('ELIRE',['ELU','ELUE','ELUES','ELUS']);
+
+  // DEVOIR/POUVOIR subjonctif imparfait manquants
+  add('DEVOIR',['DUSSENT','DUSSES','DUSSIEZ','DUSSIONS']);
+  add('POUVOIR',['PUSSENT','PUSSES','PUSSIEZ','PUSSIONS']);
+
+  // VIVRE/VOULOIR/EQUIVALOIR pp féminins
+  add('VIVRE',['VECU','VECUE','VECUES','VECUS']);
+  add('VOULOIR',['VOULUE','VOULUES']);
+  add('EQUIVALOIR',['EQUIVALUE','EQUIVALUES','EQUIVALUS']);
+
+  // APERCEVOIR subjonctif imparfait manquants
+  add('APERCEVOIR',['APERCUSSE','APERCUSSES','APERCUSSENT','APERCUSSIONS','APERCUSSIEZ']);
+
+  // ACQUERIR présent + composés (CONQUERIR/REQUERIR/ENQUERIR explicites car pas de décomposition directe)
+  add('ACQUERIR',['ACQUIERS','ACQUIERT','ACQUIERENT','ACQUIERE','ACQUIERES',
+    'ACQUIT','ACQUIRENT']);
+  add('CONQUERIR',['CONQUIERS','CONQUIERT','CONQUIERENT','CONQUIERE','CONQUIERES',
+    'CONQUIT','CONQUIRENT']);
+  add('REQUERIR',['REQUIERS','REQUIERT','REQUIERENT','REQUIERE','REQUIERES',
+    'REQUIT','REQUIRENT']);
+  add('ENQUERIR',['ENQUIERS','ENQUIERT','ENQUIERENT','ENQUIERE','ENQUIERES',
+    'ENQUIT','ENQUIRENT']);
+
+  // SERVIR/SENTIR/PARTIR présent → verbes composés via boucle préfixes
+  add('SERVIR',['SERS','SERT','SERVE','SERVES','SERVENT']);
+  add('SENTIR',['SENS','SENT','SENTE','SENTES','SENTENT']);
+  add('PARTIR',['PARS','PART','PARTE','PARTES','PARTENT']);
+  add('RESSENTIR',['RESSENS','RESSENT','RESSENTE','RESSENTENT']);
+
+  // REMOUDRE/EMOUDRE pp féminins
+  add('REMOUDRE',['REMOULU','REMOULUE','REMOULUES','REMOULUS']);
+  add('EMOUDRE',['EMOULU','EMOULUE','EMOULUES','EMOULUS']);
+
+  // COUDRE passé simple manquants
+  add('COUDRE',['COUSIS','COUSIT','COUSITES']);
+
   return _irregMap;
 }
 
@@ -573,9 +644,9 @@ function findLemma(w){
   // et passé simple -TENIR/-VENIR (INT/INTS/INS)
   // Doit précéder le test endsWith('S') pour éviter PEINS→PEINE, ATTEINS→ATTEINDRE, etc.
   for(const [sfx,add] of [
-    ['EINTS','EINDRE'],['EINT','EINDRE'],['EINS','EINDRE'],
-    ['OINTS','OINDRE'],['OINT','OINDRE'],['OINS','OINDRE'],
-    ['AINTS','AINDRE'],['AINT','AINDRE'],['AINS','AINDRE'],
+    ['EINTS','EINDRE'],['EINT','EINDRE'],['EINS','EINDRE'],['EINTES','EINDRE'],['EINTE','EINDRE'],
+    ['OINTS','OINDRE'],['OINT','OINDRE'],['OINS','OINDRE'],['OINTES','OINDRE'],['OINTE','OINDRE'],
+    ['AINTS','AINDRE'],['AINT','AINDRE'],['AINS','AINDRE'],['AINTES','AINDRE'],['AINTE','AINDRE'],
     ['INTS',null],['INT',null],['INS','ENIR'],
   ]){
     if(!w.endsWith(sfx)||w.length<=sfx.length) continue;
@@ -664,10 +735,11 @@ function findLemma(w){
     if(im.has(stem)) return im.get(stem);
     if(s==='AUX' && cm.has(stem+'AL')) return stem+'AL';
     if(s==='EAUX' && cm.has(stem+'EAU')) return stem+'EAU';
-    if(cm.has(stem+'ER')) return stem+'ER';
-    if(cm.has(stem+'IR')) return stem+'IR';
-    if(cm.has(stem+'RE')) return stem+'RE';
-    if(cm.has(stem+'E'))  return stem+'E';
+    if(cm.has(stem+'ER'))  return stem+'ER';
+    if(cm.has(stem+'IR'))  return stem+'IR';
+    if(cm.has(stem+'RE'))  return stem+'RE';
+    if(cm.has(stem+'TRE')) return stem+'TRE';
+    if(cm.has(stem+'E'))   return stem+'E';
     if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
     if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
     if(stem.endsWith('RR')&&stem.length>2){if(cm.has(stem.slice(0,-1)+'IR'))return stem.slice(0,-1)+'IR';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
@@ -717,10 +789,11 @@ function findLemma(w){
     {const r=_xchk(st,cm);if(r)return r;}
   }
 
-  // Participes passés masc. en -I (ABOLI→ABOLIR, ADOUCI→ADOUCIR)
-  if(w.endsWith('I') && w.length > 3){
+  // Participes passés masc. en -I (ABOLI→ABOLIR, AGI→AGIR, FUI→FUIR, NUI→NUIRE)
+  if(w.endsWith('I') && w.length > 2){
     const st = w.slice(0,-1);
-    if(cm.has(st+'IR')) return st+'IR';
+    if(cm.has(st+'IR'))  return st+'IR';
+    if(cm.has(st+'IRE')) return st+'IRE';
   }
 
   // Présent 3s -RE/-TRE/-IR sans désinence (APPREND→APPRENDRE, COMMET→COMMETTRE, MENT→MENTIR)
