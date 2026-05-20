@@ -743,7 +743,6 @@ window.THEMODS_DATA.able = [
   {"label":"INV","words":["INVIVABLE"]},
   {"label":"IR","words":["IRISABLE", "IRRIGABLE", "IRRITABLE"]},
   {"label":"IS","words":["ISOLABLE"]},
-  {"label":"JA","words":["JABLE"]},
   {"label":"JE","words":["JETABLE"]},
   {"label":"JO","words":["JOIGNABLE", "JOUABLE"]},
   {"label":"JU","words":["JUGEABLE", "JURABLE"]},
