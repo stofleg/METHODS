@@ -284,7 +284,9 @@ function _getIrregMap(){
   add('RESOUDRE',['RESOLVAIT','RESOLVAIENT','RESOLVAIS','RESOLVANT','RESOLVE','RESOLVENT',
     'RESOLVES','RESOLVEZ','RESOLVIEZ','RESOLVIONS','RESOLVONS','RESOUTE','RESOUTES']);
 
-  add('ECHOIR',['ECHOIE','ECHOIENT','ECHOYAIT','ECHOYAIENT','ECHOYANT']);
+  add('ECHOIR',['ECHOIE','ECHOIENT','ECHOYAIT','ECHOYAIENT','ECHOYANT','ECHERRAIENT','ECHERRONT']);
+  add('DECHOIR',['DECHOYAIT','DECHOYAIENT','DECHOYAIS','DECHOYANT','DECHOYONS','DECHOYEZ','DECHOYIEZ','DECHOYIONS',
+    'DECHERRAIENT','DECHERRONT','DECHERRAI','DECHERRAIS','DECHERRIONS','DECHERRIEZ','DECHERRONS','DECHUT','DECHUTES']);
 
   add('BRAIRE',['BRAIENT']);
 
@@ -308,6 +310,60 @@ function _getIrregMap(){
 
   add('ENVOYER',['ENVERRAI','ENVERRAS','ENVERRA','ENVERRONS','ENVERREZ','ENVERRONT',
     'ENVERRAIS','ENVERRAIT','ENVERRIONS','ENVERRIEZ','ENVERRAIENT']);
+
+  add('RENVOYER',['RENVERRA','RENVERRAI','RENVERRAS','RENVERRONS','RENVERREZ','RENVERRONT',
+    'RENVERRAIS','RENVERRAIT','RENVERRIONS','RENVERRIEZ','RENVERRAIENT']);
+
+  add('AVOIR',['EU','EUE']);
+
+  add('RIRE',['RI','RIS','RIT','RIONS','RIEZ','RIENT',
+    'RIAIS','RIAIT','RIIONS','RIIEZ','RIAIENT',
+    'RIMES','RITES','RIRENT','RISSE','RIANT']);
+
+  add('VAINCRE',['VAINC','VAINQUONS','VAINQUEZ','VAINQUAIS','VAINQUAIT',
+    'VAINQUIONS','VAINQUIEZ','VAINQUAIENT','VAINQUANT',
+    'VAINQUE','VAINQUES','VAINQUENT',
+    'VAINQUIS','VAINQUIT','VAINQUIMES','VAINQUITES','VAINQUIRENT',
+    'VAINQUISSE','VAINQUISSES','VAINQUISSIONS','VAINQUISSIEZ','VAINQUISSENT']);
+
+  add('ASSEOIR',['ASSIEDS','ASSIED','ASSEYONS','ASSEYEZ',
+    'ASSEYAIS','ASSEYAIT','ASSEYIONS','ASSEYIEZ','ASSEYAIENT',
+    'ASSOYAIS','ASSOYAIT','ASSOYIONS','ASSOYIEZ','ASSOYAIENT','ASSOYONS','ASSOYEZ','ASSOYANT',
+    'ASSEYE','ASSEYES','ASSEYANT',
+    'ASSIERAI','ASSIERAIS','ASSIERIEZ','ASSIERIONS','ASSIERAIENT']);
+
+  add('RASSEOIR',['RASSIEDS','RASSIED','RASSEYONS','RASSEYEZ',
+    'RASSEYAIS','RASSEYAIT','RASSEYIONS','RASSEYIEZ','RASSEYAIENT',
+    'RASSOYAIS','RASSOYAIT','RASSOYIONS','RASSOYIEZ','RASSOYAIENT','RASSOYONS','RASSOYEZ','RASSOYANT',
+    'RASSEYE','RASSEYES','RASSEYENT','RASSEYANT']);
+
+  add('POURVOIR',['POURVOYAIS','POURVOYAIT','POURVOYIONS','POURVOYIEZ','POURVOYAIENT',
+    'POURVOYONS','POURVOYEZ','POURVOYANT']);
+
+  add('SURSOIR',['SURSOYAIS','SURSOYAIT','SURSOYIONS','SURSOYIEZ','SURSOYAIENT',
+    'SURSOYONS','SURSOYEZ','SURSOYANT']);
+
+  add('FUIR',['FUYAIS','FUYAIT','FUYIONS','FUYIEZ','FUYAIENT','FUYONS','FUYEZ','FUYANT']);
+
+  add('ATTRAIRE',['ATTRAYAIS','ATTRAYAIT','ATTRAYIONS','ATTRAYIEZ','ATTRAYAIENT',
+    'ATTRAYONS','ATTRAYEZ']);
+
+  add('EXTRAIRE',['EXTRAYAIS','EXTRAYAIT','EXTRAYIONS','EXTRAYIEZ','EXTRAYAIENT',
+    'EXTRAYONS','EXTRAYEZ','EXTRAYANT']);
+
+  add('BRUIRE',['BRUYAIS','BRUYAIT','BRUYIONS','BRUYIEZ','BRUYAIENT']);
+
+  add('VETIR',['VET','VETE','VETIS','VETIT','VETENT','VETANT']);
+
+  add('GAGWOMAN',['GAGWOMEN','GAGWOMANS']);
+  add('JAZZWOMAN',['JAZZWOMEN','JAZZWOMANS']);
+  add('GIPSY',['GIPSIES']);
+  add('PINZUTU',['PINZUTI']);
+  add('VEVEYSAN',['VEVEYSANNE','VEVEYSANNES']);
+  add('GOUROU',['GOUROUTE','GOUROUTES']);
+  add('LOUPIOTE',['LOUPIOTTE','LOUPIOTTES']);
+  add('BOSCOT',['BOSCOTTE','BOSCOTTES']);
+  add('MAIGRIOT',['MAIGRIOTTE','MAIGRIOTTES']);
 
   add('CONNAITRE',['CONNAIS','CONNAIT',
     'CONNUS','CONNUT','CONNUMES','CONNUTES','CONNURENT',
@@ -414,8 +470,15 @@ function _xchk(stem,cm){
   if(cm.has(stem+'ENDRE'))return stem+'ENDRE';
   // stem + DRE (APPREN+DRE=APPRENDRE, présent 1pl/2pl/3pl)
   if(cm.has(stem+'DRE'))return stem+'DRE';
-  // -NN → -N+DRE (APPRENN→APPRENDRE, présent 3pl)
-  if(stem.endsWith('NN')&&stem.length>2){const c=stem.slice(0,-1)+'DRE';if(cm.has(c))return c;}
+  // -NN → -N+DRE (APPRENN→APPRENDRE) ou -N bare (BONN→BON, PAYSANN→PAYSAN)
+  if(stem.endsWith('NN')&&stem.length>2){
+    const c=stem.slice(0,-1)+'DRE';if(cm.has(c))return c;
+    if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);
+  }
+  // -LL → -L (féminin adj: NULL→NUL, PAREILL→PAREIL, GENTILL→GENTIL)
+  if(stem.endsWith('LL')&&stem.length>2){if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);}
+  // -TT → -T (féminin adj -ET/-OT: SOTT→SOT, MUETT→MUET, CADETT→CADET)
+  if(stem.endsWith('TT')&&stem.length>2){if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);}
   // stem + URE (CONCL+URE=CONCLURE, subj. imp.)
   if(cm.has(stem+'URE'))return stem+'URE';
   // -L → -UDRE (ABSOL→ABSOUDRE, DISSOL→DISSOUDRE)
@@ -426,6 +489,8 @@ function _xchk(stem,cm){
   if(cm.has(stem+'OIR'))return stem+'OIR';
   // stem + AITRE (APPAR+AITRE=APPARAITRE, subj. imp.)
   if(cm.has(stem+'AITRE'))return stem+'AITRE';
+  // -U → -AITRE (passé simple PARAITRE composés: APPARU→APPARAITRE, COMPARU→COMPARAITRE)
+  if(stem.endsWith('U')&&stem.length>2){const c=stem.slice(0,-1)+'AITRE';if(cm.has(c))return c;}
   // -E → bare (INSCRITE→INSCRIT après strip -S)
   if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)))return stem.slice(0,-1);
   return null;
@@ -457,7 +522,7 @@ function findLemma(w){
 
   // Participes passés féminins : -EES/-EE (verbes -ER), -IES/-IE (verbes -IR)
   for(const [sfx,vs] of [['EES',['ER']],['EE',['ER']],['IES',['IR','ER']],['IE',['IR','ER']]]){
-    if(w.endsWith(sfx) && w.length > sfx.length+2){
+    if(w.endsWith(sfx) && w.length > sfx.length+1){
       const st = w.slice(0,-sfx.length);
       for(const v of vs){ if(cm.has(st+v)) return st+v; }
     }
@@ -537,6 +602,7 @@ function findLemma(w){
       if(cm.has(stem+'IR'))   return stem+'IR';
       if(cm.has(stem+'RE'))   return stem+'RE';
       if(cm.has(stem+'ITRE')) return stem+'ITRE'; // CONNAITRE, NAITRE, APPARAITRE…
+      if(cm.has(stem+'IRE'))  return stem+'IRE';  // LUIRE, NUIRE, SUFFIRE (LU→LUIRE)
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
       if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
@@ -576,6 +642,8 @@ function findLemma(w){
     ['IENNES','IEN'],['IENNE','IEN'],
     ['ONNES','ON'],['ONNE','ON'],
     ['ENNES','EN'],['ENNE','EN'],
+    ['LLES','L'],['LLE','L'],
+    ['ANNES','AN'],['ANNE','AN'],
   ]){
     if(w.endsWith(sfx)&&w.length>sfx.length+1){
       const st=w.slice(0,-sfx.length);
@@ -584,11 +652,11 @@ function findLemma(w){
   }
 
   // Présent 1s/3s -ER et futurs -RE (CHANTE→CHANTER, COMMETTRA→COMMETTRE)
-  if(w.endsWith('E') && w.length > 3){
+  if(w.endsWith('E') && w.length > 2){
     const st = w.slice(0,-1);
     if(cm.has(st+'ER'))   return st+'ER';
-    if(cm.has(st+'RE'))   return st+'RE';
     if(cm.has(st))        return st;
+    if(cm.has(st+'RE'))   return st+'RE';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'IR')) return st.slice(0,-1)+'IR';
     if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
@@ -604,12 +672,35 @@ function findLemma(w){
     if(cm.has(st+'IR')) return st+'IR';
     if(cm.has(st+'RE')) return st+'RE';
     if(cm.has(st+'ER')) return st+'ER';
+    {const r=_xchk(st,cm);if(r)return r;}
   }
 
   // Participes passés masc. en -I (ABOLI→ABOLIR, ADOUCI→ADOUCIR)
   if(w.endsWith('I') && w.length > 3){
     const st = w.slice(0,-1);
     if(cm.has(st+'IR')) return st+'IR';
+  }
+
+  // Présent 3s -RE/-TRE/-IR sans désinence (APPREND→APPRENDRE, COMMET→COMMETTRE, MENT→MENTIR)
+  if(w.length > 3){
+    if(cm.has(w+'RE'))  return w+'RE';
+    if(cm.has(w+'TRE')) return w+'TRE';
+    if(cm.has(w+'IR'))  return w+'IR';
+  }
+  // Présent 3s -T → strip T puis essayer (ACCOURT→ACCOURIR, ROMPT→ROMPRE, DISSOUT→DISSOUDRE)
+  if(w.endsWith('T') && w.length > 3){
+    const st = w.slice(0,-1);
+    if(cm.has(st+'RE'))  return st+'RE';
+    if(cm.has(st+'TRE')) return st+'TRE';
+    if(cm.has(st+'DRE')) return st+'DRE';
+    if(cm.has(st+'IR'))  return st+'IR';
+  }
+  // PP en -IS (APPRIS→APPRENDRE, TRANSMIS→TRANSMETTRE, SOUSCRIS→SOUSCRIRE)
+  if(w.endsWith('IS') && w.length > 3){
+    const st = w.slice(0,-2);
+    if(cm.has(st+'ENDRE')) return st+'ENDRE';
+    if(cm.has(st+'ETTRE')) return st+'ETTRE';
+    if(cm.has(st+'IRE'))   return st+'IRE';
   }
 
   return null;

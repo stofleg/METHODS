@@ -285,6 +285,60 @@ function _getIrregMap(){
   add('ENVOYER',['ENVERRAI','ENVERRAS','ENVERRA','ENVERRONS','ENVERREZ','ENVERRONT',
     'ENVERRAIS','ENVERRAIT','ENVERRIONS','ENVERRIEZ','ENVERRAIENT']);
 
+  add('RENVOYER',['RENVERRA','RENVERRAI','RENVERRAS','RENVERRONS','RENVERREZ','RENVERRONT',
+    'RENVERRAIS','RENVERRAIT','RENVERRIONS','RENVERRIEZ','RENVERRAIENT']);
+
+  add('AVOIR',['EU','EUE']);
+
+  add('RIRE',['RI','RIS','RIT','RIONS','RIEZ','RIENT',
+    'RIAIS','RIAIT','RIIONS','RIIEZ','RIAIENT',
+    'RIMES','RITES','RIRENT','RISSE','RIANT']);
+
+  add('VAINCRE',['VAINC','VAINQUONS','VAINQUEZ','VAINQUAIS','VAINQUAIT',
+    'VAINQUIONS','VAINQUIEZ','VAINQUAIENT','VAINQUANT',
+    'VAINQUE','VAINQUES','VAINQUENT',
+    'VAINQUIS','VAINQUIT','VAINQUIMES','VAINQUITES','VAINQUIRENT',
+    'VAINQUISSE','VAINQUISSES','VAINQUISSIONS','VAINQUISSIEZ','VAINQUISSENT']);
+
+  add('ASSEOIR',['ASSIEDS','ASSIED','ASSEYONS','ASSEYEZ',
+    'ASSEYAIS','ASSEYAIT','ASSEYIONS','ASSEYIEZ','ASSEYAIENT',
+    'ASSOYAIS','ASSOYAIT','ASSOYIONS','ASSOYIEZ','ASSOYAIENT','ASSOYONS','ASSOYEZ','ASSOYANT',
+    'ASSEYE','ASSEYES','ASSEYANT',
+    'ASSIERAI','ASSIERAIS','ASSIERIEZ','ASSIERIONS','ASSIERAIENT']);
+
+  add('RASSEOIR',['RASSIEDS','RASSIED','RASSEYONS','RASSEYEZ',
+    'RASSEYAIS','RASSEYAIT','RASSEYIONS','RASSEYIEZ','RASSEYAIENT',
+    'RASSOYAIS','RASSOYAIT','RASSOYIONS','RASSOYIEZ','RASSOYAIENT','RASSOYONS','RASSOYEZ','RASSOYANT',
+    'RASSEYE','RASSEYES','RASSEYENT','RASSEYANT']);
+
+  add('POURVOIR',['POURVOYAIS','POURVOYAIT','POURVOYIONS','POURVOYIEZ','POURVOYAIENT',
+    'POURVOYONS','POURVOYEZ','POURVOYANT']);
+
+  add('SURSOIR',['SURSOYAIS','SURSOYAIT','SURSOYIONS','SURSOYIEZ','SURSOYAIENT',
+    'SURSOYONS','SURSOYEZ','SURSOYANT']);
+
+  add('FUIR',['FUYAIS','FUYAIT','FUYIONS','FUYIEZ','FUYAIENT','FUYONS','FUYEZ','FUYANT']);
+
+  add('ATTRAIRE',['ATTRAYAIS','ATTRAYAIT','ATTRAYIONS','ATTRAYIEZ','ATTRAYAIENT',
+    'ATTRAYONS','ATTRAYEZ']);
+
+  add('EXTRAIRE',['EXTRAYAIS','EXTRAYAIT','EXTRAYIONS','EXTRAYIEZ','EXTRAYAIENT',
+    'EXTRAYONS','EXTRAYEZ','EXTRAYANT']);
+
+  add('BRUIRE',['BRUYAIS','BRUYAIT','BRUYIONS','BRUYIEZ','BRUYAIENT']);
+
+  add('VETIR',['VET','VETE','VETIS','VETIT','VETENT','VETANT']);
+
+  add('GAGWOMAN',['GAGWOMEN','GAGWOMANS']);
+  add('JAZZWOMAN',['JAZZWOMEN','JAZZWOMANS']);
+  add('GIPSY',['GIPSIES']);
+  add('PINZUTU',['PINZUTI']);
+  add('VEVEYSAN',['VEVEYSANNE','VEVEYSANNES']);
+  add('GOUROU',['GOUROUTE','GOUROUTES']);
+  add('LOUPIOTE',['LOUPIOTTE','LOUPIOTTES']);
+  add('BOSCOT',['BOSCOTTE','BOSCOTTES']);
+  add('MAIGRIOT',['MAIGRIOTTE','MAIGRIOTTES']);
+
   add('CONNAITRE',['CONNAIS','CONNAIT',
     'CONNUS','CONNUT','CONNUMES','CONNUTES','CONNURENT',
     'CONNAITRAI','CONNAITRAS','CONNAITRA','CONNAITRONS','CONNAITREZ','CONNAITRONT',
@@ -360,6 +414,9 @@ function _getConjMap(){
   add('TAIRE',['TUMES','TURENT','TUSSE','TUSSIONS','TUT','TUTES']);
   add('TRAIRE',['TRAIE','TRAYAIS','TRAYEZ']);
   add('VALOIR',['VAILLE']);
+  add('ECHOIR',['ECHOIE','ECHOIENT','ECHOYAIT','ECHOYAIENT','ECHOYANT','ECHERRAIENT','ECHERRONT']);
+  add('DECHOIR',['DECHOYAIT','DECHOYAIENT','DECHOYAIS','DECHOYANT','DECHOYONS','DECHOYEZ','DECHOYIEZ','DECHOYIONS',
+    'DECHERRAIENT','DECHERRONT','DECHERRAI','DECHERRAIS','DECHERRIONS','DECHERRIEZ','DECHERRONS','DECHUT','DECHUTES']);
   return _conjMap;
 }
 
@@ -428,12 +485,15 @@ function _xchk(stem,cm){
   if(stem.endsWith('I')&&stem.length>3){const c=stem.slice(0,-2)+'RE';if(cm.has(c))return c;}
   if(cm.has(stem+'ENDRE'))return stem+'ENDRE';
   if(cm.has(stem+'DRE'))return stem+'DRE';
-  if(stem.endsWith('NN')&&stem.length>2){const c=stem.slice(0,-1)+'DRE';if(cm.has(c))return c;}
+  if(stem.endsWith('NN')&&stem.length>2){const c=stem.slice(0,-1)+'DRE';if(cm.has(c))return c;if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);}
   if(cm.has(stem+'URE'))return stem+'URE';
   if(stem.endsWith('L')&&stem.length>2){const c=stem.slice(0,-1)+'UDRE';if(cm.has(c))return c;}
   if(cm.has(stem+'ERIR'))return stem+'ERIR';
   if(cm.has(stem+'OIR'))return stem+'OIR';
   if(cm.has(stem+'AITRE'))return stem+'AITRE';
+  if(stem.endsWith('LL')&&stem.length>2){if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);}
+  if(stem.endsWith('TT')&&stem.length>2){if(cm.has(stem.slice(0,-1)))return stem.slice(0,-1);}
+  if(stem.endsWith('U')&&stem.length>2){const c=stem.slice(0,-1)+'AITRE';if(cm.has(c))return c;}
   if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)))return stem.slice(0,-1);
   return null;
 }
@@ -462,7 +522,7 @@ function findLemma(w){
   }
 
   for(const [sfx,vs] of [['EES',['ER']],['EE',['ER']],['IES',['IR','ER']],['IE',['IR','ER']]]){
-    if(w.endsWith(sfx) && w.length > sfx.length+2){
+    if(w.endsWith(sfx) && w.length > sfx.length+1){
       const st = w.slice(0,-sfx.length);
       for(const v of vs){ if(cm.has(st+v)) return st+v; }
     }
@@ -532,6 +592,7 @@ function findLemma(w){
       if(cm.has(stem+'ER'))   return stem+'ER';
       if(cm.has(stem+'IR'))   return stem+'IR';
       if(cm.has(stem+'RE'))   return stem+'RE';
+      if(cm.has(stem+'IRE'))  return stem+'IRE';
       if(cm.has(stem+'ITRE')) return stem+'ITRE';
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
@@ -569,9 +630,11 @@ function findLemma(w){
     ['RICES','EUR'],['RICE','EUR'],
     ['IVES','IF'],['IVE','IF'],
     ['ELLES','EL'],['ELLE','EL'],
+    ['LLES','L'],['LLE','L'],
     ['IENNES','IEN'],['IENNE','IEN'],
     ['ONNES','ON'],['ONNE','ON'],
     ['ENNES','EN'],['ENNE','EN'],
+    ['ANNES','AN'],['ANNE','AN'],
   ]){
     if(w.endsWith(sfx)&&w.length>sfx.length+1){
       const st=w.slice(0,-sfx.length);
@@ -579,11 +642,11 @@ function findLemma(w){
     }
   }
 
-  if(w.endsWith('E') && w.length > 3){
+  if(w.endsWith('E') && w.length > 2){
     const st = w.slice(0,-1);
     if(cm.has(st+'ER'))   return st+'ER';
-    if(cm.has(st+'RE'))   return st+'RE';
     if(cm.has(st))        return st;
+    if(cm.has(st+'RE'))   return st+'RE';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'IR')) return st.slice(0,-1)+'IR';
     if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
@@ -598,11 +661,31 @@ function findLemma(w){
     if(cm.has(st+'IR')) return st+'IR';
     if(cm.has(st+'RE')) return st+'RE';
     if(cm.has(st+'ER')) return st+'ER';
+    {const r=_xchk(st,cm);if(r)return r;}
   }
 
   if(w.endsWith('I') && w.length > 3){
     const st = w.slice(0,-1);
     if(cm.has(st+'IR')) return st+'IR';
+  }
+
+  if(w.length > 3){
+    if(cm.has(w+'RE'))  return w+'RE';
+    if(cm.has(w+'TRE')) return w+'TRE';
+    if(cm.has(w+'IR'))  return w+'IR';
+  }
+  if(w.endsWith('T') && w.length > 3){
+    const st = w.slice(0,-1);
+    if(cm.has(st+'RE'))  return st+'RE';
+    if(cm.has(st+'TRE')) return st+'TRE';
+    if(cm.has(st+'DRE')) return st+'DRE';
+    if(cm.has(st+'IR'))  return st+'IR';
+  }
+  if(w.endsWith('IS') && w.length > 3){
+    const st = w.slice(0,-2);
+    if(cm.has(st+'ENDRE')) return st+'ENDRE';
+    if(cm.has(st+'ETTRE')) return st+'ETTRE';
+    if(cm.has(st+'IRE'))   return st+'IRE';
   }
 
   return null;
