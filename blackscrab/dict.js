@@ -512,7 +512,7 @@ function findLemma(w){
   }
 
   for(const pfx of _VERB_PREFIXES){
-    if(!w.startsWith(pfx) || w.length <= pfx.length+3) continue;
+    if(!w.startsWith(pfx) || w.length <= pfx.length+2) continue;
     const rest = w.slice(pfx.length);
     if(irr.has(rest)){
       const baseInf = irr.get(rest);
@@ -645,13 +645,13 @@ function findLemma(w){
   if(w.endsWith('E') && w.length > 2){
     const st = w.slice(0,-1);
     if(cm.has(st+'ER'))   return st+'ER';
+    if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
+    if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
+    if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
     if(cm.has(st))        return st;
     if(cm.has(st+'RE'))   return st+'RE';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'IR')) return st.slice(0,-1)+'IR';
-    if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
-    if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
-    if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
     if(st.endsWith('U')&&st.length>2){const su2=st.slice(0,-1);if(cm.has(su2+'IR'))return su2+'IR';if(cm.has(su2+'RE'))return su2+'RE';}
     {const r=_xchk(st,cm);if(r)return r;}
   }
