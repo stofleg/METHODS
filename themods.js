@@ -834,3 +834,29 @@ function initThemods(){
   // Toujours afficher l'accueil quand on entre dans THEMODS
   renderTmHome();
 }
+
+/* ── Synchronisation exclusion depuis l'éditeur admin (recherche.js) ── */
+window.tmNotifyExclusion = function(moduleId, canon, isExcluded){
+  // Mettre à jour le cache _modExcl si déjà chargé
+  if(_modExcl.hasOwnProperty(moduleId)){
+    if(isExcluded) _modExcl[moduleId].add(canon);
+    else _modExcl[moduleId].delete(canon);
+  }
+  // Mettre à jour la session live si le module actif correspond
+  if(!tmSession || tmTheme !== moduleId) return;
+  if(isExcluded){
+    // Reconstruire la liste de mots en retirant le mot exclu, en remappant tmFound
+    const newWords = [], newFound = new Set();
+    tmSession.words.forEach((w, oldIdx) => {
+      if(norm(w) === canon) return;
+      const newIdx = newWords.length;
+      newWords.push(w);
+      if(tmFound.has(oldIdx)) newFound.add(newIdx);
+    });
+    tmSession = {...tmSession, words: newWords};
+    tmFound = newFound;
+    renderTmGame();
+    const ctr = document.getElementById("tm-counter");
+    if(ctr) ctr.textContent = tmFound.size + " / " + tmSession.words.length;
+  }
+};
