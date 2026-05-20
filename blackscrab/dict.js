@@ -355,6 +355,47 @@ function _getIrregMap(){
 
   add('SURSEOIR',['SURSISE']);
 
+  add('EQUIVALOIR',['EQUIVAUX','EQUIVAUT','EQUIVALONS','EQUIVALEZ','EQUIVALENT',
+    'EQUIVALAIS','EQUIVALAIT','EQUIVALIONS','EQUIVALIEZ','EQUIVALAIENT',
+    'EQUIVAUDRAI','EQUIVAUDRAS','EQUIVAUDRA','EQUIVAUDRONS','EQUIVAUDREZ','EQUIVAUDRONT',
+    'EQUIVAUDRAIS','EQUIVAUDRAIT','EQUIVAUDRIONS','EQUIVAUDRIEZ','EQUIVAUDRAIENT',
+    'EQUIVAILLE','EQUIVAILLES','EQUIVAILLENT','EQUIVALANT','EQUIVALU']);
+
+  add('PLAIRE',['PLUMES','PLUTES','PLUSSIEZ','PLUSSENT','PLUSSIONS']);
+
+  add('ASSEOIR',['ASSIERA','ASSIERAS','ASSIERONS','ASSIEREZ','ASSIERONT','ASSIERAIT']);
+  add('RASSEOIR',['RASSIERA','RASSIERAS','RASSIERONS','RASSIEREZ','RASSIERONT','RASSIERAIT']);
+
+  add('DORMIR',['DORT']);
+
+  add('ELIRE',['ELUT','ELUTES','ELURENT','ELUSSIEZ','ELUSSIONS','ELUSSENT']);
+
+  add('EMOUVOIR',['EMUT','EMUTES','EMURENT','EMUSSE','EMUSSIEZ','EMUSSIONS','EMUSSENT']);
+
+  add('REBOIRE',['REBU','REBUE','REBUES']);
+
+  add('ABSOUDRE',['ABSOLUS','ABSOLUT','ABSOLUMES','ABSOLUTES','ABSOLURENT','ABSOLUSSE','ABSOLUSSIONS','ABSOLUSSIEZ','ABSOLUSSENT']);
+
+  add('ACCROITRE',['ACCRUS','ACCRUT','ACCRUMES','ACCRUTES','ACCRURENT','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS']);
+
+  add('DECROITRE',['DECRUS','DECRUT','DECRUMES','DECRUTES','DECRURENT','DECRUSSENT','DECRUSSIEZ','DECRUSSIONS']);
+
+  add('ASSAILLIR',['ASSAILLE','ASSAILLES','ASSAILLENT']);
+  add('DEFAILLIR',['DEFAILLE','DEFAILLES','DEFAILLENT']);
+
+  add('APERCEVOIR',['APERCOIS','APERCOIT','APERCEVONS','APERCEVEZ','APERCOIVENT',
+    'APERCEVAIS','APERCEVAIT','APERCEVIONS','APERCEVIEZ','APERCEVAIENT',
+    'APERCUS','APERCUT','APERCUMES','APERCUTES','APERCURENT',
+    'APERCEVRAI','APERCEVRAIS','APERCEVRA','APERCEVRONS','APERCEVREZ','APERCEVRONT',
+    'APERCEVRAIT','APERCEVRIONS','APERCEVRIEZ','APERCEVRAIENT',
+    'APERCOIVE','APERCOIVES','APERCEVANT','APERCU','APERCUE','APERCUES','APERCUS']);
+
+  add('GRAFF',['GRAFS']);
+
+  add('SUIVRE',['SUIT','SUIVI','SUIVIE','SUIVIES','SUIVIS']);
+
+  add('ACCOURIR',['ACCOURE','ACCOURES','ACCOURUT','ACCOURUIT']);
+
   return _irregMap;
 }
 
@@ -471,7 +512,7 @@ function getNormToE(){
 }
 
 /* ── Préfixes de verbes composés ── */
-const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
+const _VERB_PREFIXES = ['RESSOU','DISCON','CIRCON','APPAR','MAIN','ENTRE','CONTRE','INTER','TRANS','CODE','REDE','SOUS','TRES','SATIS','POUR','PAR','SUR','ABS','SUB','SOU','CON','COM','PRE','PRO','DIS','OB','MES','RE','DE','EN','EM','AD','AB'];
 
 function _xchk(stem,cm){
   if(stem.endsWith('IGN')&&stem.length>3){const c=stem.slice(0,-3)+'INDRE';if(cm.has(c))return c;}
@@ -553,7 +594,7 @@ function findLemma(w){
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
-    'AIENT','ERENT','IRENT','ATES','AMES','AT','AIT','AIS','IONS','IEZ',
+    'AIENT','ERENT','IRENT','ATES','AMES','UMES','UTES','AT','AIT','AIS','IONS','IEZ',
     'ANT','ONS','ENT','EZ','IT','AI','AS','A','ES','IMES','ITES',
     'URENT',
   ]);
@@ -562,7 +603,7 @@ function findLemma(w){
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
     'AIENT','ANT','ERENT','IRENT','ERAIENT','ERIONS','ERIEZ','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
-    'ATES','AMES','AT','IMES','ITES',
+    'ATES','AMES','UMES','UTES','AT','IMES','ITES',
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
     'IT','EAUX','AUX',
     'AS','A','ERA','ERAS','ES','S','X',
@@ -589,11 +630,12 @@ function findLemma(w){
       if(cm.has(stem+'E'))  return stem+'E';
     }
     if(VERB_SFXS.has(s)){
-      if(cm.has(stem+'ER'))   return stem+'ER';
-      if(cm.has(stem+'IR'))   return stem+'IR';
-      if(cm.has(stem+'RE'))   return stem+'RE';
-      if(cm.has(stem+'IRE'))  return stem+'IRE';
-      if(cm.has(stem+'ITRE')) return stem+'ITRE';
+      if(cm.has(stem+'ER'))    return stem+'ER';
+      if(cm.has(stem+'IR'))    return stem+'IR';
+      if(cm.has(stem+'RE'))    return stem+'RE';
+      if(cm.has(stem+'ETTRE')) return stem+'ETTRE';
+      if(cm.has(stem+'IRE'))   return stem+'IRE';
+      if(cm.has(stem+'ITRE'))  return stem+'ITRE';
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
       if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
@@ -680,12 +722,25 @@ function findLemma(w){
     if(cm.has(st+'TRE')) return st+'TRE';
     if(cm.has(st+'DRE')) return st+'DRE';
     if(cm.has(st+'IR'))  return st+'IR';
+    {const r=_xchk(st,cm);if(r)return r;}
   }
   if(w.endsWith('IS') && w.length > 3){
     const st = w.slice(0,-2);
     if(cm.has(st+'ENDRE')) return st+'ENDRE';
     if(cm.has(st+'ETTRE')) return st+'ETTRE';
     if(cm.has(st+'IRE'))   return st+'IRE';
+  }
+  if(w.endsWith('ISES') && w.length > 5){
+    const st = w.slice(0,-4);
+    if(cm.has(st+'ETTRE')) return st+'ETTRE';
+    if(cm.has(st+'IRE'))   return st+'IRE';
+    if(cm.has(st+'ENDRE')) return st+'ENDRE';
+  }
+  if(w.endsWith('ISE') && w.length > 4){
+    const st = w.slice(0,-3);
+    if(cm.has(st+'ETTRE')) return st+'ETTRE';
+    if(cm.has(st+'IRE'))   return st+'IRE';
+    if(cm.has(st+'ENDRE')) return st+'ENDRE';
   }
 
   return null;
