@@ -461,7 +461,7 @@ function findLemma(w){
 
   if(w.endsWith('S') && w.length>2){ const bare=w.slice(0,-1); if(cm.has(bare)) return bare; }
 
-  const ER_FUTURE = new Set(['ERAI','ERAS','ERA','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERENT']);
+  const ER_FUTURE = new Set(['ERAI','ERAS','ERA','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERENT','ERIONS','ERIEZ','ERAIENT']);
   const VERB_SFXS = new Set([
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
@@ -473,7 +473,7 @@ function findLemma(w){
     'ASSENT','ASSIEZ','ASSIONS','ASSES','ASSE',
     'USSENT','USSIEZ','USSIONS','USSES','USSE',
     'ISSAIENT','ISSAIT','ISSAIS','ISSANT','ISSONS','ISSEZ','ISSENT','ISSIEZ','ISSIONS','ISSES','ISSE',
-    'AIENT','ANT','ERENT','IRENT','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
+    'AIENT','ANT','ERENT','IRENT','ERAIENT','ERIONS','ERIEZ','ERONT','EREZ','ERONS','ERAIT','ERAIS','ERAI',
     'ATES','AMES','AT','IMES','ITES',
     'AIT','AIS','IONS','IEZ','ONS','ONT','ENT','EZ','AI',
     'IT','EAUX','AUX',
@@ -486,13 +486,17 @@ function findLemma(w){
       if(cm.has(stem+'ER')) return stem+'ER';
       if(cm.has(stem+'IR')) return stem+'IR';
       if(cm.has(stem+'RE')) return stem+'RE';
-      if(cm.has(stem+'E'))  return stem+'E';
       if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
       if(stem.endsWith('AIE')&&cm.has(stem.slice(0,-3)+'AYER')) return stem.slice(0,-3)+'AYER';
       if(stem.endsWith('UIE')&&cm.has(stem.slice(0,-3)+'UYER')) return stem.slice(0,-3)+'UYER';
+      if(stem.endsWith('OI')&&cm.has(stem.slice(0,-2)+'OYER')) return stem.slice(0,-2)+'OYER';
+      if(stem.endsWith('AI')&&cm.has(stem.slice(0,-2)+'AYER')) return stem.slice(0,-2)+'AYER';
+      if(stem.endsWith('UI')&&cm.has(stem.slice(0,-2)+'UYER')) return stem.slice(0,-2)+'UYER';
       if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'RE')) return stem.slice(0,-1)+'RE';
+      if(cm.has(stem+'E'))  return stem+'E';
     }
     if(VERB_SFXS.has(s)){
       if(cm.has(stem+'ER'))   return stem+'ER';
@@ -508,7 +512,10 @@ function findLemma(w){
       if(stem.endsWith('AI')&&cm.has(stem.slice(0,-2)+'AYER')) return stem.slice(0,-2)+'AYER';
       if(stem.endsWith('UI')&&cm.has(stem.slice(0,-2)+'UYER')) return stem.slice(0,-2)+'UYER';
       if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
       if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
+      if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
+      if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);
@@ -518,6 +525,8 @@ function findLemma(w){
     if(cm.has(stem+'IR')) return stem+'IR';
     if(cm.has(stem+'RE')) return stem+'RE';
     if(cm.has(stem+'E'))  return stem+'E';
+    if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
+    if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
   }
 
   // Formes féminines
@@ -529,6 +538,7 @@ function findLemma(w){
     ['ELLES','EL'],['ELLE','EL'],
     ['IENNES','IEN'],['IENNE','IEN'],
     ['ONNES','ON'],['ONNE','ON'],
+    ['ENNES','EN'],['ENNE','EN'],
   ]){
     if(w.endsWith(sfx)&&w.length>sfx.length+1){
       const st=w.slice(0,-sfx.length);
@@ -542,9 +552,11 @@ function findLemma(w){
     if(cm.has(st+'RE'))   return st+'RE';
     if(cm.has(st))        return st;
     if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'ER')) return st.slice(0,-1)+'ER';
+    if((st.endsWith('LL')||st.endsWith('TT'))&&cm.has(st.slice(0,-1)+'IR')) return st.slice(0,-1)+'IR';
     if(st.endsWith('OI')&&cm.has(st.slice(0,-2)+'OYER')) return st.slice(0,-2)+'OYER';
     if(st.endsWith('AI')&&cm.has(st.slice(0,-2)+'AYER')) return st.slice(0,-2)+'AYER';
     if(st.endsWith('UI')&&cm.has(st.slice(0,-2)+'UYER')) return st.slice(0,-2)+'UYER';
+    if(st.endsWith('U')&&st.length>2){const su2=st.slice(0,-1);if(cm.has(su2+'IR'))return su2+'IR';if(cm.has(su2+'RE'))return su2+'RE';}
   }
 
   if(w.endsWith('U') && w.length > 3){
