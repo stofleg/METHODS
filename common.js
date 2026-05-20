@@ -320,6 +320,230 @@ function _getIrregMap(){
 
   add('SURSEOIR',['SURSISE']);
 
+  add('EQUIVALOIR',['EQUIVAUX','EQUIVAUT','EQUIVALONS','EQUIVALEZ','EQUIVALENT',
+    'EQUIVALAIS','EQUIVALAIT','EQUIVALIONS','EQUIVALIEZ','EQUIVALAIENT',
+    'EQUIVAUDRAI','EQUIVAUDRAS','EQUIVAUDRA','EQUIVAUDRONS','EQUIVAUDREZ','EQUIVAUDRONT',
+    'EQUIVAUDRAIS','EQUIVAUDRAIT','EQUIVAUDRIONS','EQUIVAUDRIEZ','EQUIVAUDRAIENT',
+    'EQUIVAILLE','EQUIVAILLES','EQUIVAILLENT','EQUIVALANT','EQUIVALU']);
+
+  add('PLAIRE',['PLUMES','PLUTES','PLUSSIEZ','PLUSSENT','PLUSSIONS']);
+
+  add('ASSEOIR',['ASSIERA','ASSIERAS','ASSIERONS','ASSIEREZ','ASSIERONT','ASSIERAIT']);
+  add('RASSEOIR',['RASSIERA','RASSIERAS','RASSIERONS','RASSIEREZ','RASSIERONT','RASSIERAIT']);
+
+  add('DORMIR',['DORT']);
+
+  add('ELIRE',['ELUT','ELUTES','ELURENT','ELUSSIEZ','ELUSSIONS','ELUSSENT']);
+
+  add('EMOUVOIR',['EMUT','EMUTES','EMURENT','EMUSSE','EMUSSIEZ','EMUSSIONS','EMUSSENT']);
+
+  add('REBOIRE',['REBU','REBUE','REBUES']);
+
+  add('ABSOUDRE',['ABSOLUS','ABSOLUT','ABSOLUMES','ABSOLUTES','ABSOLURENT','ABSOLUSSE','ABSOLUSSIONS','ABSOLUSSIEZ','ABSOLUSSENT']);
+
+  add('ACCROITRE',['ACCRUS','ACCRUT','ACCRUMES','ACCRUTES','ACCRURENT','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS']);
+
+  add('DECROITRE',['DECRUS','DECRUT','DECRUMES','DECRUTES','DECRURENT','DECRUSSENT','DECRUSSIEZ','DECRUSSIONS']);
+
+  add('ASSAILLIR',['ASSAILLE','ASSAILLES','ASSAILLENT']);
+  add('DEFAILLIR',['DEFAILLE','DEFAILLES','DEFAILLENT']);
+
+  add('APERCEVOIR',['APERCOIS','APERCOIT','APERCEVONS','APERCEVEZ','APERCOIVENT',
+    'APERCEVAIS','APERCEVAIT','APERCEVIONS','APERCEVIEZ','APERCEVAIENT',
+    'APERCUS','APERCUT','APERCUMES','APERCUTES','APERCURENT',
+    'APERCEVRAI','APERCEVRAIS','APERCEVRA','APERCEVRONS','APERCEVREZ','APERCEVRONT',
+    'APERCEVRAIT','APERCEVRIONS','APERCEVRIEZ','APERCEVRAIENT',
+    'APERCOIVE','APERCOIVES','APERCEVANT','APERCU','APERCUE','APERCUES','APERCUS']);
+
+  add('GRAFF',['GRAFS']);
+
+  add('SUIVRE',['SUIT','SUIVI','SUIVIE','SUIVIES','SUIVIS']);
+
+  add('ACCOURIR',['ACCOURE','ACCOURES','ACCOURUT','ACCOURUIT']);
+
+  // PARAITRE passé simple → fix faux positifs PARUT→PARURE et COMPARUMES→COMPARER
+  add('PARAITRE',['PARUS','PARUT','PARUMES','PARUTES','PARURENT','PARUSSENT','PARUSSIEZ','PARUSSIONS']);
+  add('APPARAITRE',['APPARU','APPARUS','APPARUT','APPARUMES','APPARUTES','APPARURENT','APPARUSSENT','APPARUSSIEZ']);
+
+  // PLAIRE passé simple complets (PLU/PLUS/PLUT → COMPLAIRE/DEPLAIRE via boucle préfixes)
+  add('PLAIRE',['PLU','PLUS','PLUT']);
+
+  // CONCEVOIR / DECEVOIR conjugaison complète
+  add('CONCEVOIR',['CONCOIS','CONCOIT','CONCEVONS','CONCEVEZ','CONCOIVENT',
+    'CONCEVAIS','CONCEVAIT','CONCEVIONS','CONCEVIEZ','CONCEVAIENT',
+    'CONCUS','CONCUT','CONCUMES','CONCUTES','CONCURENT',
+    'CONCOIVE','CONCOIVES','CONCEVANT','CONCU','CONCUE','CONCUES']);
+  add('DECEVOIR',['DECOIS','DECOIT','DECEVONS','DECEVEZ','DECOIVENT',
+    'DECEVAIS','DECEVAIT','DECEVIONS','DECEVIEZ','DECEVAIENT',
+    'DECUS','DECUT','DECUMES','DECUTES','DECURENT',
+    'DECOIVE','DECOIVES','DECEVANT','DECU','DECUE','DECUES']);
+
+  // COUVRIR/OUVRIR/OFFRIR/SOUFFRIR pp → DECOUVRIR/RECOUVRIR/ENTROUVERT via boucle préfixes
+  add('COUVRIR',['COUVERT','COUVERTE','COUVERTES','COUVERTS']);
+  add('OUVRIR',['OUVERT','OUVERTE','OUVERTES','OUVERTS']);
+  add('OFFRIR',['OFFERT','OFFERTE','OFFERTES','OFFERTS']);
+  add('SOUFFRIR',['SOUFFERT','SOUFFERTE','SOUFFERTES','SOUFFERTS']);
+
+  // DISSOUDRE : formes en DISSOLV-
+  add('DISSOUDRE',['DISSOLVE','DISSOLVES','DISSOLVENT',
+    'DISSOLVAIS','DISSOLVAIT','DISSOLVIONS','DISSOLVIEZ','DISSOLVAIENT',
+    'DISSOLVONS','DISSOLVEZ','DISSOLVANT','DISSOUTE','DISSOUTES','DISSOUTS']);
+
+  // DORMIR présent → ENDORMIR/RENDORMIR via boucle préfixes
+  add('DORMIR',['DORS','DORME','DORMES','DORMENT']);
+  add('RENDORMIR',['RENDORS','RENDORT','RENDORME','RENDORMES','RENDORMENT']);
+
+  // RELIRE/ELIRE pp (RELU→RELIRE, ELU→RE+ELIRE=REELIRE)
+  add('RELIRE',['RELU','RELUE','RELUES','RELUS']);
+  add('ELIRE',['ELU','ELUE','ELUES','ELUS']);
+
+  // DEVOIR/POUVOIR subjonctif imparfait manquants
+  add('DEVOIR',['DUSSENT','DUSSES','DUSSIEZ','DUSSIONS']);
+  add('POUVOIR',['PUSSENT','PUSSES','PUSSIEZ','PUSSIONS']);
+
+  // VIVRE/VOULOIR/EQUIVALOIR pp féminins
+  add('VIVRE',['VECU','VECUE','VECUES','VECUS']);
+  add('VOULOIR',['VOULUE','VOULUES']);
+  add('EQUIVALOIR',['EQUIVALUE','EQUIVALUES','EQUIVALUS']);
+
+  // APERCEVOIR subjonctif imparfait manquants
+  add('APERCEVOIR',['APERCUSSE','APERCUSSES','APERCUSSENT','APERCUSSIONS','APERCUSSIEZ']);
+
+  // ACQUERIR présent + composés (CONQUERIR/REQUERIR/ENQUERIR explicites car pas de décomposition directe)
+  add('ACQUERIR',['ACQUIERS','ACQUIERT','ACQUIERENT','ACQUIERE','ACQUIERES',
+    'ACQUIT','ACQUIRENT']);
+  add('CONQUERIR',['CONQUIERS','CONQUIERT','CONQUIERENT','CONQUIERE','CONQUIERES',
+    'CONQUIT','CONQUIRENT']);
+  add('REQUERIR',['REQUIERS','REQUIERT','REQUIERENT','REQUIERE','REQUIERES',
+    'REQUIT','REQUIRENT']);
+  add('ENQUERIR',['ENQUIERS','ENQUIERT','ENQUIERENT','ENQUIERE','ENQUIERES',
+    'ENQUIT','ENQUIRENT']);
+
+  // SERVIR/SENTIR/PARTIR présent → verbes composés via boucle préfixes
+  add('SERVIR',['SERS','SERT','SERVE','SERVES','SERVENT']);
+  add('SENTIR',['SENS','SENT','SENTE','SENTES','SENTENT']);
+  add('PARTIR',['PARS','PART','PARTE','PARTES','PARTENT']);
+  add('RESSENTIR',['RESSENS','RESSENT','RESSENTE','RESSENTENT']);
+
+  // REMOUDRE/EMOUDRE pp féminins
+  add('REMOUDRE',['REMOULU','REMOULUE','REMOULUES','REMOULUS']);
+  add('EMOUDRE',['EMOULU','EMOULUE','EMOULUES','EMOULUS']);
+
+  // COUDRE passé simple manquants
+  add('COUDRE',['COUSIS','COUSIT','COUSITES']);
+
+  // DISSOUDRE passé simple → AUTODISSOUDRE via AUTO prefix compound
+  add('DISSOUDRE',['DISSOLUS','DISSOLUT','DISSOLUMES','DISSOLUTES','DISSOLURENT',
+    'DISSOLUSE','DISSOLUSES','DISSOLUSIONS','DISSOLUSIEZ','DISSOLUSSENT']);
+
+  // PLAIRE subj impf manquant (COMPLUSSES/DEPLUSSES via boucle préfixes)
+  add('PLAIRE',['PLUSSES']);
+
+  // LIRE pp fém/plur
+  add('LIRE',['LUE','LUES','LUS']);
+
+  // VALOIR pp (VALUE→VALOIR, PREVALUE/REVALUE via boucle préfixes)
+  add('VALOIR',['VALU','VALUE','VALUES','VALUS']);
+
+  // AVOIR pp fém plur
+  add('AVOIR',['EUES']);
+
+  // OINDRE passé simple manquant
+  add('OINDRE',['OIGNIS','OIGNIT','OIGNIMES','OIGNITES','OIGNIRENT']);
+
+  // ACCROITRE subj impf manquant
+  add('ACCROITRE',['ACCRUSSE','ACCRUSSES','ACCRUSSENT','ACCRUSSIEZ','ACCRUSSIONS']);
+
+  // ASSEOIR 3p présent manquant
+  add('ASSEOIR',['ASSEYENT']);
+
+  // PERCEVOIR conjugaison complète (ENTRAPERCEVOIR via ENTRA prefix compound)
+  add('PERCEVOIR',['PERCOIS','PERCOIT','PERCEVONS','PERCEVEZ','PERCOIVENT',
+    'PERCEVAIS','PERCEVAIT','PERCEVIONS','PERCEVIEZ','PERCEVAIENT',
+    'PERCU','PERCUE','PERCUES','PERCUS',
+    'PERCUSSE','PERCUSSES','PERCUSSENT','PERCUSSIEZ','PERCUSSIONS',
+    'PERCUTES','PERCOIVE','PERCOIVES','PERCEVANT']);
+
+  // CONCEVOIR subj imparfait manquant (PRECONCEVOIR via PRE prefix compound)
+  add('CONCEVOIR',['CONCUSSE','CONCUSSES','CONCUSSENT','CONCUSSIEZ','CONCUSSIONS']);
+
+  // EQUIVALOIR passé simple manquant
+  add('EQUIVALOIR',['EQUIVALUT','EQUIVALUS']);
+
+  // SECOURIR conjugaison partielle
+  add('SECOURIR',['SECOURUS','SECOURUT','SECOURUMES','SECOURUTES','SECOURURENT']);
+
+  // ECHOIR passé simple
+  add('ECHOIR',['ECHUT','ECHUMES','ECHUTES','ECHURENT']);
+
+  // POURVOIT → POURVOIR (passé simple)
+  add('POURVOIR',['POURVUT','POURVUMES','POURVUTES','POURVURENT']);
+
+  // REPLAIRE (RE+PLAIRE) passé simple via irr_map directs
+  add('PLAIRE',['REPLURENT']);
+
+  // VOIR passé simple 1s/2s (ENTREVIS via ENTRE+VIS compound)
+  add('VOIR',['VIS','VIT']);
+
+  // RESOUDRE passé simple
+  add('RESOUDRE',['RESOLUS','RESOLUT','RESOLUMES','RESOLUTES','RESOLURENT']);
+
+  // POURVOIR pp fém → REPOURVUE etc. via RE compound
+  add('POURVOIR',['POURVUE','POURVUES','POURVUS']);
+
+  // COUDRE pp → RECOUSU etc. via RE compound
+  add('COUDRE',['COUSU','COUSUE','COUSUES','COUSUS']);
+
+  // ENQUERIR/CONQUERIR pp → composés via boucle préfixes
+  add('ENQUERIR',['ENQUIS','ENQUISE','ENQUISES']);
+  add('CONQUERIR',['CONQUIS','CONQUISE','CONQUISES']);
+
+  // PERCEVOIR passé simple 3pl (ENTRAPERCEVOIR via ENTRA prefix)
+  add('PERCEVOIR',['PERCURENT']);
+
+  // DECROITRE pp masc; EMOUDRE passé simple 3sg
+  add('DECROITRE',['DECRU']);
+  add('EMOUDRE',['EMOULUT']);
+
+  // PROMOUVOIR présent 3pl et subj manquants
+  add('PROMOUVOIR',['PROMEUVENT','PROMEUVES']);
+
+  // RESSORTIR présent 1s/2s (non décomposable par boucle préfixes)
+  add('RESSORTIR',['RESSORS','RESSORT']);
+
+  // ROUVRIR/ENTROUVRIR pp (préfixes ROU-/ENTR- non standard)
+  add('ROUVRIR',['ROUVERT','ROUVERTE','ROUVERTES','ROUVERTS']);
+  add('ENTROUVRIR',['ENTROUVERT','ENTROUVERTE','ENTROUVERTES','ENTROUVERTS']);
+
+  // PRESSENTIR présent 1s/2s (PRES+SENTIR non décomposable)
+  add('PRESSENTIR',['PRESSENS','PRESSENTE']);
+
+  // POLICEWOMAN pluriel anglais
+  add('POLICEWOMAN',['POLICEWOMEN']);
+
+  // POURSUIVRE présent 1s/2s (POUR+SUIS→ETRE incorrect)
+  add('POURSUIVRE',['POURSUIS']);
+
+  // RECROITRE passé simple
+  add('RECROITRE',['RECRUT','RECRUS']);
+
+  // DECHOIR futur manquant
+  add('DECHOIR',['DECHERREZ','DECHERRONT','DECHERRAS','DECHERRONS']);
+
+  // Féminins d'adjectifs à double consonne
+  add('BAS',['BASSE','BASSES']);
+  add('SURGRAS',['SURGRASSE','SURGRASSES']);
+
+  // Féminins en -ERESSE
+  add('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES']);
+  add('COACQUEREUR',['COACQUERESSE','COACQUERESSES']);
+
+  // GRAF/GRAFF synonymes, SERTAO sans diacritique, SERINGUEIRA féminin, CONTREFICHER pp, REPLEUVOIR
+  add('GRAF',['GRAFF','GRAFS']);
+  add('SERINGUEIRO',['SERINGUEIRA','SERINGUEIRAS']);
+  add('CONTREFICHE',['CONTREFICHER','CONTREFICHU','CONTREFICHUE','CONTREFICHUES','CONTREFICHUS']);
+  add('REPLEUVOIR',['REPLUSSENT','REPLUT']);
+
   return _irregMap;
 }
 
@@ -453,9 +677,27 @@ function findLemma(w){
       if(cm.has(stem+'E'))  return stem+'E';
     }
     if(VERB_SFXS.has(s)){
-      if(cm.has(stem+'ER')) return stem+'ER';
-      if(cm.has(stem+'IR')) return stem+'IR';
-      if(cm.has(stem+'RE')) return stem+'RE';
+      if(cm.has(stem+'ER'))    return stem+'ER';
+      if(cm.has(stem+'IR'))    return stem+'IR';
+      if(cm.has(stem+'RE'))    return stem+'RE';
+      if(cm.has(stem+'ETTRE')) return stem+'ETTRE'; // METTRE composés (REEM→REEMETTRE)
+      if(cm.has(stem+'ITRE'))  return stem+'ITRE';  // CONNAITRE, NAITRE, APPARAITRE…
+      if(cm.has(stem+'AYER'))  return stem+'AYER';  // FRAYER (FRAIENT → FR → FRAYER, not FRIRE)
+      if(cm.has(stem+'IRE'))   return stem+'IRE';   // LUIRE, NUIRE, SUFFIRE (LU→LUIRE)
+      if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
+      if(stem.endsWith('OIE')&&cm.has(stem.slice(0,-3)+'OYER')) return stem.slice(0,-3)+'OYER';
+      if(stem.endsWith('AIE')&&cm.has(stem.slice(0,-3)+'AYER')) return stem.slice(0,-3)+'AYER';
+      if(stem.endsWith('UIE')&&cm.has(stem.slice(0,-3)+'UYER')) return stem.slice(0,-3)+'UYER';
+      if(stem.endsWith('OI')&&cm.has(stem.slice(0,-2)+'OYER')) return stem.slice(0,-2)+'OYER';
+      if(stem.endsWith('AI')&&cm.has(stem.slice(0,-2)+'AYER')) return stem.slice(0,-2)+'AYER';
+      if(stem.endsWith('UI')&&cm.has(stem.slice(0,-2)+'UYER')) return stem.slice(0,-2)+'UYER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
+      if((stem.endsWith('LL')||stem.endsWith('TT'))&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
+      if(stem.endsWith('RR')&&cm.has(stem.slice(0,-1)+'IR')) return stem.slice(0,-1)+'IR';
+      if(stem.endsWith('U')&&stem.length>2){const su=stem.slice(0,-1);if(cm.has(su+'IR'))return su+'IR';if(cm.has(su+'RE'))return su+'RE';}
+      if(stem.endsWith('I')&&stem.length>2){if(cm.has(stem+'R'))return stem+'R';if(cm.has(stem.slice(0,-1)+'RE'))return stem.slice(0,-1)+'RE';}
+      {const r=_xchk(stem,cm);if(r)return r;}
     }
     if(cm.has(stem)) return stem;
     if(im.has(stem)) return im.get(stem);

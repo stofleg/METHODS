@@ -450,7 +450,7 @@ window.THEMODS_DATA.vi = [
   {"label":"ER","words":["ERRER"]},
   {"label":"ET","words":["ÉTERNUER", "ÉTINCELER", "ÊTRE"]},
   {"label":"EX","words":["EXCELLER", "EXCIPER", "EXISTER", "EXULTER"]},
-  {"label":"FA","words":["FAIBLIR", "FASEILLER", "FASEYER"]},
+  {"label":"FA","words":["FAIBLIR", "FALLOIR", "FASEILLER", "FASEYER"]},
   {"label":"FE","words":["FEULER"]},
   {"label":"FI","words":["FIENTER", "FINASSER"]},
   {"label":"FL","words":["FLAGEOLER", "FLAMBOYER", "FLANCHER", "FLÂNER", "FLEURETER", "FLIRTER", "FLOCONNER", "FLOCULER", "FLUCTUER", "FLUER"]},
