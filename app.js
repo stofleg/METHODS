@@ -3,6 +3,9 @@
    APP.JS — Orchestrateur
 ══════════════════════════════════════════ */
 
+/* ── Sync au retour au premier plan ── */
+let _lastSync = 0;
+
 /* ── Settings ── */
 const LS_SETTINGS = "METHODS_SETTINGS_V1";
 let settings = {showAbc:true,showDef:true,showLen:true,chronoEnabled:true,chronoDur:10};
@@ -127,8 +130,10 @@ function initAuth(){
 /* ── Après login ── */
 async function afterLogin(){
   // Charger l'état local (sync) puis afficher immédiatement — pas d'attente réseau
+  _lastSync = Date.now();
   loadThemodsState().catch(()=>{});
   loadEntreModsState().catch(()=>{});
+  if(navigator.storage?.persist) navigator.storage.persist().catch(()=>{});
   ["tm-user-chip","em-user-chip"].forEach(id=>{
     const el=document.getElementById(id);
     if(el) el.textContent=currentUser.pseudo;
@@ -229,6 +234,15 @@ async function start(){
   initSelect();
   initNav();
   initSettingsUI();
+
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState !== 'visible') return;
+    if(!currentUser) return;
+    if(Date.now() - _lastSync < 30000) return;
+    _lastSync = Date.now();
+    loadThemodsState().catch(()=>{});
+    loadEntreModsState().catch(()=>{});
+  });
 
   const saved=loadSession();
   if(saved?.pseudo){

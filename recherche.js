@@ -138,6 +138,9 @@ async function rechToggleExclusion(canon, moduleId, label, btn){
     fbSet("rech_modexcl", moduleId, {words:[...modWords]})
   ]).catch(()=>{});
 
+  // Synchroniser la session live THEMODS si le module est actif
+  window.tmNotifyExclusion?.(moduleId, canon, excl);
+
   btn.disabled = false;
 }
 

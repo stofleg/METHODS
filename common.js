@@ -599,6 +599,12 @@ function _getIrregMap(){
   add('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES']);
   add('COACQUEREUR',['COACQUERESSE','COACQUERESSES']);
 
+  // GRAF/GRAFF synonymes, SERTAO sans diacritique, SERINGUEIRA féminin, CONTREFICHER pp, REPLEUVOIR
+  add('GRAF',['GRAFF','GRAFS']);
+  add('SERINGUEIRO',['SERINGUEIRA','SERINGUEIRAS']);
+  add('CONTREFICHE',['CONTREFICHER','CONTREFICHU','CONTREFICHUE','CONTREFICHUES','CONTREFICHUS']);
+  add('REPLEUVOIR',['REPLUSSENT','REPLUT']);
+
   return _irregMap;
 }
 
@@ -821,6 +827,7 @@ function findLemma(w){
       if(cm.has(stem+'RE'))    return stem+'RE';
       if(cm.has(stem+'ETTRE')) return stem+'ETTRE'; // METTRE composés (REEM→REEMETTRE)
       if(cm.has(stem+'ITRE'))  return stem+'ITRE';  // CONNAITRE, NAITRE, APPARAITRE…
+      if(cm.has(stem+'AYER'))  return stem+'AYER';  // FRAYER (FRAIENT → FR → FRAYER, not FRIRE)
       if(cm.has(stem+'IRE'))   return stem+'IRE';   // LUIRE, NUIRE, SUFFIRE (LU→LUIRE)
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';
@@ -1044,7 +1051,10 @@ async function fbSet(col, id, obj){
     const r = await fetch(`${FB_BASE}/${col}/${id}`, {
       method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(toFs(obj))
     });
-    return r.ok ? {ok:true} : {ok:false, err:"error"};
+    if(r.ok) return {ok:true};
+    const body = await r.json().catch(()=>null);
+    console.error(`[fbSet] ${col}/${id} → ${r.status}`, body?.error?.message||body||'');
+    return {ok:false, err:"error"};
   }catch{ return {ok:false, err:"network"}; }
 }
 
@@ -1220,22 +1230,22 @@ function openDef(canon, displayWord, defText, flechie){
     if(conjM.has(canon) && defText===undefined){
       const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
       const _CONJ=/-->\s+\S+\s+\d{2,}\./;
-      const real=allIdxs.filter(i=>{const f=F[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      const real=allIdxs.filter(i=>{const f=getNormToF()[C?.[i]]||'';return _POS.test(f)||!_CONJ.test(f);});
       if(real.length>0) allIdxs=real;
       else{ openDef(conjM.get(canon)); return; }
     }
   }
   const _CP = /^-->\s+([A-Z]+)\s+\d+\./;
   // Prefer non-redirect entry for title (dual-nature words like FEUTRANT: adj FEUTRANT,E over participle redirect)
-  const titleIdx = allIdxs.find(i => !_CP.test(F?.[i]||'')) ?? (allIdxs[0] ?? -1);
-  const rawDisplay = (displayWord || (titleIdx>=0 ? E[titleIdx] : canon)).replace(/\*/g,"").trim();
+  const titleIdx = allIdxs.find(i => !_CP.test(getNormToF()[C?.[i]]||'')) ?? (allIdxs[0] ?? -1);
+  const rawDisplay = (displayWord || (titleIdx>=0 ? (getNormToE()[C?.[titleIdx]]||C?.[titleIdx]) : canon)).replace(/\*/g,"").trim();
   const title = rawDisplay.split(",")[0].trim(); // base form, pour les liens externes
 
   // Build list of {label, entryLabel, text} for each definition to display.
   const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
     ? [{label:null, entryLabel:null, text:_cf(defText)}]
-    : allIdxs.map(i=>{ const f=_cf(F?.[i]||''); const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], entryLabel:null, text:ci!==undefined?_cf(F?.[ci]||''):''}; } const el=E?.[i]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    : allIdxs.map(i=>{ const f=_cf(getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
@@ -1299,8 +1309,8 @@ function openDef(canon, displayWord, defText, flechie){
 
   // Section forme fléchie : soit redirect depuis conjugaison, soit entrée avec virgule (ex: PERLANT, E)
   let flechieToShow = flechie || null;
-  if(!flechieToShow && titleIdx >= 0 && E?.[titleIdx]?.includes(',')){
-    const resolved = resolveInflectedCanon(canon, E[titleIdx].split(',')[1]);
+  if(!flechieToShow && titleIdx >= 0 && getNormToE()[C?.[titleIdx]]?.includes(',')){
+    const resolved = resolveInflectedCanon(canon, getNormToE()[C?.[titleIdx]].split(',')[1]);
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
@@ -1456,10 +1466,10 @@ function _getWantsSlashSet(){
   }
   for(const [canon,idxs] of byCanon){
     if(canon.endsWith('MENT')) continue;
-    if(idxs.some(i=>(E[i]||'').includes('/'))) continue;
+    if(idxs.some(i=>(getNormToE()[C[i]]||'').includes('/'))) continue;
     let hasInvar=false, hasVar=false;
     for(const i of idxs){
-      const f=F[i]||'';
+      const f=getNormToF()[C[i]]||'';
       if(_INVAR.test(f)) hasInvar=true;
       if(_VAR.test(f)) hasVar=true;
     }
@@ -1507,14 +1517,14 @@ function dictSelectWord(w, idx){
 
   if(allIdxs.length>0){
     const cIdx0=allIdxs[0];
-    const display=DATA.e[cIdx0]||w;
+    const display=getNormToE()[w]||w;
     const slash=_wantsSlash(w)&&!display.includes('/');
     document.getElementById("dict-word").textContent=display+(slash?' /':'');
 
     const defEl=document.getElementById("dict-def");
     const _customDef = window._rechCache?.[w]?.loaded ? window._rechCache[w].custom?.def : undefined;
     if(allIdxs.length===1){
-      const raw=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+      const raw=(getNormToF()[w]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
       defEl.textContent=(_customDef!==undefined ? _customDef : raw)||"(définition absente)";
     } else {
       defEl.innerHTML="";
@@ -1523,14 +1533,14 @@ function dictSelectWord(w, idx){
           const hr=document.createElement("hr");
           hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
           defEl.appendChild(hr);
-          const dispI=DATA.e[i]||w;
+          const dispI=getNormToE()[DATA.c?.[i]]||w;
           if(dispI!==display){
             const lbl=document.createElement("small");
             lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
             lbl.textContent=dispI; defEl.appendChild(lbl);
           }
         }
-        let raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        let raw=(getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
         if(n===0 && _customDef!==undefined) raw=_customDef;
         const p=document.createElement("p"); p.style.margin="0";
         p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
@@ -1632,7 +1642,7 @@ function _dictRenderSugg(prefix){
   const candidates=[];
   for(let i=start; i<C.length; i++){
     if(!C[i].startsWith(prefix)) break;
-    if(_conjM.has(C[i])){const f=F[i]||''; if(!_POS.test(f)&&_CONJ.test(f)) continue;}
+    if(_conjM.has(C[i])){const f=getNormToF()[C[i]]||''; if(!_POS.test(f)&&_CONJ.test(f)) continue;}
     candidates.push(i);
   }
   let html="";
@@ -1642,9 +1652,9 @@ function _dictRenderSugg(prefix){
     if(lemma&&lemma!==prefix) html+=`<li data-lemma="${lemma}">→ <a class="def-link">${lemma}</a></li>`;
   }
   for(const i of candidates){
-    let label=(E[i]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    let label=(getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
     if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
-    const pos=_posLabel(F[i]); if(pos) label+="  "+pos;
+    const pos=_posLabel(getNormToF()[C[i]]); if(pos) label+="  "+pos;
     html+=`<li data-idx="${i}">${label}</li>`;
   }
   sugg.innerHTML=html||"<li class='dict-no-result'>Mot inconnu.</li>";
