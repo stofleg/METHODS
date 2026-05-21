@@ -82,11 +82,9 @@ async function loadThemodsState(){
   if(!currentUser) return;
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
   if(r.ok && r.data){
-    const merged = _mergeTmStates(tmState, r.data);
-    const needsPush = merged.updatedAt > (r.data.updatedAt||0);
-    tmState = merged;
+    tmState = _mergeTmStates(tmState, r.data);
     tmSaveLocal();
-    if(needsPush) persistThemods().catch(()=>{});
+    persistThemods().catch(()=>{});
     updateTmStats();
     updateVerbesStats();
   } else {
