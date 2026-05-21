@@ -1230,7 +1230,7 @@ function openDef(canon, displayWord, defText, flechie){
     if(conjM.has(canon) && defText===undefined){
       const _POS=/^(n\.|adj\.|v\.|loc\.|adv\.|interj\.|pron\.|num\.|art\.)/;
       const _CONJ=/-->\s+\S+\s+\d{2,}\./;
-      const real=allIdxs.filter(i=>{const f=F[i]||'';return _POS.test(f)||!_CONJ.test(f);});
+      const real=allIdxs.filter(i=>{const f=getNormToF()[C?.[i]]||'';return _POS.test(f)||!_CONJ.test(f);});
       if(real.length>0) allIdxs=real;
       else{ openDef(conjM.get(canon)); return; }
     }
@@ -1309,8 +1309,8 @@ function openDef(canon, displayWord, defText, flechie){
 
   // Section forme fléchie : soit redirect depuis conjugaison, soit entrée avec virgule (ex: PERLANT, E)
   let flechieToShow = flechie || null;
-  if(!flechieToShow && titleIdx >= 0 && E?.[titleIdx]?.includes(',')){
-    const resolved = resolveInflectedCanon(canon, E[titleIdx].split(',')[1]);
+  if(!flechieToShow && titleIdx >= 0 && getNormToE()[C?.[titleIdx]]?.includes(',')){
+    const resolved = resolveInflectedCanon(canon, getNormToE()[C?.[titleIdx]].split(',')[1]);
     if(resolved && resolved !== canon) flechieToShow = resolved;
   }
   const flechieEl = $("#def-flechie"); if(flechieEl) flechieEl.innerHTML="";
@@ -1466,10 +1466,10 @@ function _getWantsSlashSet(){
   }
   for(const [canon,idxs] of byCanon){
     if(canon.endsWith('MENT')) continue;
-    if(idxs.some(i=>(E[i]||'').includes('/'))) continue;
+    if(idxs.some(i=>(getNormToE()[C[i]]||'').includes('/'))) continue;
     let hasInvar=false, hasVar=false;
     for(const i of idxs){
-      const f=F[i]||'';
+      const f=getNormToF()[C[i]]||'';
       if(_INVAR.test(f)) hasInvar=true;
       if(_VAR.test(f)) hasVar=true;
     }
@@ -1642,7 +1642,7 @@ function _dictRenderSugg(prefix){
   const candidates=[];
   for(let i=start; i<C.length; i++){
     if(!C[i].startsWith(prefix)) break;
-    if(_conjM.has(C[i])){const f=F[i]||''; if(!_POS.test(f)&&_CONJ.test(f)) continue;}
+    if(_conjM.has(C[i])){const f=getNormToF()[C[i]]||''; if(!_POS.test(f)&&_CONJ.test(f)) continue;}
     candidates.push(i);
   }
   let html="";
@@ -1652,9 +1652,9 @@ function _dictRenderSugg(prefix){
     if(lemma&&lemma!==prefix) html+=`<li data-lemma="${lemma}">→ <a class="def-link">${lemma}</a></li>`;
   }
   for(const i of candidates){
-    let label=(E[i]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    let label=(getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
     if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
-    const pos=_posLabel(F[i]); if(pos) label+="  "+pos;
+    const pos=_posLabel(getNormToF()[C[i]]); if(pos) label+="  "+pos;
     html+=`<li data-idx="${i}">${label}</li>`;
   }
   sugg.innerHTML=html||"<li class='dict-no-result'>Mot inconnu.</li>";
