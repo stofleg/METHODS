@@ -79,12 +79,18 @@ function _mergeTmStates(a, b){
 
 async function loadThemodsState(){
   tmState = tmLoadLocal();
+  const localVi = Object.values(tmState?.themes?.vi||{}).filter(v=>v?.validated).length;
+  console.log('[sync] local vi validated:', localVi);
   if(!currentUser) return;
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
+  const fbVi = Object.values(r.data?.themes?.vi||{}).filter(v=>v?.validated).length;
+  console.log('[sync] fbGet ok:', r.ok, 'err:', r.err||'—', '| firebase vi validated:', fbVi);
   if(r.ok && r.data){
     tmState = _mergeTmStates(tmState, r.data);
+    const mergedVi = Object.values(tmState?.themes?.vi||{}).filter(v=>v?.validated).length;
+    console.log('[sync] merged vi validated:', mergedVi);
     tmSaveLocal();
-    persistThemods().catch(()=>{});
+    persistThemods().catch(e=>console.error('[sync] persistThemods error:', e));
     updateTmStats();
     updateVerbesStats();
   } else {
@@ -95,7 +101,8 @@ async function persistThemods(){
   if(!currentUser) return;
   tmState.updatedAt = Date.now();
   tmSaveLocal();
-  await fbSet("themods", currentUser.pseudo.toLowerCase(), tmState);
+  const wr = await fbSet("themods", currentUser.pseudo.toLowerCase(), tmState);
+  console.log('[sync] fbSet ok:', wr.ok, wr.err||'');
 }
 
 function getSt(theme, label){
