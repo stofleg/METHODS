@@ -1,4 +1,4 @@
-/* ══ Service Worker METHODS — network-first v4.28 ══ */
+/* ══ Service Worker METHODS — network-first v4.29 ══ */
 const CACHE_NAME = "methods-v429";
 
 /* ── Install : prendre le contrôle immédiatement ── */
