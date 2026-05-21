@@ -1237,15 +1237,15 @@ function openDef(canon, displayWord, defText, flechie){
   }
   const _CP = /^-->\s+([A-Z]+)\s+\d+\./;
   // Prefer non-redirect entry for title (dual-nature words like FEUTRANT: adj FEUTRANT,E over participle redirect)
-  const titleIdx = allIdxs.find(i => !_CP.test(F?.[i]||'')) ?? (allIdxs[0] ?? -1);
-  const rawDisplay = (displayWord || (titleIdx>=0 ? E[titleIdx] : canon)).replace(/\*/g,"").trim();
+  const titleIdx = allIdxs.find(i => !_CP.test(getNormToF()[C?.[i]]||'')) ?? (allIdxs[0] ?? -1);
+  const rawDisplay = (displayWord || (titleIdx>=0 ? (getNormToE()[C?.[titleIdx]]||C?.[titleIdx]) : canon)).replace(/\*/g,"").trim();
   const title = rawDisplay.split(",")[0].trim(); // base form, pour les liens externes
 
   // Build list of {label, entryLabel, text} for each definition to display.
   const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
     ? [{label:null, entryLabel:null, text:_cf(defText)}]
-    : allIdxs.map(i=>{ const f=_cf(F?.[i]||''); const m=f.match(_CP); if(m){ const ci=_getCMap().get(m[1]); return {label:m[1], entryLabel:null, text:ci!==undefined?_cf(F?.[ci]||''):''}; } const el=E?.[i]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    : allIdxs.map(i=>{ const f=_cf(getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
@@ -1517,14 +1517,14 @@ function dictSelectWord(w, idx){
 
   if(allIdxs.length>0){
     const cIdx0=allIdxs[0];
-    const display=DATA.e[cIdx0]||w;
+    const display=getNormToE()[w]||w;
     const slash=_wantsSlash(w)&&!display.includes('/');
     document.getElementById("dict-word").textContent=display+(slash?' /':'');
 
     const defEl=document.getElementById("dict-def");
     const _customDef = window._rechCache?.[w]?.loaded ? window._rechCache[w].custom?.def : undefined;
     if(allIdxs.length===1){
-      const raw=(DATA.f[cIdx0]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+      const raw=(getNormToF()[w]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
       defEl.textContent=(_customDef!==undefined ? _customDef : raw)||"(définition absente)";
     } else {
       defEl.innerHTML="";
@@ -1533,14 +1533,14 @@ function dictSelectWord(w, idx){
           const hr=document.createElement("hr");
           hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
           defEl.appendChild(hr);
-          const dispI=DATA.e[i]||w;
+          const dispI=getNormToE()[DATA.c?.[i]]||w;
           if(dispI!==display){
             const lbl=document.createElement("small");
             lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
             lbl.textContent=dispI; defEl.appendChild(lbl);
           }
         }
-        let raw=(DATA.f[i]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+        let raw=(getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
         if(n===0 && _customDef!==undefined) raw=_customDef;
         const p=document.createElement("p"); p.style.margin="0";
         p.textContent=raw||"(définition absente)"; defEl.appendChild(p);

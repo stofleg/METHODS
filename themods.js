@@ -127,7 +127,12 @@ function getNormToE(){
   if(!_normToE){
     _normToE = {};
     const d = window.SEQODS_DATA;
-    if(d?.c) d.c.forEach((c,i) => { _normToE[c] = d.e[i]; });
+    // Reverse lookup: derive key from e[i] itself (immune to c/e index misalignment)
+    (d?.e || []).forEach(raw => {
+      if(!raw) return;
+      const n = norm(raw.split(',')[0].split('/')[0].trim());
+      if(n && !_normToE[n]) _normToE[n] = raw;
+    });
   }
   return _normToE;
 }
@@ -142,7 +147,12 @@ function getNormToF(){
   if(!_normToF){
     _normToF = {};
     const d = window.SEQODS_DATA;
-    if(d?.c) d.c.forEach((c,i) => { _normToF[c] = d.f?.[i] || ""; });
+    // Pair e[i] and f[i] together (both share same misalignment relative to c[])
+    (d?.e || []).forEach((raw, i) => {
+      if(!raw) return;
+      const n = norm(raw.split(',')[0].split('/')[0].trim());
+      if(n && !_normToF[n]) _normToF[n] = d.f?.[i] || "";
+    });
   }
   return _normToF;
 }
