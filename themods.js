@@ -83,11 +83,15 @@ async function loadThemodsState(){
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
   if(r.ok && r.data){
     const merged = _mergeTmStates(tmState, r.data);
-    // Si la fusion apporte quelque chose de plus, resauvegarder sur Firebase
-    if(merged.updatedAt > (r.data.updatedAt||0)) persistThemods().catch(()=>{});
+    const needsPush = merged.updatedAt > (r.data.updatedAt||0);
     tmState = merged;
+    tmSaveLocal();
+    if(needsPush) persistThemods().catch(()=>{});
+    updateTmStats();
+    updateVerbesStats();
+  } else {
+    tmSaveLocal();
   }
-  tmSaveLocal();
 }
 async function persistThemods(){
   if(!currentUser) return;
