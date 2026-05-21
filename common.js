@@ -1051,7 +1051,10 @@ async function fbSet(col, id, obj){
     const r = await fetch(`${FB_BASE}/${col}/${id}`, {
       method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(toFs(obj))
     });
-    return r.ok ? {ok:true} : {ok:false, err:"error"};
+    if(r.ok) return {ok:true};
+    const body = await r.json().catch(()=>null);
+    console.error(`[fbSet] ${col}/${id} → ${r.status}`, body?.error?.message||body||'');
+    return {ok:false, err:"error"};
   }catch{ return {ok:false, err:"network"}; }
 }
 
