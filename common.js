@@ -599,6 +599,12 @@ function _getIrregMap(){
   add('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES']);
   add('COACQUEREUR',['COACQUERESSE','COACQUERESSES']);
 
+  // GRAF/GRAFF synonymes, SERTAO sans diacritique, SERINGUEIRA féminin, CONTREFICHER pp, REPLEUVOIR
+  add('GRAF',['GRAFF','GRAFS']);
+  add('SERINGUEIRO',['SERINGUEIRA','SERINGUEIRAS']);
+  add('CONTREFICHE',['CONTREFICHER','CONTREFICHU','CONTREFICHUE','CONTREFICHUES','CONTREFICHUS']);
+  add('REPLEUVOIR',['REPLUSSENT','REPLUT']);
+
   return _irregMap;
 }
 
@@ -821,6 +827,7 @@ function findLemma(w){
       if(cm.has(stem+'RE'))    return stem+'RE';
       if(cm.has(stem+'ETTRE')) return stem+'ETTRE'; // METTRE composés (REEM→REEMETTRE)
       if(cm.has(stem+'ITRE'))  return stem+'ITRE';  // CONNAITRE, NAITRE, APPARAITRE…
+      if(cm.has(stem+'AYER'))  return stem+'AYER';  // FRAYER (FRAIENT → FR → FRAYER, not FRIRE)
       if(cm.has(stem+'IRE'))   return stem+'IRE';   // LUIRE, NUIRE, SUFFIRE (LU→LUIRE)
       if(stem.endsWith('E')&&stem.length>2&&cm.has(stem.slice(0,-1)+'ER')) return stem.slice(0,-1)+'ER';
       if(stem.endsWith('I')&&cm.has(stem+'R')) return stem+'R';

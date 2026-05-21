@@ -484,6 +484,12 @@ add_irr('SURGRAS',['SURGRASSE','SURGRASSES'])
 add_irr('SEIGNEUR',['SEIGNEURESSE','SEIGNEURESSES'])
 add_irr('COACQUEREUR',['COACQUERESSE','COACQUERESSES'])
 
+# GRAF/GRAFF synonymes, SERINGUEIRA féminin, CONTREFICHER pp, REPLEUVOIR
+add_irr('GRAF',['GRAFF','GRAFS'])
+add_irr('SERINGUEIRO',['SERINGUEIRA','SERINGUEIRAS'])
+add_irr('CONTREFICHE',['CONTREFICHER','CONTREFICHU','CONTREFICHUE','CONTREFICHUES','CONTREFICHUS'])
+add_irr('REPLEUVOIR',['REPLUSSENT','REPLUT'])
+
 # ── Step 4: Build _conjMap (adds to BOTH conjMap and irr) ────────────────────
 conj = {}
 
@@ -755,6 +761,7 @@ def findLemma(w):
             if stem + 'RE' in cm_set:    return stem + 'RE'
             if stem + 'ETTRE' in cm_set: return stem + 'ETTRE'
             if stem + 'ITRE' in cm_set:  return stem + 'ITRE'
+            if stem + 'AYER' in cm_set:  return stem + 'AYER'  # FRAYER (FRAIENT→FR→FRAYER not FRIRE)
             if stem + 'IRE' in cm_set:   return stem + 'IRE'
             if stem.endswith('E') and len(stem) > 2 and stem[:-1] + 'ER' in cm_set: return stem[:-1] + 'ER'
             if stem.endswith('I') and stem + 'R' in cm_set: return stem + 'R'

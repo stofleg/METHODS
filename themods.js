@@ -41,11 +41,52 @@ function tmDefault(){ return {updatedAt:0, themes:{}}; }
 function tmLoadLocal(){ try{ return JSON.parse(localStorage.getItem(LS_THEMODS())||"null")||tmDefault(); }catch{ return tmDefault(); } }
 function tmSaveLocal(){ try{ localStorage.setItem(LS_THEMODS(), JSON.stringify(tmState)); }catch{} }
 
+function _mergeTmStates(a, b){
+  // Fusionne deux états THEMODS : prend le meilleur de chaque label,
+  // plutôt que de trancher en bloc sur updatedAt.
+  const out = { updatedAt: Math.max(a.updatedAt||0, b.updatedAt||0), themes:{} };
+  const themes = new Set([...Object.keys(a.themes||{}), ...Object.keys(b.themes||{})]);
+  for(const th of themes){
+    const at = a.themes?.[th]||{}, bt = b.themes?.[th]||{};
+    out.themes[th] = {};
+    const labels = new Set([...Object.keys(at), ...Object.keys(bt)]);
+    for(const lb of labels){
+      if(lb==='_completions'){
+        out.themes[th][lb] = Math.max(at[lb]||0, bt[lb]||0);
+      } else if(lb==='_p'){
+        // Progression ODS/GM : garder le plus avancé (done max)
+        const ap=at[lb]||{done:0}, bp=bt[lb]||{done:0};
+        out.themes[th][lb] = (bp.done||0)>=(ap.done||0) ? bp : ap;
+      } else {
+        // Session SRS standard : validated l'emporte, puis seen, puis meilleur due
+        const as=at[lb]||{}, bs=bt[lb]||{};
+        const validated = as.validated || bs.validated;
+        const seen      = as.seen || bs.seen;
+        const src       = validated ? (as.validated ? as : bs) : ((as.lastSeen||'')>=(bs.lastSeen||'') ? as : bs);
+        out.themes[th][lb] = {
+          seen, validated,
+          lastResult: src.lastResult||'',
+          lastSeen:   src.lastSeen||'',
+          interval:   Math.max(as.interval||1, bs.interval||1),
+          due:        validated ? src.due||todayStr()
+                                : ((as.due||'') < (bs.due||'') ? as.due : bs.due)||todayStr()
+        };
+      }
+    }
+  }
+  return out;
+}
+
 async function loadThemodsState(){
   tmState = tmLoadLocal();
   if(!currentUser) return;
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
-  if(r.ok && r.data && (r.data.updatedAt||0) > (tmState.updatedAt||0)) tmState = r.data;
+  if(r.ok && r.data){
+    const merged = _mergeTmStates(tmState, r.data);
+    // Si la fusion apporte quelque chose de plus, resauvegarder sur Firebase
+    if(merged.updatedAt > (r.data.updatedAt||0)) persistThemods().catch(()=>{});
+    tmState = merged;
+  }
   tmSaveLocal();
 }
 async function persistThemods(){
@@ -834,3 +875,29 @@ function initThemods(){
   // Toujours afficher l'accueil quand on entre dans THEMODS
   renderTmHome();
 }
+
+/* ── Synchronisation exclusion depuis l'éditeur admin (recherche.js) ── */
+window.tmNotifyExclusion = function(moduleId, canon, isExcluded){
+  // Mettre à jour le cache _modExcl si déjà chargé
+  if(_modExcl.hasOwnProperty(moduleId)){
+    if(isExcluded) _modExcl[moduleId].add(canon);
+    else _modExcl[moduleId].delete(canon);
+  }
+  // Mettre à jour la session live si le module actif correspond
+  if(!tmSession || tmTheme !== moduleId) return;
+  if(isExcluded){
+    // Reconstruire la liste de mots en retirant le mot exclu, en remappant tmFound
+    const newWords = [], newFound = new Set();
+    tmSession.words.forEach((w, oldIdx) => {
+      if(norm(w) === canon) return;
+      const newIdx = newWords.length;
+      newWords.push(w);
+      if(tmFound.has(oldIdx)) newFound.add(newIdx);
+    });
+    tmSession = {...tmSession, words: newWords};
+    tmFound = newFound;
+    renderTmGame();
+    const ctr = document.getElementById("tm-counter");
+    if(ctr) ctr.textContent = tmFound.size + " / " + tmSession.words.length;
+  }
+};
