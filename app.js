@@ -155,6 +155,9 @@ function initSelect(){
     showView("v-themods");
     initThemods();
   });
+  document.getElementById("btn-go-explods")?.addEventListener("click", ()=>{
+    openDictModal();
+  });
 }
 
 /* ── Navigation globale ── */

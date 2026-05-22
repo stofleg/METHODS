@@ -162,13 +162,24 @@ input[type=range]{accent-color:var(--accent);}
 .srs-prompt{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:4px 0;font-size:13px;}
 
 /* ══ SELECT ══ */
-#v-select{align-items:center;justify-content:center;gap:16px;}
-.sel-card{width:88%;max-width:300px;padding:20px 22px;
-  display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:background .15s;}
-.sel-card:hover{background:rgba(255,255,255,.12);}
-.sel-name{font-size:26px;font-weight:950;letter-spacing:.12em;}
-.sel-name .l1{color:var(--t1);}.sel-name .l2{color:var(--accent);}
+#v-select{align-items:center;justify-content:center;gap:14px;}
+.sel-card{width:88%;max-width:340px;padding:16px 20px;
+  display:flex;flex-direction:row;align-items:center;gap:16px;
+  cursor:pointer;transition:background .15s;border-left:3px solid transparent;}
+.sel-card:hover{background:rgba(255,255,255,.1);}
+.sel-icon{flex-shrink:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;}
+.sel-text{display:flex;flex-direction:column;gap:3px;}
+.sel-name{font-size:26px;font-weight:950;letter-spacing:.12em;}.sel-name .l1{color:var(--t1);}
 .sel-desc{font-size:13px;color:var(--muted);}
+#btn-go-entremods{border-left-color:#b78af7;}
+#btn-go-entremods .sel-icon{background:rgba(183,138,247,.15);color:#b78af7;}
+#btn-go-entremods .sel-name .l2{color:#b78af7;}
+#btn-go-themods{border-left-color:#2dd4d4;}
+#btn-go-themods .sel-icon{background:rgba(45,212,212,.15);color:#2dd4d4;}
+#btn-go-themods .sel-name .l2{color:#2dd4d4;}
+#btn-go-explods{border-left-color:#f59e0b;}
+#btn-go-explods .sel-icon{background:rgba(245,158,11,.15);color:#f59e0b;}
+#btn-go-explods .sel-name .l2{color:#f59e0b;}
 
 /* ══ METHODS ══ */
 #v-methods{flex-direction:column;}
@@ -363,13 +374,7 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 .tool-btn:hover{background:rgba(255,255,255,.16);}
 .m-bottom{padding:5px 10px;border-top:1px solid var(--stroke);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;gap:8px;}
 @media(max-width:640px){.m-bottom{display:none;}}
-/* Select */
-#v-select{align-items:center;justify-content:center;gap:16px;}
-.sel-card{width:88%;max-width:300px;padding:20px 22px;display:flex;flex-direction:column;gap:6px;cursor:pointer;transition:background .15s;}
-.sel-card:hover{background:rgba(255,255,255,.12);}
-.sel-name{font-size:26px;font-weight:950;letter-spacing:.12em;}
-.sel-name .l1{color:var(--t1);}.sel-name .l2{color:var(--accent);}
-.sel-desc{font-size:13px;color:var(--muted);}
+/* Select — voir bloc principal ci-dessus */
 /* Auth */
 #v-auth{align-items:center;justify-content:center;}
 .auth-card{width:90%;max-width:340px;padding:24px;display:flex;flex-direction:column;gap:14px;}
@@ -596,12 +601,25 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <!-- ══ SELECT ══ -->
 <div id="v-select" class="view">
   <div class="card sel-card" id="btn-go-entremods">
-    <div class="sel-name"><span class="l1">METH</span><span class="l2">ODS</span></div>
-    <div class="sel-desc">Trouver les mots d'une longueur donnée entre deux bornes</div>
+    <div class="sel-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><polyline points="3 6 4 7 6 5"/><polyline points="3 12 4 13 6 11"/><polyline points="3 18 4 19 6 17"/></svg></div>
+    <div class="sel-text">
+      <div class="sel-name"><span class="l1">METH</span><span class="l2">ODS</span></div>
+      <div class="sel-desc">Trouver les mots d'une longueur donnée entre deux bornes</div>
+    </div>
   </div>
   <div class="card sel-card" id="btn-go-themods">
-    <div class="sel-name"><span class="l1">THEM</span><span class="l2">ODS</span></div>
-    <div class="sel-desc">Réviser par thèmes et familles de mots</div>
+    <div class="sel-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+    <div class="sel-text">
+      <div class="sel-name"><span class="l1">THEM</span><span class="l2">ODS</span></div>
+      <div class="sel-desc">Réviser par thèmes et familles de mots</div>
+    </div>
+  </div>
+  <div class="card sel-card" id="btn-go-explods">
+    <div class="sel-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></div>
+    <div class="sel-text">
+      <div class="sel-name"><span class="l1">EXPL</span><span class="l2">ODS</span></div>
+      <div class="sel-desc">Explorer le dictionnaire ODS9</div>
+    </div>
   </div>
 </div>
 
@@ -905,7 +923,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   <div class="card rech-outer">
     <div class="rech-hdr">
       <button id="rech-btn-back" class="btn" style="font-size:14px;padding:5px 9px;">←</button>
-      <span class="rech-title">RECHERCHE</span>
+      <span class="rech-title"><span style="color:var(--t1)">EXPL</span><span style="color:#f59e0b">ODS</span></span>
     </div>
     <!-- Onglets -->
     <div class="rech-tabs">
@@ -980,7 +998,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.29</div>
+  pointer-events:none;user-select:none;">v4.30</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -992,7 +1010,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v429";
+  const CURRENT_CACHE="methods-v430";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
