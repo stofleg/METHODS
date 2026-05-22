@@ -172,15 +172,27 @@ function initNav(){
   // Swipe vers la droite → menu principal (mobile uniquement)
   let _swSX=0, _swSY=0;
   const _swStart=e=>{_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
+  const _absorbNext=()=>{
+    const absorb=ev=>{ev.stopPropagation();ev.preventDefault();};
+    document.addEventListener("click",absorb,{capture:true,once:true});
+    setTimeout(()=>document.removeEventListener("click",absorb,true),400);
+  };
   const _swToMenu=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
     if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
-    emChronoStop(); showView("v-select");
+    emChronoStop(); showView("v-select"); _absorbNext();
+  };
+  const _swToBack=e=>{
+    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
+    if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
+    closeDictModal(); _absorbNext();
   };
   document.getElementById("v-entremods")?.addEventListener("touchstart",_swStart,{passive:true});
   document.getElementById("v-entremods")?.addEventListener("touchend",_swToMenu,{passive:true});
   document.getElementById("v-themods")?.addEventListener("touchstart",_swStart,{passive:true});
   document.getElementById("v-themods")?.addEventListener("touchend",_swToMenu,{passive:true});
+  document.getElementById("v-recherche")?.addEventListener("touchstart",_swStart,{passive:true});
+  document.getElementById("v-recherche")?.addEventListener("touchend",_swToBack,{passive:true});
   // Bouton menu PC
   const doMenu=()=>{ emChronoStop(); showView("v-select"); };
   document.getElementById("em-btn-menu")?.addEventListener("click", doMenu);

@@ -165,7 +165,8 @@ input[type=range]{accent-color:var(--accent);}
 #v-select{align-items:center;justify-content:center;gap:14px;}
 .sel-card{width:88%;max-width:340px;padding:16px 20px;
   display:flex;flex-direction:row;align-items:center;gap:16px;
-  cursor:pointer;transition:background .15s;border-left:3px solid transparent;}
+  cursor:pointer;transition:background .15s;border-left:3px solid transparent;
+  touch-action:manipulation;}
 @media(hover:hover){.sel-card:hover{background:rgba(255,255,255,.1);}}
 .sel-icon{flex-shrink:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;}
 .sel-text{display:flex;flex-direction:column;gap:3px;}
@@ -1002,7 +1003,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.34</div>
+  pointer-events:none;user-select:none;">v4.35</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1014,7 +1015,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v434";
+  const CURRENT_CACHE="methods-v435";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
