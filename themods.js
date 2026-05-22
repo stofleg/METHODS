@@ -83,10 +83,11 @@ async function loadThemodsState(){
   console.log('[sync] local vi validated:', localVi);
   if(!currentUser) return;
   const r = await fbGet("themods", currentUser.pseudo.toLowerCase());
-  const fbVi = Object.values(r.data?.themes?.vi||{}).filter(v=>v?.validated).length;
+  const fbRaw = r.data?.state ? JSON.parse(r.data.state) : null;
+  const fbVi = Object.values(fbRaw?.themes?.vi||{}).filter(v=>v?.validated).length;
   console.log('[sync] fbGet ok:', r.ok, 'err:', r.err||'—', '| firebase vi validated:', fbVi);
-  if(r.ok && r.data){
-    tmState = _mergeTmStates(tmState, r.data);
+  if(r.ok && fbRaw){
+    tmState = _mergeTmStates(tmState, fbRaw);
     const mergedVi = Object.values(tmState?.themes?.vi||{}).filter(v=>v?.validated).length;
     console.log('[sync] merged vi validated:', mergedVi);
     tmSaveLocal();
@@ -104,7 +105,8 @@ async function persistThemods(){
   if(!currentUser) return;
   tmState.updatedAt = Date.now();
   tmSaveLocal();
-  const wr = await fbSet("themods", currentUser.pseudo.toLowerCase(), tmState);
+  // Stocker comme un seul champ JSON pour éviter la limite Firestore d'index (40k entrées)
+  const wr = await fbSet("themods", currentUser.pseudo.toLowerCase(), {state: JSON.stringify(tmState)});
   console.log('[sync] fbSet ok:', wr.ok, wr.err||'');
 }
 
