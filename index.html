@@ -435,18 +435,18 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 .rech-textarea:focus{box-shadow:0 0 0 3px var(--focus);}
 .rech-actions{display:flex;gap:6px;}
 
-/* ── Bouton dictionnaire flottant ── */
-#btn-dict{
-  position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 18px);right:18px;
-  z-index:300;width:46px;height:46px;border-radius:50%;
-  background:var(--accent);color:#fff;font-size:20px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 4px 18px rgba(0,0,0,.45);border:none;cursor:pointer;
-  transition:opacity .18s,transform .18s;}
-#btn-dict.hidden{opacity:0;pointer-events:none;transform:scale(.75);}
-@media(max-width:640px){ #btn-dict{ display:none; } }
-.btn-menu-pc{display:none;}
+/* ── Bouton dictionnaire flottant — désactivé (remplacé par EXPLODS) ── */
+#btn-dict{display:none !important;}
+/* ── Bouton menu PC ── */
+.btn-menu-pc{display:none;flex-shrink:0;}
 @media(min-width:641px){.btn-menu-pc{display:inline-flex;}}
+/* ── Couleurs boutons header ── */
+#em-btn-recherche,#btn-tm-recherche{background:var(--accent);border-color:var(--accent);color:#fff;}
+#em-btn-recherche:hover,#btn-tm-recherche:hover{background:var(--accent);filter:brightness(1.12);}
+#em-btn-logout,#btn-tm-logout{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#ff6b6b;}
+#em-btn-settings,#btn-tm-settings{background:rgba(138,155,191,.1);border-color:rgba(138,155,191,.25);color:var(--muted);}
+#em-btn-menu{background:rgba(183,138,247,.15);border-color:rgba(183,138,247,.35);color:#b78af7;}
+#tm-btn-menu{background:rgba(45,212,212,.12);border-color:rgba(45,212,212,.3);color:#2dd4d4;}
 
 /* ── Modal dictionnaire ── */
 .dict-inp{width:100%;padding:9px 14px;border-radius:12px;
@@ -631,7 +631,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="em-shdr">
       <span id="em-user-chip" class="user-chip"></span>
       <button id="em-btn-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <button id="em-btn-menu" class="btn btn-menu-pc" style="padding:5px 8px;" aria-label="Menu"><svg width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><rect x="0" y="0" width="5" height="5" rx="1"/><rect x="7" y="0" width="5" height="5" rx="1"/><rect x="0" y="7" width="5" height="5" rx="1"/><rect x="7" y="7" width="5" height="5" rx="1"/></svg></button>
+      <button id="em-btn-menu" class="btn btn-menu-pc" style="padding:5px 8px;flex-shrink:0;" aria-label="Menu"><svg width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><rect x="0" y="0" width="5" height="5" rx="1"/><rect x="7" y="0" width="5" height="5" rx="1"/><rect x="0" y="7" width="5" height="5" rx="1"/><rect x="7" y="7" width="5" height="5" rx="1"/></svg></button>
       <div class="logo em-hdr-logo"><span class="l1">METH</span><span class="l2">ODS</span></div>
       <button id="em-btn-recherche" class="btn" style="font-size:16px;padding:5px 9px;">🔍</button>
       <button id="em-btn-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
@@ -714,7 +714,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="tm-shdr">
       <span id="tm-user-chip" class="user-chip"></span>
       <button id="btn-tm-logout" class="btn" style="padding:5px 9px;font-size:14px;">⏏</button>
-      <button id="tm-btn-menu" class="btn btn-menu-pc" style="padding:5px 8px;" aria-label="Menu"><svg width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><rect x="0" y="0" width="5" height="5" rx="1"/><rect x="7" y="0" width="5" height="5" rx="1"/><rect x="0" y="7" width="5" height="5" rx="1"/><rect x="7" y="7" width="5" height="5" rx="1"/></svg></button>
+      <button id="tm-btn-menu" class="btn btn-menu-pc" style="padding:5px 8px;flex-shrink:0;" aria-label="Menu"><svg width="14" height="14" viewBox="0 0 12 12" fill="currentColor"><rect x="0" y="0" width="5" height="5" rx="1"/><rect x="7" y="0" width="5" height="5" rx="1"/><rect x="0" y="7" width="5" height="5" rx="1"/><rect x="7" y="7" width="5" height="5" rx="1"/></svg></button>
       <div class="logo tm-hdr-logo"><span class="l1">THEM</span><span class="l2">ODS</span></div>
       <button id="btn-tm-recherche" class="btn" style="font-size:16px;padding:5px 9px;">🔍</button>
       <button id="btn-tm-settings" class="btn" style="padding:5px 9px;font-size:14px;">⚙️</button>
@@ -1002,7 +1002,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.31</div>
+  pointer-events:none;user-select:none;">v4.32</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1014,7 +1014,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v431";
+  const CURRENT_CACHE="methods-v432";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
