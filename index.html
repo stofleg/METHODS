@@ -475,7 +475,8 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 .emv.active{display:flex;flex:1;flex-direction:column;overflow:hidden;}
 .em-shdr{display:flex;align-items:center;gap:6px;padding:7px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;}
 .em-hdr-logo{flex:1;text-align:center;font-size:18px;}
-.em-ghdr{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;}
+.em-ghdr{display:flex;align-items:center;gap:8px;padding:7px 12px;border-bottom:1px solid var(--stroke);flex-shrink:0;position:relative;}
+#em-chrono{position:absolute;left:50%;transform:translateX(-50%);pointer-events:none;}
 .em-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px;}
 .em-new-btn{padding:13px;font-size:14px;font-weight:800;border-radius:13px;width:100%;}
 .em-list-card{border:1px solid var(--stroke);border-radius:14px;padding:14px 16px;cursor:pointer;transition:background .15s;display:flex;align-items:center;gap:10px;}
@@ -512,6 +513,16 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
   #rech-kb{display:block;}
   #rech-kb-top{display:none;}
 }
+/* Caractères spéciaux PC (onglet Recherche) */
+#rech-pc-specials{display:flex;gap:8px;padding:8px 14px 4px;flex-shrink:0;flex-wrap:wrap;}
+@media(max-width:640px){#rech-pc-specials{display:none!important;}}
+.rss-btn{display:flex;flex-direction:column;align-items:center;gap:1px;
+  padding:5px 12px;border-radius:8px;border:1px solid var(--stroke);
+  background:rgba(255,255,255,.05);color:var(--txt);cursor:pointer;font-family:inherit;
+  transition:background .12s,border-color .12s;}
+.rss-btn:hover{background:rgba(245,158,11,.15);border-color:rgba(245,158,11,.4);}
+.rss-c{font-size:16px;font-weight:900;color:#f59e0b;line-height:1.2;}
+.rss-l{font-size:9px;color:var(--muted);font-weight:700;letter-spacing:.03em;white-space:nowrap;text-transform:uppercase;}
 /* Onglets Recherche */
 .rech-tabs{display:flex;flex-shrink:0;border-bottom:1px solid var(--stroke);}
 .rech-tab{flex:1;padding:8px 0;font-size:12px;font-weight:700;letter-spacing:.06em;border:none;background:transparent;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-1px;}
@@ -942,6 +953,13 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         autocomplete="off" autocapitalize="characters" autocorrect="off" spellcheck="false"
         placeholder="Saisir un mot…"/>
     </div>
+    <div id="rech-pc-specials" style="display:none;">
+      <button class="rss-btn" data-ins="•" title="B•R → mots de 3 lettres avec B et R"><span class="rss-c">•</span><span class="rss-l">1 lettre</span></button>
+      <button class="rss-btn" data-ins="*" title="*TION → tout ce qui finit par TION"><span class="rss-c">✶</span><span class="rss-l">n lettres</span></button>
+      <button class="rss-btn" data-ins="?" title="ABC? → anagramme de ABC avec 1 lettre en plus"><span class="rss-c">?</span><span class="rss-l">+1 libre</span></button>
+      <button class="rss-btn" data-ins="/" title="*AIS/-IS → finit par AIS, sauf -IS"><span class="rss-c">/</span><span class="rss-l">variante</span></button>
+      <button class="rss-btn" data-ins="-" title="après / : exclure cette terminaison"><span class="rss-c">-</span><span class="rss-l">exclure</span></button>
+    </div>
     <!-- Onglet Dictionnaire -->
     <div id="rech-tab-dict" class="rech-body" style="padding-top:6px;">
       <ul id="dict-sugg" class="dict-sugg"></ul>
@@ -1003,7 +1021,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.36</div>
+  pointer-events:none;user-select:none;">v4.37</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1015,7 +1033,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v436";
+  const CURRENT_CACHE="methods-v437";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

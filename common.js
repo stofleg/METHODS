@@ -1674,6 +1674,8 @@ function _rechSwitchTab(tab){
   if(srchEl) srchEl.style.display = tab==="search" ? "" : "none";
   const spec=document.getElementById("rech-kb-specials");
   if(spec) spec.style.display = tab==="search" ? "" : "none";
+  const pcSpec=document.getElementById("rech-pc-specials");
+  if(pcSpec) pcSpec.style.display = tab==="search" ? "" : "none";
   const inp=document.getElementById("dict-input");
   if(inp){
     inp.value="";
@@ -1870,6 +1872,20 @@ function wireDictModal(){
       if(C) dictSelectWord(C[+li.dataset.idx], +li.dataset.idx);
     }
   });
+  // Boutons caractères spéciaux PC
+  document.querySelectorAll("#rech-pc-specials .rss-btn").forEach(btn=>{
+    btn.addEventListener("mousedown", e=>{
+      e.preventDefault();
+      const ch=btn.dataset.ins;
+      const inp=document.getElementById("dict-input"); if(!inp) return;
+      const s=inp.selectionStart, en=inp.selectionEnd;
+      inp.value=inp.value.slice(0,s)+ch+inp.value.slice(en);
+      inp.setSelectionRange(s+1,s+1);
+      inp.dispatchEvent(new Event("input",{bubbles:true}));
+      inp.focus();
+    });
+  });
+
   // Clic sur un mot résultat
   document.getElementById("rech-search-res")?.addEventListener("click", e=>{
     const sp=e.target.closest(".rech-res-word"); if(!sp) return;
