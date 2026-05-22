@@ -236,6 +236,7 @@ function initSettingsUI(){
     document.getElementById("row-dur").style.display=e.target.checked?"":"none";
     saveSettings();
     if(typeof emChronoReset==="function") emChronoReset();
+    if(typeof tmChronoReset==="function") tmChronoReset();
   });
   document.getElementById("set-dur")?.addEventListener("input",e=>{
     settings.chronoDur=parseInt(e.target.value);

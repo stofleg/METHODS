@@ -1134,6 +1134,8 @@ function addDays(ymd, n){
   return new Intl.DateTimeFormat("fr-CA",{year:"numeric",month:"2-digit",day:"2-digit"}).format(dt);
 }
 
+function chronoFmt(s){ return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+
 function norm(w){
   if(!w) return "";
   return w.toUpperCase()

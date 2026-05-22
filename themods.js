@@ -166,6 +166,34 @@ function tmRefocus(){
     setTimeout(()=>document.getElementById("tm-saisie")?.focus(), 50);
 }
 
+let tmChronoInterval=null, tmChronoRem=0;
+function tmChronoStop(){
+  if(tmChronoInterval){ clearInterval(tmChronoInterval); tmChronoInterval=null; }
+}
+function tmChronoStart(){
+  tmChronoStop();
+  const el=document.getElementById("tm-chrono"); if(!el) return;
+  if(!settings.chronoEnabled){ el.textContent=""; el.className="chrono"; return; }
+  tmChronoRem=settings.chronoDur*60;
+  el.textContent=chronoFmt(tmChronoRem);
+  el.className="chrono running";
+  tmChronoInterval=setInterval(()=>{
+    tmChronoRem=Math.max(0,tmChronoRem-1);
+    el.textContent=chronoFmt(tmChronoRem);
+    if(tmChronoRem===0){
+      el.className="chrono expired";
+      tmChronoStop();
+      if(!tmSolutions) showTmSolutions();
+    }
+  },1000);
+}
+function tmChronoReset(){
+  tmChronoStop();
+  const el=document.getElementById("tm-chrono"); if(!el) return;
+  if(settings.chronoEnabled){ el.textContent=chronoFmt(settings.chronoDur*60); el.className="chrono"; }
+  else { el.textContent=""; el.className="chrono"; }
+}
+
 // Vrai si le mot fait ≥10 lettres ET sa définition contient "(p.p.inv.)"
 function isLongPpInv(n){
   return n.length > 9 && (getNormToF()[n] || "").includes("(p.p.inv.)");
@@ -392,6 +420,7 @@ function startSession(theme, session){
   renderTmGame();
   updateTmBtn();
   setTmMsg("");
+  tmChronoStart();
   if(tmKb) tmKb.clear();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
@@ -624,6 +653,7 @@ function showTmSolutions(){
 }
 
 function finalizeTm(ok){
+  tmChronoStop();
   tmSolutions=true;
   setDictBtnVisible(true);
   updateTmBtn();
