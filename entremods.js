@@ -135,6 +135,7 @@ function emCurrentSession(){ return emCurrentSessions[emSessionIdx]||null; }
 /* ── Chrono ── */
 let emChronoInterval=null;
 let emChronoRem=0;
+function chronoFmt(s){ return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
 
 function emChronoStop(){
   if(emChronoInterval){ clearInterval(emChronoInterval); emChronoInterval=null; }
@@ -269,6 +270,7 @@ function emPrepareGame(listId,sessionIdx){
   emNoHelp=true; emPhase="WAITING";
   emRenderBounds(); emRenderSlots(); emUpdateCounter(); emChronoReset(); emUpdateBtn();
   emSetMsg("Prêt — appuie sur Jouer pour commencer.","");
+  emRefocus();
   setDictBtnVisible(true);
   const s=emSessionState(listId,sessionIdx);
   if(s){ s.seen=true; s.lastSeen=todayStr(); }

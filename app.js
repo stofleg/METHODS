@@ -221,7 +221,10 @@ function openSettingsPanel(){
   document.getElementById("settings")?.classList.add("open");
 }
 function initSettingsUI(){
-  const close=()=>document.getElementById("settings")?.classList.remove("open");
+  const close=()=>{
+    document.getElementById("settings")?.classList.remove("open");
+    if(document.querySelector("#v-entremods.active") && typeof emRefocus==="function") emRefocus();
+  };
   document.getElementById("btn-close-settings")?.addEventListener("click",close);
   document.getElementById("settings-bd")?.addEventListener("click",close);
 
