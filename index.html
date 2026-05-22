@@ -166,7 +166,7 @@ input[type=range]{accent-color:var(--accent);}
 .sel-card{width:88%;max-width:340px;padding:16px 20px;
   display:flex;flex-direction:row;align-items:center;gap:16px;
   cursor:pointer;transition:background .15s;border-left:3px solid transparent;}
-.sel-card:hover{background:rgba(255,255,255,.1);}
+@media(hover:hover){.sel-card:hover{background:rgba(255,255,255,.1);}}
 .sel-icon{flex-shrink:0;width:42px;height:42px;display:flex;align-items:center;justify-content:center;border-radius:10px;}
 .sel-text{display:flex;flex-direction:column;gap:3px;}
 .sel-name{font-size:26px;font-weight:950;letter-spacing:.12em;}.sel-name .l1{color:var(--t1);}
@@ -441,8 +441,8 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 .btn-menu-pc{display:none;flex-shrink:0;}
 @media(min-width:641px){.btn-menu-pc{display:inline-flex;}}
 /* ── Couleurs boutons header ── */
-#em-btn-recherche,#btn-tm-recherche{background:var(--accent);border-color:var(--accent);color:#fff;}
-#em-btn-recherche:hover,#btn-tm-recherche:hover{background:var(--accent);filter:brightness(1.12);}
+#em-btn-recherche,#btn-tm-recherche{background:#f59e0b;border-color:#f59e0b;color:#fff;}
+#em-btn-recherche:hover,#btn-tm-recherche:hover{background:#f59e0b;filter:brightness(1.12);}
 #em-btn-logout,#btn-tm-logout{background:rgba(255,107,107,.15);border-color:rgba(255,107,107,.35);color:#ff6b6b;}
 #em-btn-settings,#btn-tm-settings{background:rgba(138,155,191,.1);border-color:rgba(138,155,191,.25);color:var(--muted);}
 #em-btn-menu{background:rgba(183,138,247,.15);border-color:rgba(183,138,247,.35);color:#b78af7;}
@@ -1002,7 +1002,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.33</div>
+  pointer-events:none;user-select:none;">v4.34</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1014,7 +1014,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v433";
+  const CURRENT_CACHE="methods-v434";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

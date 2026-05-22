@@ -220,6 +220,7 @@ function initSettingsUI(){
     settings.chronoEnabled=e.target.checked;
     document.getElementById("row-dur").style.display=e.target.checked?"":"none";
     saveSettings();
+    if(typeof emChronoReset==="function") emChronoReset();
   });
   document.getElementById("set-dur")?.addEventListener("input",e=>{
     settings.chronoDur=parseInt(e.target.value);
