@@ -93,6 +93,9 @@ async function loadThemodsState(){
     persistThemods().catch(e=>console.error('[sync] persistThemods error:', e));
     updateTmStats();
     updateVerbesStats();
+  } else if(r.err === "not_found"){
+    tmSaveLocal();
+    persistThemods().catch(e=>console.error('[sync] initial create error:', e));
   } else {
     tmSaveLocal();
   }
