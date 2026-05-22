@@ -169,21 +169,22 @@ function initNav(){
   // Settings — shared panel
   document.getElementById("btn-tm-settings")?.addEventListener("click", ()=>openSettingsPanel());
   document.getElementById("em-btn-settings")?.addEventListener("click", ()=>openSettingsPanel());
-  // Swipe latéral ENTREMODS↔THEMODS
+  // Swipe vers la droite → menu principal (mobile uniquement)
   let _swSX=0, _swSY=0;
   const _swStart=e=>{_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
+  const _swToMenu=e=>{
+    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
+    if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
+    emChronoStop(); showView("v-select");
+  };
   document.getElementById("v-entremods")?.addEventListener("touchstart",_swStart,{passive:true});
-  document.getElementById("v-entremods")?.addEventListener("touchend",e=>{
-    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
-    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)) return;
-    if(dx<0){ emChronoStop(); showView("v-themods"); setDictBtnVisible(true); initThemods(); }
-  },{passive:true});
+  document.getElementById("v-entremods")?.addEventListener("touchend",_swToMenu,{passive:true});
   document.getElementById("v-themods")?.addEventListener("touchstart",_swStart,{passive:true});
-  document.getElementById("v-themods")?.addEventListener("touchend",e=>{
-    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
-    if(Math.abs(dx)<60||Math.abs(dx)<Math.abs(dy)) return;
-    if(dx>0){ showView("v-entremods"); ensureEntreModsInit(); }
-  },{passive:true});
+  document.getElementById("v-themods")?.addEventListener("touchend",_swToMenu,{passive:true});
+  // Bouton menu PC
+  const doMenu=()=>{ emChronoStop(); showView("v-select"); };
+  document.getElementById("em-btn-menu")?.addEventListener("click", doMenu);
+  document.getElementById("tm-btn-menu")?.addEventListener("click", doMenu);
   // F1
   document.addEventListener("keydown", e=>{
     if(e.key==="F1"){
