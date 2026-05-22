@@ -172,9 +172,9 @@ function emRenderBounds(){
     if(bb){ bb.textContent="—"; bb.onclick=null; }
     return;
   }
-  const C=emC(), E=emE();
-  const ea=E[sess.lowerIdx]||C[sess.lowerIdx];
-  const eb=E[sess.upperIdx]||C[sess.upperIdx];
+  const C=emC();
+  const ea=getNormToE()[C[sess.lowerIdx]]||C[sess.lowerIdx];
+  const eb=getNormToE()[C[sess.upperIdx]]||C[sess.upperIdx];
   if(ba){ setElWord(ba,ea,C[sess.lowerIdx]); ba.onclick=()=>openDef(C[sess.lowerIdx],ea); }
   if(bb){ setElWord(bb,eb,C[sess.upperIdx]); bb.onclick=()=>openDef(C[sess.upperIdx],eb); }
 }
@@ -184,12 +184,12 @@ function emRenderSlots(){
   const sess=emCurrentSession();
   list.innerHTML="";
   if(!sess) return;
-  const C=emC(), E=emE(), F=emF();
+  const C=emC();
   const n=sess.targetIdxs.length;
   for(let i=0;i<n;i++){
     const tIdx=sess.targetIdxs[i];
     const canon=C[tIdx];
-    const word=E[tIdx]||canon;
+    const word=getNormToE()[canon]||canon;
     const li=document.createElement("li");
     li.dataset.slot=i;
     li.className="slot"+(canon.length<10?" slot-short":"");
@@ -223,7 +223,7 @@ function emRenderSlots(){
         if(settings.showDef){
           const b=document.createElement("button"); b.className="tool-btn"; b.textContent="📖";
           b.addEventListener("mousedown",e=>e.preventDefault());
-          b.addEventListener("click",()=>{ emNoHelp=false; emHintUsed[i]=true; const custom=(emState._customDefs||{})[canon]; const raw=custom||(F[tIdx]||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim(); openDefSimple(raw||canon); emRefocus(); });
+          b.addEventListener("click",()=>{ emNoHelp=false; emHintUsed[i]=true; const custom=(emState._customDefs||{})[canon]; const raw=custom||(getNormToF()[canon]||"").replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").trim(); openDefSimple(raw||canon); emRefocus(); });
           tools.appendChild(b);
         }
         if(settings.showLen){
