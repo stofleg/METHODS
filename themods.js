@@ -542,7 +542,7 @@ function renderOdsGame(){
     }
     if(revealed){
       row.style.cursor="pointer";
-      row.addEventListener("click",()=>openDef(norm(form),form));
+      row.addEventListener("click",()=>openDef(norm(form)));
     }
     tilesDiv.appendChild(row);
   });
@@ -560,7 +560,7 @@ function renderOdsGame(){
         row.appendChild(t);
       }
       row.style.cursor="pointer";
-      row.addEventListener("click",()=>openDef(norm(form),form));
+      row.addEventListener("click",()=>openDef(norm(form)));
       tilesDiv.appendChild(row);
     });
   }
