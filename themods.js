@@ -758,13 +758,15 @@ function getGMStats(){
 function gmPickNext(){
   const total=getAllGMEntries().length, today=todayStr();
   const gmSt=tmState.themes?.gm||{};
-  const unseen=[], due=[], locked=[];
+  const due=[], unseen=[], locked=[];
   for(let i=0;i<total;i++){
     const s=gmSt[String(i)];
     if(!s||!s.seen){ unseen.push(i); continue; }
-    if(!s.validated||s.due<=today) due.push(i); else locked.push(i);
+    if(s.due<=today) due.push(i);   // révision due (validé ou non)
+    else locked.push(i);             // pas encore dû
   }
-  const pool=unseen.length?unseen:due.length?due:locked;
+  // Révisions dues en priorité, puis nouvelles entrées, puis verrouillées
+  const pool=due.length?due:unseen.length?unseen:locked;
   return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
 function currentGMEntry(){

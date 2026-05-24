@@ -1765,7 +1765,10 @@ function _rechTriggerSearch(raw){
   const q=raw.toUpperCase().trim();
   const el=document.getElementById("rech-search-res");
   if(!q){ if(el) el.innerHTML=""; return; }
-  _rechSearchTimer=setTimeout(()=>_rechRenderResults(_rechExec(q)),250);
+  _rechSearchTimer=setTimeout(()=>{
+    const parsed=_rechParseQuery(q);
+    _rechRenderResults(_rechExec(q),parsed);
+  },250);
 }
 
 function _rechExec(q){
@@ -1805,9 +1808,20 @@ function _rechExec(q){
   return res;
 }
 
-function _rechRenderResults(words){
+function _rechRenderResults(words, parsed){
   const el=document.getElementById("rech-search-res"); if(!el) return;
   if(!words.length){ el.innerHTML="<div class='rech-no-res'>Aucun résultat</div>"; return; }
+  const isSubana = parsed?.type==="subanagram";
+  const baseLetters = isSubana ? parsed.letters.split("") : null;
+  function _markExtra(w){
+    if(!isSubana) return w;
+    const rem=[...baseLetters];
+    return [...w].map(l=>{
+      const i=rem.indexOf(l);
+      if(i>=0){ rem[i]=null; return l; }
+      return `<span style="color:#ef4444;font-weight:900">${l}</span>`;
+    }).join("");
+  }
   const total=words.length;
   const groups={};
   for(const w of words)(groups[w.length]=groups[w.length]||[]).push(w);
@@ -1817,7 +1831,7 @@ function _rechRenderResults(words){
     const g=groups[len];
     html+=`<div class="rech-group-hdr">${len} lettres · ${g.length}</div><div class="rech-group">`;
     for(const w of g){
-      html+=`<span class="rech-res-word" data-canon="${w}">${w}</span>`;
+      html+=`<span class="rech-res-word" data-canon="${w}">${_markExtra(w)}</span>`;
     }
     html+="</div>";
   }
@@ -1913,7 +1927,7 @@ function wireDictModal(){
         if(_rechActiveTab==="search"){
           clearTimeout(_rechSearchTimer);
           const q=inp.value.toUpperCase().trim();
-          if(q) _rechRenderResults(_rechExec(q));
+          if(q){ const p=_rechParseQuery(q); _rechRenderResults(_rechExec(q),p); }
           return;
         }
         const v=norm(inp.value); if(!v) return;
@@ -1946,7 +1960,7 @@ function wireDictModal(){
         } else if(k==="OK"){
           clearTimeout(_rechSearchTimer);
           const q=i.value.toUpperCase().trim();
-          if(q) _rechRenderResults(_rechExec(q));
+          if(q){ const p=_rechParseQuery(q); _rechRenderResults(_rechExec(q),p); }
           return;
         } else {
           i.value=i.value.slice(0,pos)+k+i.value.slice(sel>pos?sel:pos);
