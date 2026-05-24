@@ -202,7 +202,7 @@ function isLongPpInv(n){
 /* ── État jeu ── */
 let tmTheme=null, tmSession=null;
 let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
-let gmEntryIdx=0, gmFound=new Set();
+let gmCurrentIdx=0, gmFound=new Set();
 let odsEntryIdx=0, odsFnd=new Set();
 
 /* ── Navigation sous-vues ── */
@@ -259,10 +259,15 @@ function fmtPct(val, total){
 function updateTmStats(){
   if(!tmState) return;
   // GM
-  const prog=getGMProgress();
-  const gmTotal=getAllGMEntries().length;
+  const {seen:gmSeen,validated:gmVal,toReview:gmRev,total:gmTotal}=getGMStats();
   const gmEl=document.getElementById("gm-desc");
-  if(gmEl) gmEl.textContent="1 808 groupes"+fmtPct(prog.done,gmTotal);
+  if(gmEl){
+    const parts=[gmTotal+" groupes"];
+    if(gmVal) parts.push(gmVal+" validés");
+    if(gmRev) parts.push(gmRev+" à revoir");
+    else if(gmSeen&&!gmVal) parts.push(gmSeen+" vus");
+    gmEl.textContent=parts.join(" · ");
+  }
 
 
 
@@ -641,7 +646,7 @@ function validateTmWord(raw){
 
 function showTmSolutions(){
   tmNoHelp=false;
-  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); updateTmBtn(); return; }
+  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); finalizeGM(false); return; }
 
   if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
   const sess=tmSession; if(!sess) return;
@@ -731,16 +736,67 @@ function shuffleArray(arr){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
-function getGMProgress(){
+function getGMSt(idx){
   if(!tmState.themes) tmState.themes={};
   if(!tmState.themes.gm) tmState.themes.gm={};
-  if(!tmState.themes.gm._p) tmState.themes.gm._p={idx:0,done:0,order:null};
-  return tmState.themes.gm._p;
+  const k=String(idx);
+  if(!tmState.themes.gm[k]) tmState.themes.gm[k]={seen:false,validated:false,lastResult:"",lastSeen:"",interval:1,due:todayStr()};
+  const s=tmState.themes.gm[k]; if(!s.due) s.due=todayStr(); if(!s.interval) s.interval=1;
+  return s;
+}
+function getGMStats(){
+  const total=getAllGMEntries().length, today=todayStr();
+  const gmSt=tmState.themes?.gm||{};
+  let seen=0, validated=0, toReview=0;
+  for(let i=0;i<total;i++){
+    const s=gmSt[String(i)]; if(!s||!s.seen) continue;
+    seen++;
+    if(s.validated&&s.due>today) validated++; else toReview++;
+  }
+  return {seen,validated,toReview,total};
+}
+function gmPickNext(){
+  const total=getAllGMEntries().length, today=todayStr();
+  const gmSt=tmState.themes?.gm||{};
+  const unseen=[], due=[], locked=[];
+  for(let i=0;i<total;i++){
+    const s=gmSt[String(i)];
+    if(!s||!s.seen){ unseen.push(i); continue; }
+    if(!s.validated||s.due<=today) due.push(i); else locked.push(i);
+  }
+  const pool=unseen.length?unseen:due.length?due:locked;
+  return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
 function currentGMEntry(){
-  const all=getAllGMEntries(), prog=getGMProgress();
-  const realIdx=prog.order?.[gmEntryIdx];
-  return realIdx!==undefined ? all[realIdx] : null;
+  const all=getAllGMEntries();
+  return all[gmCurrentIdx]||null;
+}
+function updateGMCounter(){
+  const el=document.getElementById("tm-session-label");
+  if(!el||tmTheme!=="gm") return;
+  const {seen,validated,toReview,total}=getGMStats();
+  const parts=[];
+  if(validated) parts.push("✓ "+validated);
+  if(toReview) parts.push("↺ "+toReview);
+  parts.push(seen+"/"+total+" vus");
+  el.textContent=parts.join(" · ");
+  el.style.fontSize="12px"; el.style.fontWeight="700"; el.style.padding="4px 12px";
+}
+function finalizeGM(ok){
+  tmChronoStop(); tmSolutions=true;
+  setDictBtnVisible(true); updateTmBtn();
+  const s=getGMSt(gmCurrentIdx);
+  s.seen=true; s.lastSeen=todayStr();
+  if(ok){
+    s.validated=true; s.lastResult="ok";
+    s.interval=nextInterval(s.interval||1); s.due=addDays(todayStr(),s.interval);
+    setTmMsg("✓ Toutes les graphies trouvées !","ok");
+  } else {
+    s.validated=false; s.lastResult="help";
+    s.interval=3; s.due=addDays(todayStr(),3);
+    setTmMsg("Solutions affichées.","warn");
+  }
+  updateGMCounter(); persistThemods().catch(()=>{});
 }
 function cleanDef(d){
   if(!d) return "";
@@ -751,29 +807,33 @@ function cleanDef(d){
 function letterCount(w){ return w.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").length; }
 
 function startGM(){
-  const all=getAllGMEntries(), prog=getGMProgress();
-  if(!prog.order||prog.order.length!==all.length){
-    prog.order=shuffleArray(all.map((_,i)=>i));
-    prog.idx=0; prog.done=0;
+  gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
+  const idx=gmPickNext();
+  if(idx===null){
+    const {validated,total}=getGMStats();
+    if(validated>=total){
+      if(!tmState.themes.gm) tmState.themes.gm={};
+      tmState.themes.gm._completions=(tmState.themes.gm._completions||0)+1;
+      persistThemods().catch(()=>{}); _showTmDone("gm");
+    } else { renderTmHome(); }
+    return;
   }
-  if(prog.idx>=all.length){ prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; }
-  gmEntryIdx=prog.idx; gmFound=new Set(); tmSolutions=false; tmNoHelp=true;
+  gmCurrentIdx=idx;
+  getGMSt(idx).seen=true; getGMSt(idx).lastSeen=todayStr();
   setDictBtnVisible(false);
   showTmView("tv-game");
   document.getElementById("tm-gtitle").textContent="Graphies multiples";
-  const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
-  updateTmBtn(); setTmMsg(""); renderGMGame();
+  updateTmBtn(); setTmMsg(""); renderGMGame(); updateGMCounter();
   if(tmKb) tmKb.clear();
+  tmChronoStart();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
 
 function renderGMGame(){
-  const all=getAllGMEntries(), prog=getGMProgress();
+  const all=getAllGMEntries();
   const entry=currentGMEntry();
   const list=document.getElementById("tm-wlist"); if(!list) return;
   list.innerHTML="";
-  const lbl=document.getElementById("tm-session-label");
-  if(lbl) lbl.textContent="";
   if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
 
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
@@ -813,13 +873,6 @@ function renderGMGame(){
   });
   list.appendChild(tilesDiv);
 
-  if(allFormsFound||tmSolutions){
-    const nav=document.createElement("div"); nav.className="gm-nav";
-    const pos=document.createElement("span"); pos.className="gm-pos";
-    pos.textContent=(gmEntryIdx+1)+" / "+all.length;
-    nav.appendChild(pos);
-    list.appendChild(nav);
-  }
 }
 
 function validateGMWord(n){
@@ -831,15 +884,8 @@ function validateGMWord(n){
   }
   gmFound.add(n); setTmMsg("");
   const allFound=entry.forms.every(f=>gmFound.has(norm(f)));
-  if(allFound){
-    const prog=getGMProgress();
-    prog.done=(prog.done||0)+1; prog.idx=gmEntryIdx+1;
-    setTmMsg("✓ Toutes les graphies trouvées !","ok");
-    setDictBtnVisible(true);
-    persistThemods().catch(()=>{});
-  }
   renderGMGame();
-  updateTmBtn();
+  if(allFound) finalizeGM(tmNoHelp); else updateTmBtn();
 }
 
 /* ── Init (une seule fois) ── */
@@ -866,14 +912,8 @@ function initThemods(){
 
     const onSolBtn=()=>{
       if(tmTheme==="gm"){
-        if(isGMResolved()){
-          const prog=getGMProgress();
-          gmEntryIdx++; prog.idx=gmEntryIdx;
-          gmFound=new Set(); tmSolutions=false;
-          updateTmBtn(); setTmMsg(""); renderGMGame();
-          if(tmKb) tmKb.clear();
-          persistThemods().catch(()=>{});
-        } else { showTmSolutions(); }
+        if(isGMResolved()) startGM();
+        else showTmSolutions();
       } else if(isOds(tmTheme)){
         if(isOdsResolved()){
           const prog=getOdsProgress(tmTheme);
