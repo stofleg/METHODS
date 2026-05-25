@@ -846,7 +846,7 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  defText.textContent=cleanDef(_cdGM!==undefined ? _cdGM : entry.def)||"…";
+  defText.textContent=cleanDef(_cdGM||"")||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());

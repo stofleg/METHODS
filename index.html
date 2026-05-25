@@ -976,6 +976,14 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
           <a id="dict-img" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:12px;text-decoration:none;">🔍 Image</a>
         </div>
       </div>
+      <!-- ── Admin global (outils batch) ── -->
+      <div id="rech-admin-global" style="display:none;border-top:1px solid var(--stroke);padding-top:14px;margin-top:4px;">
+        <div class="rech-admin-title">ADMIN · OUTILS</div>
+        <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
+          <button id="gm-batch-wikt-btn" class="btn btn-ok" style="font-size:12px;padding:6px 10px;">Batch GM → Wiktionnaire</button>
+          <div id="gm-batch-progress" style="display:none;font-size:11px;color:var(--muted);line-height:1.5;white-space:pre-wrap;"></div>
+        </div>
+      </div>
       <!-- ── Admin stof2 ── -->
       <div id="rech-admin" style="display:none;">
         <div class="rech-admin-title">ADMIN · STOF2</div>
@@ -1023,7 +1031,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.43</div>
+  pointer-events:none;user-select:none;">v4.44</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1035,7 +1043,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v443";
+  const CURRENT_CACHE="methods-v444";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

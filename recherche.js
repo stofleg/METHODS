@@ -215,6 +215,92 @@ function _rechParseWikt(wikitext){
   return null;
 }
 
+/* ── Batch GM → Wiktionnaire ── */
+let _gmBatchRunning = false;
+
+async function gmBatchWikt(){
+  if(!_isAdm() || _gmBatchRunning) return;
+
+  const entries = typeof getAllGMEntries === "function" ? getAllGMEntries() : [];
+  if(!entries.length){ return; }
+
+  const btn = document.getElementById("gm-batch-wikt-btn");
+  const prog = document.getElementById("gm-batch-progress");
+  _gmBatchRunning = true;
+  if(btn){ btn.disabled=true; btn.textContent="En cours…"; }
+  if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
+
+  const normToE = getNormToE();
+
+  // Dédoublonner par canon (shortest form)
+  const seenCanons = new Set();
+  const items = [];
+  for(const entry of entries){
+    const sortedForms = [...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+    const canon = norm(sortedForms[0]);
+    if(seenCanons.has(canon)) continue;
+    seenCanons.add(canon);
+    const raw = normToE[canon] || canon;
+    const display = raw.split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+    items.push({canon, display});
+  }
+
+  let processed=0, added=0, skipped=0, failed=0;
+  const total = items.length;
+
+  const updateProg = () => {
+    if(prog) prog.textContent =
+      `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+  };
+
+  async function processOne({canon, display}){
+    // Si déjà en cache avec une def → skip immédiat
+    const cached = _rechCache[canon];
+    if(cached?.loaded && cached.custom.def !== undefined){ skipped++; processed++; return; }
+
+    // Vérifier Firestore
+    const r = await fbGet("rech_custom", canon);
+    if(r.ok && r.data?.def !== undefined){
+      if(!_rechCache[canon]) _rechCache[canon]={custom:r.data, excl:[], loaded:true};
+      skipped++; processed++; return;
+    }
+
+    // Fetch Wiktionnaire
+    let wiktDef = null;
+    try{
+      const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
+      const resp = await fetch(url);
+      const data = await resp.json();
+      const page = Object.values(data.query?.pages||{})[0];
+      const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
+      wiktDef = _rechParseWikt(wikitext);
+    }catch{}
+
+    if(wiktDef){
+      const existing = r.ok && r.data ? r.data : {};
+      await fbSet("rech_custom", canon, {...existing, def: wiktDef}).catch(()=>{});
+      if(!_rechCache[canon]) _rechCache[canon]={custom:{}, excl:[], loaded:true};
+      _rechCache[canon].custom.def = wiktDef;
+      added++;
+    } else {
+      failed++;
+    }
+    processed++;
+  }
+
+  // Traitement par groupes de 4 en parallèle
+  const CONCURRENCY = 4;
+  for(let i=0; i<items.length; i+=CONCURRENCY){
+    await Promise.all(items.slice(i, i+CONCURRENCY).map(processOne));
+    updateProg();
+  }
+
+  if(prog) prog.textContent =
+    `Terminé  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf Wiktionnaire`;
+  if(btn){ btn.disabled=false; btn.textContent="Batch GM → Wiktionnaire"; }
+  _gmBatchRunning = false;
+}
+
 /* ── Wiring ── */
 function wireRechercheAdmin(){
   document.getElementById("rech-modules")?.addEventListener("click", e=>{
@@ -223,6 +309,11 @@ function wireRechercheAdmin(){
   });
   document.getElementById("rech-save-def")?.addEventListener("click", rechSaveDef);
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
+  document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
+  window._onDictOpen = ()=>{
+    const el = document.getElementById("rech-admin-global");
+    if(el) el.style.display = _isAdm() ? "" : "none";
+  };
 }
 
 window._onDictSelect = rechShowAdmin;

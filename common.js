@@ -1854,6 +1854,7 @@ function openDictModal(){
   const _suggEl=document.getElementById("dict-sugg"); if(_suggEl) _suggEl.innerHTML="";
   const _resEl=document.getElementById("dict-result"); if(_resEl) _resEl.style.display="none";
   dictUpdateLinks("");
+  window._onDictOpen?.();
   inp?.focus();
 }
 
