@@ -230,19 +230,24 @@ async function gmBatchWikt(){
   if(btn){ btn.disabled=true; btn.textContent="En cours…"; }
   if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
 
-  const normToE = getNormToE();
-
-  // Dédoublonner par canon (shortest form)
+  // Dédoublonner par canon ; conserver toutes les graphies comme candidats Wikt
   const seenCanons = new Set();
   const items = [];
   for(const entry of entries){
-    const sortedForms = [...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+    const sortedForms = [...entry.forms].filter(f=>f&&f.trim())
+      .sort((a,b)=>letterCount(a)-letterCount(b));
+    if(!sortedForms.length) continue;
     const canon = norm(sortedForms[0]);
     if(seenCanons.has(canon)) continue;
     seenCanons.add(canon);
-    const raw = normToE[canon] || canon;
-    const display = raw.split(",")[0].trim().toLowerCase().replace(/\*/g,"");
-    items.push({canon, display});
+    // Toutes les graphies comme candidats Wikt (sans doublon de display)
+    const seenDisp = new Set();
+    const allDisplays = [];
+    for(const f of sortedForms){
+      const d = f.split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+      if(d && !seenDisp.has(d)){ seenDisp.add(d); allDisplays.push(d); }
+    }
+    items.push({canon, allDisplays});
   }
 
   let processed=0, added=0, skipped=0, failed=0;
@@ -253,8 +258,23 @@ async function gmBatchWikt(){
       `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
   };
 
-  async function processOne({canon, display}){
-    // Si déjà en cache avec une def → skip immédiat
+  async function fetchWiktAny(displays){
+    for(const display of displays){
+      try{
+        const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
+        const resp = await fetch(url);
+        const data = await resp.json();
+        const page = Object.values(data.query?.pages||{})[0];
+        const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
+        const def = _rechParseWikt(wikitext);
+        if(def) return def;
+      }catch{}
+    }
+    return null;
+  }
+
+  async function processOne({canon, allDisplays}){
+    // Déjà en cache avec une def → skip
     const cached = _rechCache[canon];
     if(cached?.loaded && cached.custom.def !== undefined){ skipped++; processed++; return; }
 
@@ -265,16 +285,8 @@ async function gmBatchWikt(){
       skipped++; processed++; return;
     }
 
-    // Fetch Wiktionnaire
-    let wiktDef = null;
-    try{
-      const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
-      const resp = await fetch(url);
-      const data = await resp.json();
-      const page = Object.values(data.query?.pages||{})[0];
-      const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
-      wiktDef = _rechParseWikt(wikitext);
-    }catch{}
+    // Essayer toutes les graphies sur Wiktionnaire
+    const wiktDef = await fetchWiktAny(allDisplays);
 
     if(wiktDef){
       const existing = r.ok && r.data ? r.data : {};

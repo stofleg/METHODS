@@ -104,16 +104,20 @@ async function fbSet(col, id, obj) {
   } catch (e) { return { ok: false, err: "network" }; }
 }
 
-/* ── Wiktionnaire fetch ── */
-async function fetchWikt(display) {
-  try {
-    const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=" + encodeURIComponent(display);
-    const resp = await fetch(url, { headers: { "User-Agent": "METHODS-batch/1.0" } });
-    const data = await resp.json();
-    const page = Object.values(data.query?.pages || {})[0];
-    const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
-    return parseWikt(wikitext);
-  } catch { return null; }
+/* ── Wiktionnaire fetch (essaie chaque display jusqu'à trouver une déf) ── */
+async function fetchWiktAny(displays) {
+  for (const display of displays) {
+    try {
+      const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles=" + encodeURIComponent(display);
+      const resp = await fetch(url, { headers: { "User-Agent": "METHODS-batch/1.0" } });
+      const data = await resp.json();
+      const page = Object.values(data.query?.pages || {})[0];
+      const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
+      const def = parseWikt(wikitext);
+      if (def) return def;
+    } catch {}
+  }
+  return null;
 }
 
 /* ── Collecter les entrées GM uniques ── */
@@ -122,13 +126,20 @@ const items = [];
 
 for (const section of GM_DATA) {
   for (const entry of (section.entries || [])) {
-    const sortedForms = [...entry.forms].sort((a, b) => letterCount(a) - letterCount(b));
+    const sortedForms = [...entry.forms].filter(f => f && f.trim())
+      .sort((a, b) => letterCount(a) - letterCount(b));
+    if (!sortedForms.length) continue;
     const canon = norm(sortedForms[0]);
     if (seenCanons.has(canon)) continue;
     seenCanons.add(canon);
-    // display = forme accentuée la plus courte, en minuscules, sans virgule
-    const display = sortedForms[0].split(",")[0].trim().toLowerCase();
-    items.push({ canon, display, forms: entry.forms });
+    // Toutes les graphies comme candidats Wikt (sans doublon de display)
+    const seenDisp = new Set();
+    const allDisplays = [];
+    for (const f of sortedForms) {
+      const d = f.split(",")[0].trim().toLowerCase().replace(/\*/g, "");
+      if (d && !seenDisp.has(d)) { seenDisp.add(d); allDisplays.push(d); }
+    }
+    items.push({ canon, allDisplays, forms: entry.forms });
   }
 }
 
@@ -142,7 +153,7 @@ const missing = []; // entrées sans def Wiktionnaire
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 async function processOne(item) {
-  const { canon, display, forms } = item;
+  const { canon, allDisplays, forms } = item;
 
   // Vérifier Firestore
   const r = await fbGet("rech_custom", canon);
@@ -152,11 +163,11 @@ async function processOne(item) {
   }
   if (r.err === "network") { errors++; return; }
 
-  // Fetch Wiktionnaire
-  const def = await fetchWikt(display);
+  // Essayer toutes les graphies sur Wiktionnaire
+  const def = await fetchWiktAny(allDisplays);
 
   if (!def) {
-    missing.push({ canon, display, forms });
+    missing.push({ canon, allDisplays, forms });
     failed++;
     return;
   }
@@ -193,7 +204,7 @@ if (errors) console.log(`   ⚠  ${errors} erreurs réseau`);
 
 if (missing.length) {
   console.log(`\n📋 Mots sans définition Wiktionnaire (${missing.length}) :\n`);
-  for (const { canon, display, forms } of missing) {
-    console.log(`  ${forms.join(" / ")}  [${canon}]`);
+  for (const { canon, allDisplays, forms } of missing) {
+    console.log(`  ${forms.join(" / ")}  [${canon}]  (essayé: ${allDisplays.join(", ")})`);
   }
 }
