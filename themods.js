@@ -791,11 +791,11 @@ function finalizeGM(ok){
   s.seen=true; s.lastSeen=todayStr();
   if(ok){
     s.validated=true; s.lastResult="ok";
-    s.interval=nextInterval(s.interval||1); s.due=addDays(todayStr(),s.interval);
+    s.interval=Math.max(7,nextInterval(s.interval||1)); s.due=addDays(todayStr(),s.interval);
     setTmMsg("✓ Toutes les graphies trouvées !","ok");
   } else {
     s.validated=false; s.lastResult="help";
-    s.interval=3; s.due=addDays(todayStr(),3);
+    s.interval=7; s.due=addDays(todayStr(),7);
     setTmMsg("Solutions affichées.","warn");
   }
   updateGMCounter(); persistThemods().catch(()=>{});
@@ -868,7 +868,7 @@ function renderGMGame(){
     }
     if(revealed){
       row.style.cursor="pointer";
-      row.addEventListener("click",()=>openDef(norm(form),form));
+      row.addEventListener("click",()=>openDef(norm(form)));
     }
     wrap.appendChild(row);
     tilesDiv.appendChild(wrap);
