@@ -17,7 +17,7 @@ const window = {};
 eval(readFileSync(new URL("../data.js",        import.meta.url), "utf8"));
 eval(readFileSync(new URL("../themods_data.js", import.meta.url), "utf8"));
 
-const { c: ODS_C, f: ODS_F } = window.SEQODS_DATA;
+const { e: ODS_E, f: ODS_F } = window.SEQODS_DATA;
 const GM_DATA = window.THEMODS_DATA.gm;
 
 /* ── Helpers ── */
@@ -33,10 +33,14 @@ function letterCount(w) {
     .replace(/[^A-Za-zÀ-ÿ]/g, "").length;
 }
 
-/* ── ODS map brute ── */
+/* ── ODS map : toutes les formes affichées (e[]) → définition ── */
 const rawMap = new Map();
-for (let i = 0; i < ODS_C.length; i++) {
-  if (ODS_F?.[i]) rawMap.set(ODS_C[i], ODS_F[i]);
+for (let i = 0; i < ODS_E.length; i++) {
+  if (!ODS_E[i] || !ODS_F?.[i]) continue;
+  for (const form of ODS_E[i].split(",").map(f => f.trim()).filter(Boolean)) {
+    const canon = norm(form);
+    if (canon) rawMap.set(canon, ODS_F[i]);
+  }
 }
 
 /* ── Résolution de renvoi ── */
