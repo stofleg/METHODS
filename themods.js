@@ -69,7 +69,7 @@ function _mergeTmStates(a, b){
           lastSeen:   src.lastSeen||'',
           interval:   Math.max(as.interval||1, bs.interval||1),
           due:        validated ? src.due||todayStr()
-                                : ((as.due||'') < (bs.due||'') ? as.due : bs.due)||todayStr()
+                                : ((as.due||'') > (bs.due||'') ? as.due : bs.due)||todayStr()
         };
       }
     }
