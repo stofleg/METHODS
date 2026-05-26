@@ -425,6 +425,8 @@ function startSession(theme, session){
   renderTmGame();
   updateTmBtn();
   setTmMsg("");
+  _setQuizMode(false);
+  _showVerdictBar(false, false);
   tmChronoStart();
   if(tmKb) tmKb.clear();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
@@ -480,9 +482,9 @@ function startOds(theme){
   showTmView("tv-game");
   document.getElementById("tm-gtitle").textContent=THEME_NAMES[theme]||theme;
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
-  updateTmBtn(); setTmMsg(""); renderOdsGame();
-  if(tmKb) tmKb.clear();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
+  setTmMsg(""); renderOdsGame();
+  _setQuizMode(true);
+  _showVerdictBar(true, false);
 }
 function isOdsResolved(){
   const entry=currentOdsEntry(tmTheme); if(!entry) return false;
@@ -644,11 +646,41 @@ function validateTmWord(raw){
   else persistThemods().catch(()=>{});
 }
 
+/* ── Helpers mode quiz (GM/ODS) ── */
+function _setQuizMode(on){
+  const inp = document.getElementById("tm-inp-bar");
+  const kb  = document.getElementById("tm-kb");
+  const sol = document.getElementById("tm-btn-sol");
+  if(inp) inp.style.display = on ? "none" : "";
+  if(kb)  kb.style.display  = on ? "none" : "";
+  if(sol) sol.style.display = on ? "none" : "";
+}
+function _showVerdictBar(visible, withVerdict){
+  const bar  = document.getElementById("tm-verdict-bar");
+  const btns = document.getElementById("tm-verdict-btns");
+  const solQ = document.getElementById("tm-btn-sol-quiz");
+  if(bar)  bar.style.display  = visible ? "flex" : "none";
+  if(solQ) solQ.style.display = (visible && !withVerdict) ? "" : "none";
+  if(btns) btns.style.display = (visible && withVerdict)  ? "flex" : "none";
+}
+function _advanceOds(ok){
+  const prog=getOdsProgress(tmTheme);
+  prog.done=(prog.done||0)+1; prog.idx=odsEntryIdx+1;
+  odsEntryIdx++; odsFnd=new Set(); tmSolutions=false;
+  const all=getAllOdsEntries(tmTheme);
+  if(odsEntryIdx>=all.length){
+    prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; odsEntryIdx=0;
+  }
+  setTmMsg(ok?"✓ Trouvé !":"À revoir.", ok?"ok":"warn");
+  _showVerdictBar(true, false);
+  renderOdsGame();
+  persistThemods().catch(()=>{});
+}
+
 function showTmSolutions(){
   tmNoHelp=false;
-  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); finalizeGM(false); return; }
-
-  if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
+  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); _showVerdictBar(true, true); return; }
+  if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); _showVerdictBar(true, true); return; }
   const sess=tmSession; if(!sess) return;
   tmSolutions=true;
   renderTmGame();
@@ -682,17 +714,11 @@ function isGMResolved(){
 }
 
 function updateTmBtn(){
+  if(tmTheme==="gm"||isOds(tmTheme)) return; // géré par _showVerdictBar
   const sol=document.getElementById("tm-btn-sol");
   const solKb=document.getElementById("tm-btn-sol-kb");
-  const gmLike=tmTheme==="gm"||isOds(tmTheme);
   [sol,solKb].forEach(b=>{
     if(!b) return;
-    if(gmLike){
-      const resolved=tmTheme==="gm"?isGMResolved():isOdsResolved();
-      if(resolved){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
-      else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
-      return;
-    }
     if(tmSolutions){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
     else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
   });
@@ -825,10 +851,10 @@ function startGM(){
   setDictBtnVisible(false);
   showTmView("tv-game");
   document.getElementById("tm-gtitle").textContent="Graphies multiples";
-  updateTmBtn(); setTmMsg(""); renderGMGame(); updateGMCounter();
-  if(tmKb) tmKb.clear();
+  setTmMsg(""); renderGMGame(); updateGMCounter();
+  _setQuizMode(true);
+  _showVerdictBar(true, false);
   tmChronoStart();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
 
 function renderGMGame(){
@@ -913,25 +939,26 @@ function initThemods(){
     });
 
     const onSolBtn=()=>{
-      if(tmTheme==="gm"){
-        if(isGMResolved()) startGM();
-        else showTmSolutions();
-      } else if(isOds(tmTheme)){
-        if(isOdsResolved()){
-          const prog=getOdsProgress(tmTheme);
-          odsEntryIdx++; prog.idx=odsEntryIdx;
-          odsFnd=new Set(); tmSolutions=false;
-          updateTmBtn(); setTmMsg(""); renderOdsGame();
-          if(tmKb) tmKb.clear();
-          persistThemods().catch(()=>{});
-        } else { showTmSolutions(); }
-      } else {
-        tmSolutions ? playTheme(tmTheme) : showTmSolutions();
-      }
+      if(tmTheme==="gm"||isOds(tmTheme)) return; // géré par tm-btn-sol-quiz
+      tmSolutions ? playTheme(tmTheme) : showTmSolutions();
       tmRefocus();
     };
     document.getElementById("tm-btn-sol")?.addEventListener("click", onSolBtn);
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
+
+    document.getElementById("tm-btn-sol-quiz")?.addEventListener("click", ()=>{
+      if(!tmSolutions) showTmSolutions();
+    });
+    document.getElementById("tm-btn-found")?.addEventListener("click", ()=>{
+      _showVerdictBar(false, false);
+      if(tmTheme==="gm"){ finalizeGM(true); setTimeout(()=>startGM(), 900); }
+      else if(isOds(tmTheme)){ _advanceOds(true); }
+    });
+    document.getElementById("tm-btn-review")?.addEventListener("click", ()=>{
+      _showVerdictBar(false, false);
+      if(tmTheme==="gm"){ finalizeGM(false); setTimeout(()=>startGM(), 900); }
+      else if(isOds(tmTheme)){ _advanceOds(false); }
+    });
 
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
       if(isOds(tmTheme)) renderTmOds();
