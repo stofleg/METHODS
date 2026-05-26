@@ -169,8 +169,8 @@ function initNav(){
   // Settings — shared panel
   document.getElementById("btn-tm-settings")?.addEventListener("click", ()=>openSettingsPanel());
   document.getElementById("em-btn-settings")?.addEventListener("click", ()=>openSettingsPanel());
-  // Swipe vers la droite → menu principal (mobile uniquement)
-  let _swSX=0, _swSY=0;
+  // Swipe droite → menu principal ; swipe gauche sur v-select → retour au jeu (mobile uniquement)
+  let _swSX=0, _swSY=0, _prevGameView=null;
   const _swStart=e=>{_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
   const _absorbNext=()=>{
     const absorb=ev=>{ev.stopPropagation();ev.preventDefault();};
@@ -180,7 +180,13 @@ function initNav(){
   const _swToMenu=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
     if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
+    _prevGameView=document.querySelector(".view.active")?.id||null;
     emChronoStop(); showView("v-select"); _absorbNext();
+  };
+  const _swToGame=e=>{
+    const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
+    if(dx>-60||Math.abs(dx)<Math.abs(dy)||!_prevGameView) return;
+    showView(_prevGameView); _absorbNext();
   };
   const _swToBack=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
@@ -191,6 +197,8 @@ function initNav(){
   document.getElementById("v-entremods")?.addEventListener("touchend",_swToMenu,{passive:true});
   document.getElementById("v-themods")?.addEventListener("touchstart",_swStart,{passive:true});
   document.getElementById("v-themods")?.addEventListener("touchend",_swToMenu,{passive:true});
+  document.getElementById("v-select")?.addEventListener("touchstart",_swStart,{passive:true});
+  document.getElementById("v-select")?.addEventListener("touchend",_swToGame,{passive:true});
   document.getElementById("v-recherche")?.addEventListener("touchstart",_swStart,{passive:true});
   document.getElementById("v-recherche")?.addEventListener("touchend",_swToBack,{passive:true});
   // Bouton menu PC
