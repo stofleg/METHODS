@@ -293,13 +293,24 @@ async function gmBatchWikt(){
   };
 
   async function fetchWiktAny(displays){
-    for(const display of displays){
+    const toTry = [...displays];
+    const tried = new Set();
+    while(toTry.length){
+      const display = toTry.shift();
+      if(tried.has(display)) continue;
+      tried.add(display);
       try{
         const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
         const resp = await fetch(url);
         const data = await resp.json();
         const page = Object.values(data.query?.pages||{})[0];
         const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
+        const redir = wikitext.match(/^#REDIRECT\s*\[\[([^\]#|]+)/i);
+        if(redir){
+          const target = redir[1].trim().toLowerCase();
+          if(!tried.has(target)) toTry.unshift(target);
+          continue;
+        }
         const def = _rechParseWikt(wikitext);
         if(def) return def;
       }catch{}
