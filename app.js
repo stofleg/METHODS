@@ -170,8 +170,8 @@ function initNav(){
   document.getElementById("btn-tm-settings")?.addEventListener("click", ()=>openSettingsPanel());
   document.getElementById("em-btn-settings")?.addEventListener("click", ()=>openSettingsPanel());
   // Swipe droite → menu principal ; swipe gauche sur v-select → retour au jeu (mobile uniquement)
-  let _swSX=0, _swSY=0, _prevGameView=null;
-  const _swStart=e=>{_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
+  let _swSX=0, _swSY=0, _prevGameView=null, _swBlocked=false;
+  const _swStart=e=>{_swBlocked=!!e.target.closest("textarea");_swSX=e.touches[0].clientX;_swSY=e.touches[0].clientY;};
   const _absorbNext=()=>{
     const absorb=ev=>{ev.stopPropagation();ev.preventDefault();};
     document.addEventListener("click",absorb,{capture:true,once:true});
@@ -179,18 +179,18 @@ function initNav(){
   };
   const _swToMenu=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
-    if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
+    if(_swBlocked||dx<60||Math.abs(dx)<Math.abs(dy)) return;
     _prevGameView=document.querySelector(".view.active")?.id||null;
     emChronoStop(); showView("v-select"); _absorbNext();
   };
   const _swToGame=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
-    if(dx>-60||Math.abs(dx)<Math.abs(dy)||!_prevGameView) return;
+    if(_swBlocked||dx>-60||Math.abs(dx)<Math.abs(dy)||!_prevGameView) return;
     showView(_prevGameView); _absorbNext();
   };
   const _swToBack=e=>{
     const dx=e.changedTouches[0].clientX-_swSX, dy=e.changedTouches[0].clientY-_swSY;
-    if(dx<60||Math.abs(dx)<Math.abs(dy)) return;
+    if(_swBlocked||dx<60||Math.abs(dx)<Math.abs(dy)) return;
     closeDictModal(); _absorbNext();
   };
   document.getElementById("v-entremods")?.addEventListener("touchstart",_swStart,{passive:true});

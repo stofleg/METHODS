@@ -321,6 +321,13 @@ function wireRechercheAdmin(){
   document.getElementById("rech-save-def")?.addEventListener("click", rechSaveDef);
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
+
+  // Masquer le clavier app quand la zone de texte est active (évite le double clavier)
+  const editDef = document.getElementById("rech-edit-def");
+  const rechKb  = document.getElementById("rech-kb");
+  editDef?.addEventListener("focus", ()=>{ if(rechKb) rechKb.style.display="none"; });
+  editDef?.addEventListener("blur",  ()=>{ if(rechKb) rechKb.style.display=""; });
+
   window._onDictOpen = ()=>{
     const el = document.getElementById("rech-admin-global");
     if(el) el.style.display = _isAdm() ? "" : "none";
