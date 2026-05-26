@@ -915,7 +915,14 @@ function renderGMGame(){
   defDiv.className="gm-def";
   const defText=document.createElement("span");
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
-  defText.textContent=cleanDef(_cdGM!==undefined ? _cdGM : _gmFallback)||"…";
+  const _cleanedFallback=cleanDef(_gmFallback);
+  let _rawDef;
+  if(_cdGM!==undefined){
+    // Si l'ODS ne contient que POS + conjugaison (pas de sens réel), le préfixer au def Wiktionnaire
+    const _posOnly=/^[a-z.\d()\s]+$/.test(_cleanedFallback);
+    _rawDef=(_posOnly&&_cleanedFallback) ? _cleanedFallback+' '+_cdGM : _cdGM;
+  } else { _rawDef=_gmFallback; }
+  defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());

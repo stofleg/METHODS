@@ -285,11 +285,13 @@ async function gmBatchWikt(){
   }
 
   let processed=0, added=0, skipped=0, failed=0;
+  const failedWords = [];
   const total = items.length;
 
   const updateProg = () => {
-    if(prog) prog.textContent =
-      `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+    let txt = `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+    if(failedWords.length) txt += `\n✕ ${failedWords.join(', ')}`;
+    if(prog) prog.textContent = txt;
   };
 
   async function fetchWiktAny(displays){
@@ -357,6 +359,7 @@ async function gmBatchWikt(){
         await fbDelete("rech_custom", canon).catch(()=>{});
         if(_rechCache[canon]) delete _rechCache[canon].custom.def;
       }
+      failedWords.push(canon);
       failed++;
     }
     processed++;
