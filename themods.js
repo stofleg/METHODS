@@ -946,6 +946,26 @@ function renderGMGame(){
 
 }
 
+/* ── Pull-to-refresh : swipe bas sur tv-game pour recharger la def Firestore ── */
+function _refreshCurrentDef(){
+  if(tmTheme!=="gm" && !isOds(tmTheme)) return;
+  let primaryCanon=null;
+  if(tmTheme==="gm"){
+    const entry=currentGMEntry(); if(!entry) return;
+    const sorted=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+    primaryCanon=norm(sorted[0]);
+  } else {
+    const entry=currentOdsEntry(tmTheme); if(!entry) return;
+    const sorted=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+    primaryCanon=norm(sorted[0]);
+  }
+  if(!primaryCanon) return;
+  if(!window._rechCache) window._rechCache={};
+  window._rechCache[primaryCanon]={custom:{},excl:[],loaded:false};
+  setTmMsg("↻ Actualisation…","");
+  renderTmGame();
+}
+
 function validateGMWord(n){
   const entry=currentGMEntry(); if(!entry) return;
   if(!entry.forms.find(f=>norm(f)===n)){
@@ -971,6 +991,16 @@ function initThemods(){
         e.preventDefault(); validateTmWord(e.target.value); e.target.value=""; tmRefocus();
       }
     });
+
+    // Pull-to-refresh : swipe vertical bas sur tv-game
+    let _prSX=0, _prSY=0;
+    document.getElementById("tv-game")?.addEventListener("touchstart", e=>{
+      _prSX=e.touches[0].clientX; _prSY=e.touches[0].clientY;
+    }, {passive:true});
+    document.getElementById("tv-game")?.addEventListener("touchend", e=>{
+      const dx=e.changedTouches[0].clientX-_prSX, dy=e.changedTouches[0].clientY-_prSY;
+      if(dy>90 && Math.abs(dy)>Math.abs(dx)*2){ e.stopPropagation(); _refreshCurrentDef(); }
+    }, {passive:true});
 
     // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
     document.getElementById("tv-game")?.addEventListener("mousedown", e=>{
