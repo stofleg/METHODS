@@ -163,6 +163,46 @@ function getNormToF(){
   }
   return _normToF;
 }
+
+let _normToAllDefs = null;
+function getNormToAllDefs(){
+  if(!_normToAllDefs){
+    _normToAllDefs = {};
+    const d = window.SEQODS_DATA;
+    (d?.e || []).forEach((raw, i) => {
+      if(!raw) return;
+      const n = norm(raw.split(',')[0].split('/')[0].trim());
+      if(!n) return;
+      const def = d.f?.[i] || "";
+      if(!_normToAllDefs[n]) _normToAllDefs[n] = [];
+      if(def && !_normToAllDefs[n].includes(def)) _normToAllDefs[n].push(def);
+    });
+  }
+  return _normToAllDefs;
+}
+
+// Pour les homographes dans GM : choisit la def dont le POS correspond aux autres formes du binôme.
+const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
+function _gmPickDef(primaryCanon, allForms){
+  const allDefsMap = getNormToAllDefs();
+  const primaryDefs = allDefsMap[primaryCanon] || [];
+  if(primaryDefs.length <= 1) return primaryDefs[0] || "";
+  // Collecte le POS des autres formes
+  const targetPOS = new Set();
+  allForms.forEach(form => {
+    const n = norm(form);
+    if(n === primaryCanon) return;
+    (allDefsMap[n] || []).forEach(d => { const p = _getPOS(d); if(p) targetPOS.add(p); });
+  });
+  if(targetPOS.size > 0){
+    for(const def of primaryDefs){
+      const p = _getPOS(def);
+      if(p && targetPOS.has(p)) return def;
+    }
+  }
+  // Fallback : préférer nom commun
+  return primaryDefs.find(d => /^n\.[mf]\./.test(d)) || primaryDefs[0] || "";
+}
 function tmRefocus(){
   if(window.matchMedia("(pointer:fine)").matches)
     setTimeout(()=>document.getElementById("tm-saisie")?.focus(), 50);
@@ -874,7 +914,7 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  const _gmFallback=getNormToF()[primaryCanon]||"";
+  const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
   defText.textContent=cleanDef(_cdGM!==undefined ? _cdGM : _gmFallback)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
