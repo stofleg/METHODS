@@ -62,6 +62,23 @@ function rechFindModules(canon){
   return out;
 }
 
+/* ── Onglet actif dans le bloc définition ── */
+let _rechDefActiveTab = "def"; // "def" | "quiz"
+
+function _rechSwitchDefTab(tab){
+  _rechDefActiveTab = tab;
+  document.getElementById("rech-def-tab-def")?.classList.toggle("active", tab==="def");
+  document.getElementById("rech-def-tab-quiz")?.classList.toggle("active", tab==="quiz");
+  document.getElementById("rech-edit-def").style.display    = tab==="def"  ? "" : "none";
+  document.getElementById("rech-edit-defquiz").style.display = tab==="quiz" ? "" : "none";
+  const cache = _rechCache[_rechCurrentCanon];
+  const saveBtn = document.getElementById("rech-save-def");
+  if(saveBtn){
+    const hasVal = tab==="def" ? cache?.custom?.def!==undefined : cache?.custom?.defQuiz!==undefined;
+    saveBtn.textContent = hasVal ? "Mettre à jour" : "Sauvegarder";
+  }
+}
+
 /* ── Afficher / masquer le panneau ── */
 async function rechShowAdmin(canon){
   const panel = document.getElementById("rech-admin"); if(!panel) return;
@@ -70,10 +87,15 @@ async function rechShowAdmin(canon){
   _rechCurrentCanon = canon;
   panel.style.display = "";
 
-  const modEl = document.getElementById("rech-modules");
-  const defEl = document.getElementById("rech-edit-def");
+  const modEl   = document.getElementById("rech-modules");
+  const defEl   = document.getElementById("rech-edit-def");
+  const quizEl  = document.getElementById("rech-edit-defquiz");
   if(modEl) modEl.innerHTML = "<span class='rech-loading'>Chargement…</span>";
   if(defEl) defEl.value = "";
+  if(quizEl) quizEl.value = "";
+
+  // Réinitialiser l'onglet sur "def" à chaque nouveau mot
+  _rechSwitchDefTab("def");
 
   await _rechLoad(canon);
   const cache = _rechCache[canon];
@@ -100,13 +122,11 @@ async function rechShowAdmin(canon){
   }
 
   // Définition
-  if(defEl){
-    if(cache.custom.def !== undefined){
-      defEl.value = cache.custom.def;
-    } else {
-      defEl.value = getNormToF()[canon] || "";
-    }
-  }
+  const baseDef = cache.custom.def !== undefined ? cache.custom.def : (getNormToF()[canon] || "");
+  if(defEl) defEl.value = baseDef;
+
+  // Définition quiz — défaut = baseDef si pas de defQuiz stocké
+  if(quizEl) quizEl.value = cache.custom.defQuiz !== undefined ? cache.custom.defQuiz : baseDef;
 
   // Mettre à jour le bloc dict-def avec la définition personnalisée si elle existe
   if(cache.custom.def !== undefined){
@@ -145,6 +165,7 @@ async function rechToggleExclusion(canon, moduleId, label, btn){
 
 /* ── Sauvegarder définition ── */
 async function rechSaveDef(){
+  if(_rechDefActiveTab === "quiz"){ await _rechSaveDefQuiz(); return; }
   const canon = _rechCurrentCanon; if(!canon) return;
   const defEl  = document.getElementById("rech-edit-def");
   const saveBtn = document.getElementById("rech-save-def");
@@ -158,6 +179,20 @@ async function rechSaveDef(){
   const dictDefEl = document.getElementById("dict-def");
   if(dictDefEl) dictDefEl.textContent = newDef || "(définition absente)";
 
+  if(saveBtn){ saveBtn.textContent="Sauvegardé ✓"; saveBtn.disabled=false; setTimeout(()=>{ saveBtn.textContent="Mettre à jour"; },2000); }
+}
+
+async function _rechSaveDefQuiz(){
+  const canon = _rechCurrentCanon; if(!canon) return;
+  const quizEl  = document.getElementById("rech-edit-defquiz");
+  const saveBtn = document.getElementById("rech-save-def");
+  const newDef  = quizEl?.value?.trim() || "";
+  if(!_rechCache[canon]) _rechCache[canon]={custom:{},excl:[],loaded:true};
+  // Stocker null si vide (le jeu retombera sur def)
+  if(newDef) _rechCache[canon].custom.defQuiz = newDef;
+  else delete _rechCache[canon].custom.defQuiz;
+  if(saveBtn){ saveBtn.textContent="…"; saveBtn.disabled=true; }
+  await fbSet("rech_custom", canon, _rechCache[canon].custom).catch(()=>{});
   if(saveBtn){ saveBtn.textContent="Sauvegardé ✓"; saveBtn.disabled=false; setTimeout(()=>{ saveBtn.textContent="Mettre à jour"; },2000); }
 }
 
@@ -179,12 +214,12 @@ async function rechFetchWikt(){
     const page = Object.values(data.query?.pages||{})[0];
     const wikitext = page?.revisions?.[0]?.slots?.main?.["*"]
                   || page?.revisions?.[0]?.["*"] || "";
-    const defEl = document.getElementById("rech-edit-def");
-    if(defEl){
+    const activeEl = document.getElementById(_rechDefActiveTab==="quiz" ? "rech-edit-defquiz" : "rech-edit-def");
+    if(activeEl){
       const wiktDef = _rechParseWikt(wikitext);
       if(wiktDef){
-        const existing = defEl.value.trim();
-        defEl.value = existing ? existing + " " + wiktDef : wiktDef;
+        const existing = activeEl.value.trim();
+        activeEl.value = existing ? existing + " " + wiktDef : wiktDef;
       }
     }
   }catch{
@@ -322,11 +357,16 @@ function wireRechercheAdmin(){
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
 
-  // Masquer le clavier app quand la zone de texte est active (évite le double clavier)
-  const editDef = document.getElementById("rech-edit-def");
-  const rechKb  = document.getElementById("rech-kb");
-  editDef?.addEventListener("focus", ()=>{ if(rechKb) rechKb.style.display="none"; });
-  editDef?.addEventListener("blur",  ()=>{ if(rechKb) rechKb.style.display=""; });
+  // Onglets définition / quiz
+  document.getElementById("rech-def-tab-def")?.addEventListener("click", ()=>_rechSwitchDefTab("def"));
+  document.getElementById("rech-def-tab-quiz")?.addEventListener("click", ()=>_rechSwitchDefTab("quiz"));
+
+  // Masquer le clavier app quand une zone de texte est active (évite le double clavier)
+  const rechKb = document.getElementById("rech-kb");
+  ["rech-edit-def","rech-edit-defquiz"].forEach(id=>{
+    document.getElementById(id)?.addEventListener("focus", ()=>{ if(rechKb) rechKb.style.display="none"; });
+    document.getElementById(id)?.addEventListener("blur",  ()=>{ if(rechKb) rechKb.style.display=""; });
+  });
 
   window._onDictOpen = ()=>{
     const el = document.getElementById("rech-admin-global");

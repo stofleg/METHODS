@@ -16,7 +16,7 @@ function _loadCustomDefIfNeeded(canon, onLoaded){
     if(!window._rechCache[canon]) window._rechCache[canon]={custom:{},excl:[],loaded:false};
     window._rechCache[canon].custom = r.ok && r.data ? r.data : {};
     window._rechCache[canon].loaded = true;
-    if(window._rechCache[canon].custom.def !== undefined) onLoaded();
+    const _c=window._rechCache[canon].custom; if(_c.def!==undefined||_c.defQuiz!==undefined) onLoaded();
   }).catch(()=>{ _customDefPending.delete(canon); });
 }
 
@@ -518,7 +518,7 @@ function renderOdsGame(){
   const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
   const allFormsFound=sortedForms.every(f=>odsFnd.has(norm(f)));
   const _odsCanon=norm(sortedForms[0]);
-  const _cdOds=window._rechCache?.[_odsCanon]?.loaded ? window._rechCache[_odsCanon].custom?.def : undefined;
+  const _odsC=window._rechCache?.[_odsCanon]; const _cdOds=_odsC?.loaded ? (_odsC.custom?.defQuiz||_odsC.custom?.def) : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
@@ -842,7 +842,7 @@ function renderGMGame(){
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
   const primaryCanon=norm(sortedForms[0]);
-  const _cdGM=window._rechCache?.[primaryCanon]?.loaded ? window._rechCache[primaryCanon].custom?.def : undefined;
+  const _gmC=window._rechCache?.[primaryCanon]; const _cdGM=_gmC?.loaded ? (_gmC.custom?.defQuiz||_gmC.custom?.def) : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");

@@ -1,5 +1,5 @@
 /* ══ Service Worker METHODS — network-first v4.33 ══ */
-const CACHE_NAME = "methods-v448";
+const CACHE_NAME = "methods-v449";
 
 /* ── Install : prendre le contrôle immédiatement ── */
 self.addEventListener("install", e => {

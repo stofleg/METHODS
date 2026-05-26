@@ -436,6 +436,9 @@ body.kb-open .slot{min-height:28px;font-size:12px;}
 @media(prefers-color-scheme:light){.rech-textarea{background:rgba(255,255,255,.8);}}
 .rech-textarea:focus{box-shadow:0 0 0 3px var(--focus);}
 .rech-actions{display:flex;gap:6px;}
+.rech-def-tabs{display:flex;gap:4px;margin-bottom:6px;}
+.rech-def-tab{flex:1;padding:4px 0;font-size:11px;font-weight:700;letter-spacing:.04em;border:1px solid var(--stroke);border-radius:6px;background:transparent;cursor:pointer;color:var(--muted);}
+.rech-def-tab.active{border-color:var(--accent);color:var(--accent);}
 
 /* ── Bouton dictionnaire flottant — désactivé (remplacé par EXPLODS) ── */
 #btn-dict{display:none !important;}
@@ -992,8 +995,12 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
           <div id="rech-modules"></div>
         </div>
         <div>
-          <div class="rech-admin-lbl">Définition :</div>
+          <div class="rech-def-tabs">
+            <button id="rech-def-tab-def" class="rech-def-tab active">Définition</button>
+            <button id="rech-def-tab-quiz" class="rech-def-tab">Quiz</button>
+          </div>
           <textarea id="rech-edit-def" class="rech-textarea" placeholder="Définition…"></textarea>
+          <textarea id="rech-edit-defquiz" class="rech-textarea" placeholder="Définition quiz…" style="display:none;"></textarea>
           <div class="rech-actions" style="margin-top:6px;">
             <button id="rech-wikt-btn" class="btn btn-ok" style="font-size:12px;padding:6px 10px;flex:1;">Générer depuis Wiktionnaire</button>
             <button id="rech-save-def" class="btn btn-primary" style="font-size:12px;padding:6px 10px;">Sauvegarder</button>
@@ -1031,7 +1038,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.48</div>
+  pointer-events:none;user-select:none;">v4.49</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1043,7 +1050,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v448";
+  const CURRENT_CACHE="methods-v449";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
