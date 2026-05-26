@@ -992,14 +992,14 @@ function initThemods(){
       }
     });
 
-    // Pull-to-refresh : swipe vertical bas sur tv-game
+    // Pull-to-refresh : swipe vertical bas sur v-themods (même niveau que swipe-to-menu)
     let _prSX=0, _prSY=0;
-    document.getElementById("tv-game")?.addEventListener("touchstart", e=>{
+    document.getElementById("v-themods")?.addEventListener("touchstart", e=>{
       _prSX=e.touches[0].clientX; _prSY=e.touches[0].clientY;
     }, {passive:true});
-    document.getElementById("tv-game")?.addEventListener("touchend", e=>{
+    document.getElementById("v-themods")?.addEventListener("touchend", e=>{
       const dx=e.changedTouches[0].clientX-_prSX, dy=e.changedTouches[0].clientY-_prSY;
-      if(dy>90 && Math.abs(dy)>Math.abs(dx)*2){ e.stopPropagation(); _refreshCurrentDef(); }
+      if(dy>90 && Math.abs(dy)>Math.abs(dx)*2) _refreshCurrentDef();
     }, {passive:true});
 
     // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
