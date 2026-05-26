@@ -1222,9 +1222,6 @@ function openDef(canon, displayWord, defText, flechie){
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
   let allIdxs = _findAllIdxs(canon);
-  // Homographes : c[] peut avoir plusieurs entrées identiques (même graphie, catégorie diff.)
-  // On déduplique par valeur de c[] — getNormToF() combine déjà leurs defs en une seule.
-  { const seen=new Set(); allIdxs=allIdxs.filter(i=>{const v=C?.[i];if(!v||seen.has(v))return false;seen.add(v);return true;}); }
   if(allIdxs.length === 0 && defText === undefined){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }
@@ -1250,7 +1247,7 @@ function openDef(canon, displayWord, defText, flechie){
   const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
     ? [{label:null, entryLabel:null, text:_cf(defText)}]
-    : allIdxs.map(i=>{ const f=_cf(getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    : allIdxs.map(i=>{ const f=_cf(_getIdxDef()[i]||getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
@@ -1442,6 +1439,36 @@ function _dictBisect(A, prefix){
   let lo=0, hi=A.length;
   while(lo<hi){ const mid=(lo+hi)>>1; if(A[mid]<prefix) lo=mid+1; else hi=mid; }
   return lo;
+}
+
+// Mapping c[i] → définition individuelle pour les homographes.
+// c[] et e[]/f[] sont construits depuis la même source ODS dans le même ordre :
+// la k-ème occurrence de "VANILLER" dans c[] correspond à la k-ème dans e[]/f[].
+let _idxDef = null;
+function _getIdxDef(){
+  if(_idxDef) return _idxDef;
+  const {c:C, e:E, f:F} = window.SEQODS_DATA || {};
+  if(!C || !E || !F) return (_idxDef = []);
+  // Construire par-canon : norm → [def0, def1, ...] depuis e[]/f[]
+  const normDefs = new Map();
+  for(let i=0; i<E.length; i++){
+    if(!E[i]) continue;
+    const n = norm(E[i].split(",")[0].split("/")[0].trim());
+    if(!n) continue;
+    if(!normDefs.has(n)) normDefs.set(n, []);
+    normDefs.get(n).push(F[i] || "");
+  }
+  // Assigner c[i] → k-ème def
+  _idxDef = new Array(C.length);
+  const occ = new Map();
+  for(let i=0; i<C.length; i++){
+    const cn = C[i];
+    const k = occ.get(cn) || 0;
+    occ.set(cn, k+1);
+    const defs = normDefs.get(cn) || [];
+    _idxDef[i] = k < defs.length ? defs[k] : (defs[0] || "");
+  }
+  return _idxDef;
 }
 
 // Map lazy : mot canonique → index dans c[] (pour retrouver def/display)
@@ -1659,7 +1686,7 @@ function _dictRenderSugg(prefix){
   for(const i of candidates){
     let label=(getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
     if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
-    const pos=_posLabel(getNormToF()[C[i]]); if(pos) label+="  "+pos;
+    const pos=_posLabel(_getIdxDef()[i]||getNormToF()[C[i]]); if(pos) label+="  "+pos;
     html+=`<li data-idx="${i}">${label}</li>`;
   }
   sugg.innerHTML=html||"<li class='dict-no-result'>Mot inconnu.</li>";
