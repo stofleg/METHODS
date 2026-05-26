@@ -104,8 +104,7 @@ async function rechShowAdmin(canon){
     if(cache.custom.def !== undefined){
       defEl.value = cache.custom.def;
     } else {
-      const idx = _getCMap().get(canon);
-      defEl.value = (idx!==undefined ? (window.SEQODS_DATA?.f?.[idx]||"") : "");
+      defEl.value = getNormToF()[canon] || "";
     }
   }
 
