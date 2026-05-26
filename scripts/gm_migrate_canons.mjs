@@ -1,33 +1,20 @@
 /**
- * Pour chaque entrée GM sans définition dans Firestore (rech_custom),
- * cherche si l'une de ses formes existe dans SEQODS_DATA (ODS9) et,
- * si oui, récupère la définition ODS et l'écrit dans Firestore.
+ * Migre les documents Firestore rech_custom/{ancien_canon} → {nouveau_canon}
+ * pour les 473 entrées GM où le canon alphabétique diffère du canon longueur.
  *
- * Usage : node scripts/gm_fill_from_ods.mjs [--dry-run]
+ * Usage : node scripts/gm_migrate_canons.mjs [--dry-run]
  */
 
 import { readFileSync } from "fs";
 
 const FB_BASE = "https://firestore.googleapis.com/v1/projects/methods-8e4b1/databases/(default)/documents";
 const DRY_RUN = process.argv.includes("--dry-run");
+const CONCURRENCY = 8;
 
-/* ── Charger les données ── */
 const window = {};
-eval(readFileSync(new URL("../data.js",         import.meta.url), "utf8"));
-eval(readFileSync(new URL("../themods_data.js",  import.meta.url), "utf8"));
-
-const { c: ODS_C, f: ODS_F } = window.SEQODS_DATA;
+eval(readFileSync(new URL("../themods_data.js", import.meta.url), "utf8"));
 const GM_DATA = window.THEMODS_DATA.gm;
 
-/* ── Construire la map canon → def ODS ── */
-const odsMap = new Map(); // canon → def string
-for (let i = 0; i < ODS_C.length; i++) {
-  const def = ODS_F?.[i];
-  if (def) odsMap.set(ODS_C[i], def);
-}
-console.log(`\n📖 ODS : ${odsMap.size} entrées avec définition\n`);
-
-/* ── norm() ── */
 function norm(w) {
   if (!w) return "";
   return w.toUpperCase()
@@ -35,11 +22,35 @@ function norm(w) {
     .normalize("NFD").replace(/[̀-ͯ]/g, "")
     .replace(/[^A-Z]/g, "");
 }
-
 function letterCount(w) {
   return w.replace(/[Œœ]/g, "OE").replace(/[Ææ]/g, "AE")
     .replace(/[^A-Za-zÀ-ÿ]/g, "").length;
 }
+
+/* ── Collecter les paires (ancien → nouveau) canon ── */
+const migrations = [];
+const seen = new Set();
+
+for (const s of GM_DATA) {
+  for (const e of (s.entries || [])) {
+    const forms = (e.forms || []).filter(f => f && f.trim());
+    if (forms.length < 1) continue;
+
+    const byLen  = [...forms].sort((a, b) => letterCount(a) - letterCount(b));
+    const byAlph = [...forms].sort((a, b) => norm(a) < norm(b) ? -1 : norm(a) > norm(b) ? 1 : 0);
+
+    const oldCanon = norm(byLen[0]);
+    const newCanon = norm(byAlph[0]);
+
+    if (oldCanon === newCanon || seen.has(oldCanon)) continue;
+    seen.add(oldCanon);
+    migrations.push({ oldCanon, newCanon });
+  }
+}
+
+console.log(`\n🔄 ${migrations.length} canons à migrer`);
+if (DRY_RUN) console.log("⚠️  Mode --dry-run : aucune écriture\n");
+else console.log();
 
 /* ── Firestore helpers ── */
 function cvTo(val) {
@@ -75,7 +86,6 @@ async function fbGet(col, id) {
     return { ok: true, data: fromFs(await r.json()) };
   } catch { return { ok: false, err: "network" }; }
 }
-
 async function fbSet(col, id, obj) {
   try {
     const r = await fetch(`${FB_BASE}/${col}/${id}`, {
@@ -88,66 +98,38 @@ async function fbSet(col, id, obj) {
   } catch { return { ok: false, err: "network" }; }
 }
 
-/* ── Collecter les entrées GM uniques ── */
-const seenCanons = new Set();
-const items = [];
-
-for (const section of GM_DATA) {
-  for (const entry of (section.entries || [])) {
-    const sortedForms = [...entry.forms].filter(f => f && f.trim())
-      .sort((a, b) => norm(a) < norm(b) ? -1 : norm(a) > norm(b) ? 1 : 0);
-    if (!sortedForms.length) continue;
-    const canon = norm(sortedForms[0]);
-    if (seenCanons.has(canon)) continue;
-    seenCanons.add(canon);
-    // Tous les canons de toutes les formes
-    const allCanons = [...new Set(sortedForms.map(f => norm(f.split(",")[0].trim())).filter(Boolean))];
-    items.push({ canon, allCanons, forms: sortedForms });
-  }
-}
-
-console.log(`📚 ${items.length} entrées GM uniques`);
-if (DRY_RUN) console.log("⚠️  Mode --dry-run : aucune écriture Firestore\n");
-
-/* ── Traitement ── */
-const CONCURRENCY = 8;
-let processed = 0, added = 0, skipped = 0, stillMissing = 0, errors = 0;
-
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-async function processOne({ canon, allCanons, forms }) {
-  // Vérifier Firestore
-  const r = await fbGet("rech_custom", canon);
-  if (r.ok && r.data?.def !== undefined) { skipped++; return; }
+/* ── Traitement ── */
+let processed = 0, copied = 0, skipped = 0, errors = 0;
+
+async function processOne({ oldCanon, newCanon }) {
+  const r = await fbGet("rech_custom", oldCanon);
   if (r.err === "network") { errors++; return; }
+  if (!r.ok || !r.data) { skipped++; return; } // rien dans Firestore → rien à migrer
 
-  // Chercher dans ODS parmi tous les canons de l'entrée
-  let odsDef = null;
-  for (const c of allCanons) {
-    const d = odsMap.get(c);
-    if (d) { odsDef = d; break; }
-  }
+  // Vérifier si le nouveau canon a déjà des données
+  const rNew = await fbGet("rech_custom", newCanon);
+  if (rNew.err === "network") { errors++; return; }
 
-  if (!odsDef) { stillMissing++; return; }
+  // Fusionner : nouveau canon prend priorité si déjà renseigné
+  const merged = { ...r.data, ...(rNew.ok && rNew.data ? rNew.data : {}) };
 
   if (!DRY_RUN) {
-    const existing = r.ok && r.data ? r.data : {};
-    const wr = await fbSet("rech_custom", canon, { ...existing, def: odsDef });
+    const wr = await fbSet("rech_custom", newCanon, merged);
     if (!wr.ok) { errors++; return; }
   }
-  added++;
+  copied++;
 }
 
-for (let i = 0; i < items.length; i += CONCURRENCY) {
-  await Promise.all(items.slice(i, i + CONCURRENCY).map(processOne));
-  processed = Math.min(i + CONCURRENCY, items.length);
-  process.stdout.write(
-    `\r  ${processed}/${items.length}  ✓ ${added}  ⊘ ${skipped}  ✕ ${stillMissing}  ⚠ ${errors}   `
-  );
+for (let i = 0; i < migrations.length; i += CONCURRENCY) {
+  await Promise.all(migrations.slice(i, i + CONCURRENCY).map(processOne));
+  processed = Math.min(i + CONCURRENCY, migrations.length);
+  process.stdout.write(`\r  ${processed}/${migrations.length}  ✓ ${copied} copiés  ⊘ ${skipped} vides  ⚠ ${errors}   `);
+  if (!DRY_RUN && i + CONCURRENCY < migrations.length) await sleep(50);
 }
 
 console.log(`\n\n✅ Terminé`);
-console.log(`   ✓ ${added} définitions ODS ajoutées`);
-console.log(`   ⊘ ${skipped} déjà présentes dans Firestore`);
-console.log(`   ✕ ${stillMissing} toujours sans définition`);
+console.log(`   ✓ ${copied} documents copiés vers le nouveau canon`);
+console.log(`   ⊘ ${skipped} entrées sans document Firestore (rien à migrer)`);
 if (errors) console.log(`   ⚠  ${errors} erreurs réseau`);

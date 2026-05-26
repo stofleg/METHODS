@@ -515,7 +515,7 @@ function renderOdsGame(){
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
   if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
 
-  const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+  const sortedForms=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
   const allFormsFound=sortedForms.every(f=>odsFnd.has(norm(f)));
   const _odsCanon=norm(sortedForms[0]);
   const _odsC=window._rechCache?.[_odsCanon]; const _cdOds=_odsC?.loaded ? (_odsC.custom?.defQuiz||_odsC.custom?.def) : undefined;
@@ -838,7 +838,7 @@ function renderGMGame(){
   list.innerHTML="";
   if(!entry){ setTmMsg("Toutes les entrées terminées !","ok"); return; }
 
-  const sortedForms=[...entry.forms].sort((a,b)=>letterCount(a)-letterCount(b));
+  const sortedForms=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
   const primaryCanon=norm(sortedForms[0]);

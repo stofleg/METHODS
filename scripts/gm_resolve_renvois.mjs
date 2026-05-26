@@ -70,7 +70,7 @@ const items = [];
 for (const section of GM_DATA) {
   for (const entry of (section.entries || [])) {
     const sf = [...entry.forms].filter(f => f && f.trim())
-      .sort((a, b) => letterCount(a) - letterCount(b));
+      .sort((a, b) => norm(a) < norm(b) ? -1 : norm(a) > norm(b) ? 1 : 0);
     if (!sf.length) continue;
     const canon = norm(sf[0]);
     if (seenCanons.has(canon)) continue;

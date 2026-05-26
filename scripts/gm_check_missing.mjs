@@ -33,7 +33,7 @@ async function fbGetDef(canon) {
 const seen = new Set(), items = [];
 for (const s of GM) {
   for (const e of (s.entries || [])) {
-    const sf = [...e.forms].filter(f => f && f.trim()).sort((a,b) => letterCount(a)-letterCount(b));
+    const sf = [...e.forms].filter(f => f && f.trim()).sort((a,b) => norm(a) < norm(b) ? -1 : norm(a) > norm(b) ? 1 : 0);
     if (!sf.length) continue;
     const canon = norm(sf[0]);
     if (!canon || seen.has(canon)) continue;

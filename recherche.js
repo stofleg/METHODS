@@ -269,7 +269,7 @@ async function gmBatchWikt(){
   const items = [];
   for(const entry of entries){
     const sortedForms = [...entry.forms].filter(f=>f&&f.trim())
-      .sort((a,b)=>letterCount(a)-letterCount(b));
+      .sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
     if(!sortedForms.length) continue;
     const canon = norm(sortedForms[0]);
     if(seenCanons.has(canon)) continue;
