@@ -307,14 +307,26 @@ async function gmBatchWikt(){
     return null;
   }
 
-  async function processOne({canon, allDisplays}){
-    // Déjà en cache avec une def → skip
-    const cached = _rechCache[canon];
-    if(cached?.loaded && cached.custom.def !== undefined){ skipped++; processed++; return; }
+  // Une def est "effective" si elle contient un vrai contenu après nettoyage des renvois ODS.
+  // Ex. "[pivèr] n.m. (= pivert)." → nettoyé → "n.m. ." → pas effective.
+  function _isEffectiveDef(def){
+    if(!def) return false;
+    const cleaned = def
+      .replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i, "")
+      .replace(/^\([^)]*\)\s*/, "")
+      .replace(/\s*\(=[^)]*\)/g, "")
+      .trim();
+    return cleaned.length > 8 && !cleaned.startsWith("-->");
+  }
 
-    // Vérifier Firestore
+  async function processOne({canon, allDisplays}){
+    // Déjà en cache avec une def effective → skip
+    const cached = _rechCache[canon];
+    if(cached?.loaded && _isEffectiveDef(cached.custom.def)){ skipped++; processed++; return; }
+
+    // Vérifier Firestore — skip seulement si la def est effective (pas un renvoi ODS)
     const r = await fbGet("rech_custom", canon);
-    if(r.ok && r.data?.def !== undefined){
+    if(r.ok && r.data?.def !== undefined && _isEffectiveDef(r.data.def)){
       if(!_rechCache[canon]) _rechCache[canon]={custom:r.data, excl:[], loaded:true};
       skipped++; processed++; return;
     }
