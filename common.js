@@ -1449,7 +1449,6 @@ function _getIdxDef(){
   if(_idxDef) return _idxDef;
   const {c:C, e:E, f:F} = window.SEQODS_DATA || {};
   if(!C || !E || !F) return (_idxDef = []);
-  // Construire par-canon : norm → [def0, def1, ...] depuis e[]/f[]
   const normDefs = new Map();
   for(let i=0; i<E.length; i++){
     if(!E[i]) continue;
@@ -1458,17 +1457,38 @@ function _getIdxDef(){
     if(!normDefs.has(n)) normDefs.set(n, []);
     normDefs.get(n).push(F[i] || "");
   }
-  // Assigner c[i] → k-ème def
   _idxDef = new Array(C.length);
   const occ = new Map();
   for(let i=0; i<C.length; i++){
-    const cn = C[i];
-    const k = occ.get(cn) || 0;
-    occ.set(cn, k+1);
+    const cn = C[i]; const k = occ.get(cn) || 0; occ.set(cn, k+1);
     const defs = normDefs.get(cn) || [];
     _idxDef[i] = k < defs.length ? defs[k] : (defs[0] || "");
   }
   return _idxDef;
+}
+
+// Forme d'affichage individuelle par entrée c[i] (ex. "HERBAGER, ÈRE" vs "HERBAGER").
+let _idxE = null;
+function _getIdxE(){
+  if(_idxE) return _idxE;
+  const {c:C, e:E} = window.SEQODS_DATA || {};
+  if(!C || !E) return (_idxE = []);
+  const normForms = new Map();
+  for(let i=0; i<E.length; i++){
+    if(!E[i]) continue;
+    const n = norm(E[i].split(",")[0].split("/")[0].trim());
+    if(!n) continue;
+    if(!normForms.has(n)) normForms.set(n, []);
+    normForms.get(n).push(E[i]);
+  }
+  _idxE = new Array(C.length);
+  const occ = new Map();
+  for(let i=0; i<C.length; i++){
+    const cn = C[i]; const k = occ.get(cn) || 0; occ.set(cn, k+1);
+    const forms = normForms.get(cn) || [];
+    _idxE[i] = k < forms.length ? forms[k] : (forms[0] || cn);
+  }
+  return _idxE;
 }
 
 // Map lazy : mot canonique → index dans c[] (pour retrouver def/display)
@@ -1531,10 +1551,8 @@ function dictSelectWord(w, idx){
   document.getElementById("dict-sugg").innerHTML="";
 
   let allIdxs=_findAllIdxs(w);
-  // If a specific idx was passed (suggestion click), put it first
-  if(idx!==undefined && allIdxs.length>1 && allIdxs[0]!==idx){
-    allIdxs=[idx,...allIdxs.filter(i=>i!==idx)];
-  }
+  // Clic sur une suggestion précise : n'afficher que cette entrée (homographes séparés)
+  if(idx!==undefined && allIdxs.length>1) allIdxs=[idx];
   // Filter/redirect pure conjugation-form entries
   {
     const conjM=_getConjMap();
@@ -1549,35 +1567,24 @@ function dictSelectWord(w, idx){
 
   if(allIdxs.length>0){
     const cIdx0=allIdxs[0];
-    const display=getNormToE()[w]||w;
+    const display=(_getIdxE()[cIdx0]||getNormToE()[w]||w).replace(/\*/g,"").trim();
     const slash=_wantsSlash(w)&&!display.includes('/');
     document.getElementById("dict-word").textContent=display+(slash?' /':'');
 
     const defEl=document.getElementById("dict-def");
     const _customDef = window._rechCache?.[w]?.loaded ? window._rechCache[w].custom?.def : undefined;
-    if(allIdxs.length===1){
-      const raw=(getNormToF()[w]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
-      defEl.textContent=(_customDef!==undefined ? _customDef : raw)||"(définition absente)";
-    } else {
-      defEl.innerHTML="";
-      allIdxs.forEach((i,n)=>{
-        if(n>0){
-          const hr=document.createElement("hr");
-          hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
-          defEl.appendChild(hr);
-          const dispI=getNormToE()[DATA.c?.[i]]||w;
-          if(dispI!==display){
-            const lbl=document.createElement("small");
-            lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
-            lbl.textContent=dispI; defEl.appendChild(lbl);
-          }
-        }
-        let raw=(getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
-        if(n===0 && _customDef!==undefined) raw=_customDef;
-        const p=document.createElement("p"); p.style.margin="0";
-        p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
-      });
-    }
+    defEl.innerHTML="";
+    allIdxs.forEach((i,n)=>{
+      if(n>0){
+        const hr=document.createElement("hr");
+        hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
+        defEl.appendChild(hr);
+      }
+      let raw=(_getIdxDef()[i]||getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+      if(n===0 && _customDef!==undefined) raw=_customDef;
+      const p=document.createElement("p"); p.style.margin="0";
+      p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
+    });
     // Anagrammes
     const anaEl=document.getElementById("dict-ana");
     if(anaEl && DATA.a){
@@ -1684,7 +1691,7 @@ function _dictRenderSugg(prefix){
     if(lemma&&lemma!==prefix) html+=`<li data-lemma="${lemma}">→ <a class="def-link">${lemma}</a></li>`;
   }
   for(const i of candidates){
-    let label=(getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    let label=(_getIdxE()[i]||getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
     if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
     const pos=_posLabel(_getIdxDef()[i]||getNormToF()[C[i]]); if(pos) label+="  "+pos;
     html+=`<li data-idx="${i}">${label}</li>`;
