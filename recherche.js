@@ -244,7 +244,7 @@ function _rechParseWikt(wikitext){
       .replace(/'''([^']+)'''/g,"$1")
       .replace(/''([^']+)''/g,"$1")
       .replace(/\s+/g," ").trim();
-    if(d) return d;
+    if(d && d.length > 3) return d;
   }
   return null;
 }
@@ -352,6 +352,11 @@ async function gmBatchWikt(){
       _rechCache[canon].custom.def = wiktDef;
       added++;
     } else {
+      // Si une mauvaise def (non effective) est en Firestore, la supprimer pour repartir de zéro
+      if(r.ok && r.data?.def !== undefined && !_isEffectiveDef(r.data.def)){
+        await fbDelete("rech_custom", canon).catch(()=>{});
+        if(_rechCache[canon]) delete _rechCache[canon].custom.def;
+      }
       failed++;
     }
     processed++;

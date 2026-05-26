@@ -1058,6 +1058,13 @@ async function fbSet(col, id, obj){
   }catch{ return {ok:false, err:"network"}; }
 }
 
+async function fbDelete(col, id){
+  try{
+    const r = await fetch(`${FB_BASE}/${col}/${id}`, {method:"DELETE"});
+    return {ok:r.ok};
+  }catch{ return {ok:false, err:"network"}; }
+}
+
 /* ── Session utilisateur ── */
 const LS_SESSION = "METHODS_SESSION_V1";
 let currentUser = null;
