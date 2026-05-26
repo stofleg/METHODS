@@ -1222,6 +1222,9 @@ function openDef(canon, displayWord, defText, flechie){
   const C=DATA.c, E=DATA.e, F=DATA.f, A=DATA.a, R=DATA.r;
 
   let allIdxs = _findAllIdxs(canon);
+  // Homographes : c[] peut avoir plusieurs entrées identiques (même graphie, catégorie diff.)
+  // On déduplique par valeur de c[] — getNormToF() combine déjà leurs defs en une seule.
+  { const seen=new Set(); allIdxs=allIdxs.filter(i=>{const v=C?.[i];if(!v||seen.has(v))return false;seen.add(v);return true;}); }
   if(allIdxs.length === 0 && defText === undefined){
     const lemma = findLemma(canon);
     if(lemma && lemma !== canon){ openDef(lemma, null, undefined, canon); return; }

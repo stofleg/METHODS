@@ -152,11 +152,13 @@ function getNormToF(){
   if(!_normToF){
     _normToF = {};
     const d = window.SEQODS_DATA;
-    // Pair e[i] and f[i] together (both share same misalignment relative to c[])
     (d?.e || []).forEach((raw, i) => {
       if(!raw) return;
       const n = norm(raw.split(',')[0].split('/')[0].trim());
-      if(n && !_normToF[n]) _normToF[n] = d.f?.[i] || "";
+      if(!n) return;
+      const def = d.f?.[i] || "";
+      if(!_normToF[n]) _normToF[n] = def;
+      else if(def && _normToF[n] !== def) _normToF[n] += " / " + def;
     });
   }
   return _normToF;
@@ -872,7 +874,8 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  defText.textContent=cleanDef(_cdGM||"")||"…";
+  const _gmFallback=getNormToF()[primaryCanon]||"";
+  defText.textContent=cleanDef(_cdGM!==undefined ? _cdGM : _gmFallback)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
