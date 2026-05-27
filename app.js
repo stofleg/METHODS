@@ -214,6 +214,7 @@ function initNav(){
       if(v==="v-entremods"){ emReplay(); if(emPhase==="WAITING") emLaunchGame(); emRefocus(); }
     }
     if(e.key==="Escape") closeDef();
+    if((e.metaKey||e.ctrlKey) && e.key==="r"){ e.preventDefault(); location.reload(); }
   });
 }
 
