@@ -54,6 +54,7 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 .btn-primary{background:rgba(105,167,255,.18);border-color:rgba(105,167,255,.4);color:var(--accent);}
 .btn-danger{background:rgba(255,107,107,.18);border-color:rgba(255,107,107,.4);color:var(--danger);}
 .btn-ok{background:rgba(45,212,212,.18);border-color:rgba(45,212,212,.4);color:var(--ok);}
+.btn-warn{background:rgba(183,138,247,.18);border-color:rgba(183,138,247,.4);color:var(--warn);}
 .logo{font-size:22px;font-weight:950;letter-spacing:.1em;line-height:1;}
 .logo .l1{color:var(--t1);}.logo .l2{color:var(--accent);}
 .msg{font-size:12px;font-weight:700;min-height:16px;}
@@ -1051,7 +1052,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.84</div>
+  pointer-events:none;user-select:none;">v4.85</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1063,7 +1064,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v484";
+  const CURRENT_CACHE="methods-v485";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
