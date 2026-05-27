@@ -308,7 +308,7 @@ async function gmBatchWikt(){
     const odsDefNorm = odsDef.replace(/^\[[^\]]*\]\s*/,'').trim();
     const odsPOS = (typeof _getPOS==="function") ? _getPOS(odsDefNorm) : null;
     const wiktSection = odsPOS ? (_posToWiktSec[odsPOS]||null) : null;
-    items.push({canon, allDisplays, wiktSection});
+    items.push({canon, allDisplays, wiktSection, forms: sortedForms});
   }
 
   let processed=0, added=0, skipped=0, failed=0;
@@ -369,15 +369,50 @@ async function gmBatchWikt(){
     return cleaned.length > 8 && !cleaned.startsWith("-->") && !cleaned.endsWith(').');
   }
 
-  async function processOne({canon, allDisplays, wiktSection}){
-    // Déjà en cache avec une def effective → skip
+  // Construit la def formatée pour une graphie : "POS (= autres_graphies) contenu"
+  // POS : premier token de la def ODS pour ce canon ; contenu : wiktDef sans son propre POS initial
+  function _buildFormDef(wiktDef, fCanon, otherForms){
+    // Extraire le contenu : wiktDef sans son premier token POS s'il est en minuscule
+    let content = wiktDef.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'');
+    if(/^[a-zàâäéèêëîïôùûüœæç]/.test(content)) content = content.replace(/^\S+\s+/,'');
+    content = content.trim();
+    if(!content) return wiktDef;
+    // POS ODS pour ce canon : premier token de la def dans SEQODS_DATA
+    const odsRaw = (typeof getNormToF==='function' ? getNormToF() : {})[fCanon]||'';
+    const odsStripped = odsRaw.replace(/^\[[^\]]*\]\s*/,'').trim();
+    const pos = (odsStripped.match(/^(\S+)\s/)||[])[1]||'';
+    // Marqueur d'équivalence avec les autres graphies (en minuscules)
+    const eqMarker = otherForms.length ? `(= ${otherForms.join(', ')}) ` : '';
+    return (pos ? pos+' '+eqMarker : eqMarker)+content;
+  }
+
+  async function processOne({canon, allDisplays, wiktSection, forms}){
+    // Helper : propager une def source à toutes les formes manquantes dans _rechCache / Firestore
+    async function _propagateToForms(srcDef){
+      for(const form of forms){
+        const fCanon = norm(form.split(',')[0].trim());
+        if(_rechCache[fCanon]?.loaded && _isEffectiveDef(_rechCache[fCanon].custom?.def)) continue;
+        const otherForms = forms.filter(f=>norm(f.split(',')[0].trim())!==fCanon)
+          .map(f=>f.split(',')[0].trim().toLowerCase());
+        const formDef = _buildFormDef(srcDef, fCanon, otherForms);
+        await fbSet("rech_custom", fCanon, {def:formDef}).catch(()=>{});
+        if(!_rechCache[fCanon]) _rechCache[fCanon]={custom:{}, excl:[], loaded:true};
+        _rechCache[fCanon].custom.def = formDef;
+      }
+    }
+
+    // Déjà en cache avec une def effective → propagation éventuelle aux formes manquantes + skip
     const cached = _rechCache[canon];
-    if(cached?.loaded && _isEffectiveDef(cached.custom.def)){ skipped++; processed++; return; }
+    if(cached?.loaded && _isEffectiveDef(cached.custom.def)){
+      await _propagateToForms(cached.custom.def);
+      skipped++; processed++; return;
+    }
 
     // Vérifier Firestore — skip seulement si la def est effective (pas un renvoi ODS)
     const r = await fbGet("rech_custom", canon);
     if(r.ok && r.data?.def !== undefined && _isEffectiveDef(r.data.def)){
       if(!_rechCache[canon]) _rechCache[canon]={custom:r.data, excl:[], loaded:true};
+      await _propagateToForms(r.data.def);
       skipped++; processed++; return;
     }
 
@@ -386,9 +421,16 @@ async function gmBatchWikt(){
 
     if(wiktDef){
       const existing = r.ok && r.data ? r.data : {};
-      await fbSet("rech_custom", canon, {...existing, def: wiktDef}).catch(()=>{});
-      if(!_rechCache[canon]) _rechCache[canon]={custom:{}, excl:[], loaded:true};
-      _rechCache[canon].custom.def = wiktDef;
+      // Stocker pour chaque graphie avec POS et (= xxx) adaptés
+      for(const form of forms){
+        const fCanon = norm(form.split(',')[0].trim());
+        const otherForms = forms.filter(f=>norm(f.split(',')[0].trim())!==fCanon)
+          .map(f=>f.split(',')[0].trim().toLowerCase());
+        const formDef = _buildFormDef(wiktDef, fCanon, otherForms);
+        await fbSet("rech_custom", fCanon, {...(fCanon===canon?existing:{}), def:formDef}).catch(()=>{});
+        if(!_rechCache[fCanon]) _rechCache[fCanon]={custom:{}, excl:[], loaded:true};
+        _rechCache[fCanon].custom.def = formDef;
+      }
       added++;
     } else {
       // Si une mauvaise def (non effective) est en Firestore, la supprimer pour repartir de zéro
