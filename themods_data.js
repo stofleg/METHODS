@@ -1,4 +1,4 @@
-window.THEMODS_DATA --> window.THEMODS_DATA || {};
+window.THEMODS_DATA = window.THEMODS_DATA || {};
 
 window.THEMODS_DATA.age = [
   {"label":"AB","words":["ABATAGE", "ABATTAGE", "ABLOCAGE", "ABORDAGE", "ABOUTAGE", "ABREUVAGE"]},
