@@ -917,7 +917,8 @@ function renderGMGame(){
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
   const _cleanedFallback=cleanDef(_gmFallback);
   // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
-  const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback);
+  // Règle : se termine par "). " → pas de vraie def (renvoi, genre, pp.inv., etc.)
+  const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback)||_cleanedFallback.endsWith(').');
   let _rawDef;
   if(!_posOnly){
     // ODS a une vraie définition → toujours priorité ODS, ignorer Wiktionnaire

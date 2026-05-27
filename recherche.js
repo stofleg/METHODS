@@ -348,7 +348,7 @@ async function gmBatchWikt(){
       .replace(/^\([^)]*\)\s*/, "")
       .replace(/\s*\(=[^)]*\)/g, "")
       .trim();
-    return cleaned.length > 8 && !cleaned.startsWith("-->");
+    return cleaned.length > 8 && !cleaned.startsWith("-->") && !cleaned.endsWith(').');
   }
 
   async function processOne({canon, allDisplays, wiktSection}){
