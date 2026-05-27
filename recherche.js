@@ -238,10 +238,10 @@ function _rechParseWikt(wikitext, wiktSection){
 
   let searchIn = fr;
   if(wiktSection){
-    // Chercher uniquement la section de nature grammaticale attendue
-    const sRe = new RegExp('\\{\\{S\\|'+wiktSection+'\\|fr', 'i');
+    // Chercher la section grammaticale — "nom commun" peut avoir des espaces
+    const sRe = new RegExp('\\{\\{S\\|'+wiktSection.replace(/ /g,'\\s+')+'[^|]*\\|fr', 'i');
     const sIdx = fr.search(sRe);
-    if(sIdx < 0) return null; // section absente → ne pas retourner un def de mauvais POS
+    if(sIdx < 0) return null; // section absente → pas de def de mauvais POS
     const afterS = fr.slice(sIdx);
     const nextS = afterS.slice(10).search(/\n===\s*/);
     searchIn = nextS > 0 ? afterS.slice(0, nextS+10) : afterS;
@@ -276,7 +276,8 @@ async function gmBatchWikt(){
   if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
 
   // Correspondance POS ODS → section Wiktionnaire
-  const _posToWiktSec = {'n.m.':'nom','n.f.':'nom','n.':'nom','v.':'verbe','adj.':'adjectif','adv.':'adverbe','interj.':'interjection','loc.':'locution'};
+  // Sur fr.wiktionary.org les noms communs utilisent "nom commun", pas "nom"
+  const _posToWiktSec = {'n.m.':'nom commun','n.f.':'nom commun','n.':'nom commun','v.':'verbe','adj.':'adjectif','adv.':'adverbe','interj.':'interjection','loc.':'locution'};
 
   // Dédoublonner par canon ; conserver toutes les graphies comme candidats Wikt
   const seenCanons = new Set();
@@ -314,6 +315,8 @@ async function gmBatchWikt(){
   };
 
   async function fetchWiktAny(displays, wiktSection){
+    // Pass 1 : filtré par section POS ; cache les wikitexts pour le pass 2
+    const cached = [];
     const toTry = [...displays];
     const tried = new Set();
     while(toTry.length){
@@ -332,9 +335,17 @@ async function gmBatchWikt(){
           if(!tried.has(target)) toTry.unshift(target);
           continue;
         }
+        if(wikitext) cached.push(wikitext);
         const def = _rechParseWikt(wikitext, wiktSection);
         if(def) return def;
       }catch{}
+    }
+    // Pass 2 : sans filtre POS, sur les pages déjà téléchargées (0 requête réseau en plus)
+    if(wiktSection){
+      for(const wikitext of cached){
+        const def = _rechParseWikt(wikitext, null);
+        if(def) return def;
+      }
     }
     return null;
   }
