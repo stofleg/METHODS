@@ -459,33 +459,36 @@ async function gmBatchWikt(){
 
 /* ── Purge des defs Wiktionnaire GM en Firestore ── */
 async function gmPurgeWikt(){
-  if(!_isAdm()) return;
-  const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
-  if(!entries.length) return;
-  // Collecter TOUS les canons (toutes les graphies, pas seulement le canon primaire)
-  const seenCanons = new Set();
-  for(const entry of entries){
-    for(const f of entry.forms){
-      const c = norm(f.split(',')[0].trim()); if(c) seenCanons.add(c);
-    }
-  }
-  const allCanons = [...seenCanons];
-  if(!confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${allCanons.length} graphies) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)) return;
   const btn = document.getElementById("gm-purge-wikt-btn");
-  if(btn){ btn.disabled=true; btn.textContent="Purge…"; }
-  let deleted=0, errors=0, done=0;
-  const CONC = 20;
-  for(let i=0; i<allCanons.length; i+=CONC){
-    await Promise.all(allCanons.slice(i, i+CONC).map(async canon=>{
-      const r = await fbDelete("rech_custom", canon).catch(()=>({ok:false}));
-      if(r.ok) deleted++; else errors++;
-      if(_rechCache[canon]) delete _rechCache[canon];
-      done++;
-      if(btn) btn.textContent=`Purge… ${done}/${allCanons.length}`;
-    }));
-  }
-  if(btn){ btn.disabled=false; btn.textContent="Purger defs Wikt GM"; }
-  alert(`Purge terminée : ${deleted} supprimées, ${errors} non trouvées/erreurs.`);
+  const _reset = ()=>{ if(btn){ btn.disabled=false; btn.textContent="Purger defs Wikt GM"; } };
+  if(btn){ btn.disabled=true; btn.textContent="…"; }
+  try{
+    if(!_isAdm()){ _reset(); return; }
+    const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
+    if(!entries.length){ alert("Aucune entrée GM."); _reset(); return; }
+    const seenCanons = new Set();
+    for(const entry of entries){
+      for(const f of (entry.forms||[])){
+        const c = norm(f.split(',')[0].trim()); if(c) seenCanons.add(c);
+      }
+    }
+    const allCanons = [...seenCanons];
+    if(!window.confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${allCanons.length} graphies) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)){ _reset(); return; }
+    if(btn){ btn.textContent="Purge…"; }
+    let deleted=0, errors=0, done=0;
+    const CONC = 20;
+    for(let i=0; i<allCanons.length; i+=CONC){
+      await Promise.all(allCanons.slice(i, i+CONC).map(async canon=>{
+        const r = await fbDelete("rech_custom", canon).catch(()=>({ok:false}));
+        if(r.ok) deleted++; else errors++;
+        if(_rechCache[canon]) delete _rechCache[canon];
+        done++;
+        if(btn) btn.textContent=`Purge… ${done}/${allCanons.length}`;
+      }));
+    }
+    _reset();
+    alert(`Purge terminée : ${deleted} supprimées, ${errors} non trouvées/erreurs.`);
+  }catch(e){ _reset(); alert("Erreur purge : "+(e?.message||e)); }
 }
 
 /* ── Wiring ── */
