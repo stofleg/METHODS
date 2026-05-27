@@ -907,6 +907,7 @@ function cleanDef(d){
   if(!d) return "";
   d=d.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").replace(/^\([^)]*\)\s*/,"");
   d=d.replace(/\s*\(=[^)]*\)/g,"");
+  d=d.replace(/\s*-->[^.]*\./g,"");
   return d.startsWith("->") ? "" : d.trim();
 }
 function letterCount(w){ return w.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").length; }
