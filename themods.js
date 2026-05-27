@@ -65,6 +65,7 @@ function _mergeTmStates(a, b){
         const src       = validated ? (as.validated ? as : bs) : ((as.lastSeen||'')>=(bs.lastSeen||'') ? as : bs);
         out.themes[th][lb] = {
           seen, validated,
+          done:       !!(as.done || bs.done),
           lastResult: src.lastResult||'',
           lastSeen:   src.lastSeen||'',
           interval:   Math.max(as.interval||1, bs.interval||1),
