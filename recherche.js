@@ -301,8 +301,9 @@ async function gmBatchWikt(){
     const odsDef = (typeof _gmPickDef==="function") ? _gmPickDef(canon, sortedForms) : '';
     const odsDefCleaned = (typeof cleanDef==="function") ? cleanDef(odsDef) : odsDef;
     const odsIsPosOnly = !odsDefCleaned || /^[a-z.\d()\s]+$/.test(odsDefCleaned) || odsDefCleaned.endsWith(').');
-    // Si def hardcodée ou ODS réel → pas de Wiktionnaire
-    if(hardcoded || !odsIsPosOnly) continue;
+    // ODS a une vraie def → pas besoin de Wiktionnaire
+    // Si ODS est POS-only, on fetch Wiktionnaire même si une def hardcodée existe
+    if(!odsIsPosOnly) continue;
     // Déterminer le POS ODS pour filtrer la section Wiktionnaire
     const odsDefNorm = odsDef.replace(/^\[[^\]]*\]\s*/,'').trim();
     const odsPOS = (typeof _getPOS==="function") ? _getPOS(odsDefNorm) : null;
