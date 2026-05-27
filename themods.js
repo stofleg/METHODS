@@ -916,12 +916,18 @@ function renderGMGame(){
   const defText=document.createElement("span");
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
   const _cleanedFallback=cleanDef(_gmFallback);
+  // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
+  const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback);
   let _rawDef;
-  if(_cdGM!==undefined){
-    // Si l'ODS ne contient que POS + conjugaison (pas de sens réel), le préfixer au def Wiktionnaire
-    const _posOnly=/^[a-z.\d()\s]+$/.test(_cleanedFallback);
-    _rawDef=(_posOnly&&_cleanedFallback) ? _cleanedFallback+' '+_cdGM : _cdGM;
-  } else { _rawDef=_gmFallback; }
+  if(!_posOnly){
+    // ODS a une vraie définition → toujours priorité ODS, ignorer Wiktionnaire
+    _rawDef=_gmFallback;
+  } else if(_cdGM!==undefined){
+    // ODS = POS seul ou vide → compléter avec def Wiktionnaire (même POS)
+    _rawDef=_cleanedFallback ? _cleanedFallback+' '+_cdGM : _cdGM;
+  } else {
+    _rawDef=_gmFallback;
+  }
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);

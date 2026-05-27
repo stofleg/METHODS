@@ -996,6 +996,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
         <div class="rech-admin-title">ADMIN · OUTILS</div>
         <div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">
           <button id="gm-batch-wikt-btn" class="btn btn-ok" style="font-size:12px;padding:6px 10px;">Batch GM → Wiktionnaire</button>
+          <button id="gm-purge-wikt-btn" class="btn btn-warn" style="font-size:12px;padding:6px 10px;">Purger defs Wikt GM</button>
           <div id="gm-batch-progress" style="display:none;font-size:11px;color:var(--muted);line-height:1.5;white-space:pre-wrap;"></div>
         </div>
       </div>
@@ -1050,7 +1051,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.62</div>
+  pointer-events:none;user-select:none;">v4.63</div>
 
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
@@ -1062,7 +1063,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v462";
+  const CURRENT_CACHE="methods-v463";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

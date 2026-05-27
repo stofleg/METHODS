@@ -228,7 +228,7 @@ async function rechFetchWikt(){
   if(btn){ btn.textContent="Générer depuis Wiktionnaire"; btn.disabled=false; }
 }
 
-function _rechParseWikt(wikitext){
+function _rechParseWikt(wikitext, wiktSection){
   if(!wikitext) return null;
   const frIdx = wikitext.indexOf("{{langue|fr}}");
   if(frIdx<0) return null;
@@ -236,7 +236,18 @@ function _rechParseWikt(wikitext){
   const nextLang = after.slice(15).search(/\n==\s*\{\{langue\|(?!fr)/);
   const fr = nextLang>0 ? after.slice(0, nextLang+15) : after;
 
-  for(const line of fr.split("\n")){
+  let searchIn = fr;
+  if(wiktSection){
+    // Chercher uniquement la section de nature grammaticale attendue
+    const sRe = new RegExp('\\{\\{S\\|'+wiktSection+'\\|fr', 'i');
+    const sIdx = fr.search(sRe);
+    if(sIdx < 0) return null; // section absente → ne pas retourner un def de mauvais POS
+    const afterS = fr.slice(sIdx);
+    const nextS = afterS.slice(10).search(/\n===\s*/);
+    searchIn = nextS > 0 ? afterS.slice(0, nextS+10) : afterS;
+  }
+
+  for(const line of searchIn.split("\n")){
     if(!line.startsWith("# ")||line.startsWith("## ")) continue;
     const d = line.slice(2)
       .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,"$1")
@@ -264,6 +275,9 @@ async function gmBatchWikt(){
   if(btn){ btn.disabled=true; btn.textContent="En cours…"; }
   if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
 
+  // Correspondance POS ODS → section Wiktionnaire
+  const _posToWiktSec = {'n.m.':'nom','n.f.':'nom','n.':'nom','v.':'verbe','adj.':'adjectif','adv.':'adverbe','interj.':'interjection','loc.':'locution'};
+
   // Dédoublonner par canon ; conserver toutes les graphies comme candidats Wikt
   const seenCanons = new Set();
   const items = [];
@@ -281,7 +295,12 @@ async function gmBatchWikt(){
       const d = f.split(",")[0].trim().toLowerCase().replace(/\*/g,"");
       if(d && !seenDisp.has(d)){ seenDisp.add(d); allDisplays.push(d); }
     }
-    items.push({canon, allDisplays});
+    // Déterminer le POS ODS pour filtrer la section Wiktionnaire
+    const odsDef = (typeof _gmPickDef==="function") ? _gmPickDef(canon, sortedForms) : '';
+    const odsDefNorm = odsDef.replace(/^\[[^\]]*\]\s*/,'').trim();
+    const odsPOS = (typeof _getPOS==="function") ? _getPOS(odsDefNorm) : null;
+    const wiktSection = odsPOS ? (_posToWiktSec[odsPOS]||null) : null;
+    items.push({canon, allDisplays, wiktSection});
   }
 
   let processed=0, added=0, skipped=0, failed=0;
@@ -294,7 +313,7 @@ async function gmBatchWikt(){
     if(prog) prog.textContent = txt;
   };
 
-  async function fetchWiktAny(displays){
+  async function fetchWiktAny(displays, wiktSection){
     const toTry = [...displays];
     const tried = new Set();
     while(toTry.length){
@@ -313,7 +332,7 @@ async function gmBatchWikt(){
           if(!tried.has(target)) toTry.unshift(target);
           continue;
         }
-        const def = _rechParseWikt(wikitext);
+        const def = _rechParseWikt(wikitext, wiktSection);
         if(def) return def;
       }catch{}
     }
@@ -332,7 +351,7 @@ async function gmBatchWikt(){
     return cleaned.length > 8 && !cleaned.startsWith("-->");
   }
 
-  async function processOne({canon, allDisplays}){
+  async function processOne({canon, allDisplays, wiktSection}){
     // Déjà en cache avec une def effective → skip
     const cached = _rechCache[canon];
     if(cached?.loaded && _isEffectiveDef(cached.custom.def)){ skipped++; processed++; return; }
@@ -345,7 +364,7 @@ async function gmBatchWikt(){
     }
 
     // Essayer toutes les graphies sur Wiktionnaire
-    const wiktDef = await fetchWiktAny(allDisplays);
+    const wiktDef = await fetchWiktAny(allDisplays, wiktSection);
 
     if(wiktDef){
       const existing = r.ok && r.data ? r.data : {};
@@ -378,6 +397,39 @@ async function gmBatchWikt(){
   _gmBatchRunning = false;
 }
 
+/* ── Purge des defs Wiktionnaire GM en Firestore ── */
+async function gmPurgeWikt(){
+  if(!_isAdm()) return;
+  const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
+  if(!entries.length) return;
+  if(!confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${entries.length} entrées) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)) return;
+  const btn = document.getElementById("gm-purge-wikt-btn");
+  if(btn){ btn.disabled=true; btn.textContent="Purge…"; }
+  const seenCanons = new Set();
+  let deleted=0, errors=0, done=0;
+  const allCanons = [];
+  for(const entry of entries){
+    const sorted = [...entry.forms].filter(f=>f&&f.trim()).sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+    if(!sorted.length) continue;
+    const canon = norm(sorted[0]);
+    if(seenCanons.has(canon)) continue;
+    seenCanons.add(canon);
+    allCanons.push(canon);
+  }
+  const CONC = 20;
+  for(let i=0; i<allCanons.length; i+=CONC){
+    await Promise.all(allCanons.slice(i, i+CONC).map(async canon=>{
+      const r = await fbDelete("rech_custom", canon).catch(()=>({ok:false}));
+      if(r.ok) deleted++; else errors++;
+      if(_rechCache[canon]) delete _rechCache[canon];
+      done++;
+      if(btn) btn.textContent=`Purge… ${done}/${allCanons.length}`;
+    }));
+  }
+  if(btn){ btn.disabled=false; btn.textContent="Purger defs Wikt GM"; }
+  alert(`Purge terminée : ${deleted} supprimées, ${errors} non trouvées/erreurs.`);
+}
+
 /* ── Wiring ── */
 function wireRechercheAdmin(){
   document.getElementById("rech-modules")?.addEventListener("click", e=>{
@@ -387,6 +439,7 @@ function wireRechercheAdmin(){
   document.getElementById("rech-save-def")?.addEventListener("click", rechSaveDef);
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
+  document.getElementById("gm-purge-wikt-btn")?.addEventListener("click", gmPurgeWikt);
 
   // Onglets définition / quiz
   document.getElementById("rech-def-tab-def")?.addEventListener("click", ()=>_rechSwitchDefTab("def"));
