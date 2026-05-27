@@ -952,6 +952,7 @@ function renderGMGame(){
   const defText=document.createElement("span");
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
   const _cleanedFallback=cleanDef(_gmFallback);
+  const _entryDef=(entry.def||'').trim();
   // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
   // Règle : se termine par "). " → pas de vraie def (renvoi, genre, pp.inv., etc.)
   const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback)||_cleanedFallback.endsWith(').');
@@ -963,7 +964,8 @@ function renderGMGame(){
     // ODS = POS seul ou vide → compléter avec def Wiktionnaire (même POS)
     _rawDef=_cleanedFallback ? _cleanedFallback+' '+_cdGM : _cdGM;
   } else {
-    _rawDef=_gmFallback;
+    // Ni ODS réel ni Wikt → fallback sur la def hardcodée du jeu
+    _rawDef=_entryDef||_gmFallback;
   }
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
