@@ -462,20 +462,18 @@ async function gmPurgeWikt(){
   if(!_isAdm()) return;
   const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
   if(!entries.length) return;
-  if(!confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${entries.length} entrées) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)) return;
+  // Collecter TOUS les canons (toutes les graphies, pas seulement le canon primaire)
+  const seenCanons = new Set();
+  for(const entry of entries){
+    for(const f of entry.forms){
+      const c = norm(f.split(',')[0].trim()); if(c) seenCanons.add(c);
+    }
+  }
+  const allCanons = [...seenCanons];
+  if(!confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${allCanons.length} graphies) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)) return;
   const btn = document.getElementById("gm-purge-wikt-btn");
   if(btn){ btn.disabled=true; btn.textContent="Purge…"; }
-  const seenCanons = new Set();
   let deleted=0, errors=0, done=0;
-  const allCanons = [];
-  for(const entry of entries){
-    const sorted = [...entry.forms].filter(f=>f&&f.trim()).sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
-    if(!sorted.length) continue;
-    const canon = norm(sorted[0]);
-    if(seenCanons.has(canon)) continue;
-    seenCanons.add(canon);
-    allCanons.push(canon);
-  }
   const CONC = 20;
   for(let i=0; i<allCanons.length; i+=CONC){
     await Promise.all(allCanons.slice(i, i+CONC).map(async canon=>{
