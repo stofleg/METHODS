@@ -183,25 +183,60 @@ function getNormToAllDefs(){
 
 // Pour les homographes dans GM : choisit la def dont le POS correspond aux autres formes du binôme.
 const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
+// Suit un renvoi ODS (= ...) ou --> ... d'une def vers sa cible, si la cible a une vraie def.
+// Retourne la def cible si réelle, sinon la def d'origine.
+function _followODSRenvoi(def, sourceCanon, allDefsMap){
+  if(!def) return def;
+  const m = def.match(/\(=\s*([^)]+)\)/) || def.match(/-->\s*([^.]+)\./);
+  if(!m) return def;
+  const target = norm(m[1].trim());
+  if(!target || target === sourceCanon) return def; // cycle ou cible inconnue
+  const targetDefs = allDefsMap[target] || [];
+  const srcPOS = _getPOS(def.replace(/^\[[^\]]*\]\s*/,'').trim());
+  // Chercher une vraie def dans la cible, en préférant le même POS
+  const isReal = d => { const c=cleanDef(d); return c&&!/^[a-z.\d()\s]+$/.test(c)&&!c.endsWith(').'); };
+  const real = (srcPOS ? targetDefs.find(d => _getPOS(d.replace(/^\[[^\]]*\]\s*/,'').trim())===srcPOS && isReal(d)) : null)
+               || targetDefs.find(isReal);
+  return real || def;
+}
+
 function _gmPickDef(primaryCanon, allForms){
   const allDefsMap = getNormToAllDefs();
   const primaryDefs = allDefsMap[primaryCanon] || [];
-  if(primaryDefs.length <= 1) return primaryDefs[0] || "";
-  // Collecte le POS des autres formes
-  const targetPOS = new Set();
-  allForms.forEach(form => {
-    const n = norm(form);
-    if(n === primaryCanon) return;
-    (allDefsMap[n] || []).forEach(d => { const p = _getPOS(d); if(p) targetPOS.add(p); });
-  });
-  if(targetPOS.size > 0){
-    for(const def of primaryDefs){
-      const p = _getPOS(def);
-      if(p && targetPOS.has(p)) return def;
+  // Choisir la meilleure def du canon primaire (par POS)
+  let chosen;
+  if(primaryDefs.length <= 1){
+    chosen = primaryDefs[0] || "";
+  } else {
+    const targetPOS = new Set();
+    allForms.forEach(form => {
+      const n = norm(form);
+      if(n === primaryCanon) return;
+      (allDefsMap[n] || []).forEach(d => { const p = _getPOS(d); if(p) targetPOS.add(p); });
+    });
+    if(targetPOS.size > 0){
+      for(const def of primaryDefs){ const p=_getPOS(def); if(p&&targetPOS.has(p)){ chosen=def; break; } }
+    }
+    if(!chosen) chosen = primaryDefs.find(d=>/^n\.[mf]\./.test(d)) || primaryDefs[0] || "";
+  }
+  // Suivre le renvoi ODS du canon primaire
+  const followed = _followODSRenvoi(chosen, primaryCanon, allDefsMap);
+  if(followed !== chosen) return followed;
+  // Si toujours POS-seul, chercher sur chaque autre forme de la paire (direct + renvoi)
+  const isReal = d => { const c=cleanDef(d); return c&&!/^[a-z.\d()\s]+$/.test(c)&&!c.endsWith(').'); };
+  const chosenIsPos = !isReal(chosen);
+  if(chosenIsPos){
+    for(const form of allForms){
+      const n = norm(form.split(',')[0].trim());
+      if(n === primaryCanon) continue;
+      for(const d of (allDefsMap[n] || [])){
+        if(isReal(d)) return d;
+        const via = _followODSRenvoi(d, n, allDefsMap);
+        if(via !== d && isReal(via)) return via;
+      }
     }
   }
-  // Fallback : préférer nom commun
-  return primaryDefs.find(d => /^n\.[mf]\./.test(d)) || primaryDefs[0] || "";
+  return chosen;
 }
 function tmRefocus(){
   if(window.matchMedia("(pointer:fine)").matches)
