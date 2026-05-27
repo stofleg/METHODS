@@ -217,7 +217,8 @@ function _gmPickDef(primaryCanon, allForms){
     if(targetPOS.size > 0){
       for(const def of primaryDefs){ const p=_getPOS(def); if(p&&targetPOS.has(p)){ chosen=def; break; } }
     }
-    if(!chosen) chosen = primaryDefs.find(d=>/^n\.[mf]\./.test(d)) || primaryDefs[0] || "";
+    const _isRealDef = d => { const c=cleanDef(d); return c&&!/^[a-z.\d()\s]+$/.test(c)&&!c.endsWith(').'); };
+    if(!chosen) chosen = primaryDefs.find(d=>/^n\.[mf]\./.test(d)) || primaryDefs.find(_isRealDef) || primaryDefs[0] || "";
   }
   // Suivre le renvoi ODS du canon primaire
   const followed = _followODSRenvoi(chosen, primaryCanon, allDefsMap);
@@ -848,13 +849,13 @@ function getGMSt(idx){
   return s;
 }
 function getGMStats(){
-  const total=getAllGMEntries().length, today=todayStr();
+  const total=getAllGMEntries().length;
   const gmSt=tmState.themes?.gm||{};
   let seen=0, validated=0, toReview=0;
   for(let i=0;i<total;i++){
     const s=gmSt[String(i)]; if(!s||!s.seen) continue;
     seen++;
-    if(s.validated&&s.due>today) validated++; else toReview++;
+    if(s.done) validated++; else toReview++;
   }
   return {seen,validated,toReview,total};
 }
@@ -864,11 +865,11 @@ function gmPickNext(){
   const due=[], unseen=[], locked=[];
   for(let i=0;i<total;i++){
     const s=gmSt[String(i)];
+    if(s?.done) continue;                        // validé définitivement, ne revient plus
     if(!s||!s.seen){ unseen.push(i); continue; }
-    if(s.due<=today) due.push(i);   // révision due (validé ou non)
-    else locked.push(i);             // pas encore dû
+    if(s.due<=today) due.push(i);
+    else locked.push(i);
   }
-  // Révisions dues en priorité, puis nouvelles entrées, puis verrouillées
   const pool=due.length?due:unseen.length?unseen:locked;
   return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
@@ -893,12 +894,11 @@ function finalizeGM(ok){
   const s=getGMSt(gmCurrentIdx);
   s.seen=true; s.lastSeen=todayStr();
   if(ok){
-    s.validated=true; s.lastResult="ok";
-    s.interval=Math.max(7,nextInterval(s.interval||1)); s.due=addDays(todayStr(),s.interval);
+    s.done=true; s.validated=true; s.lastResult="ok";
     setTmMsg("✓ Toutes les graphies trouvées !","ok");
   } else {
-    s.validated=false; s.lastResult="help";
-    s.interval=7; s.due=addDays(todayStr(),7);
+    s.done=false; s.validated=false; s.lastResult="help";
+    s.interval=3; s.due=addDays(todayStr(),3);
     setTmMsg("Solutions affichées.","warn");
   }
   updateGMCounter(); persistThemods().catch(()=>{});
@@ -919,7 +919,14 @@ function startGM(){
     const {validated,total}=getGMStats();
     if(validated>=total){
       if(!tmState.themes.gm) tmState.themes.gm={};
-      tmState.themes.gm._completions=(tmState.themes.gm._completions||0)+1;
+      const gmSt=tmState.themes.gm;
+      // Réinitialiser pour le prochain cycle
+      Object.keys(gmSt).forEach(k=>{
+        const s=gmSt[k]; if(s&&typeof s==="object"&&s.done){
+          s.done=false; s.validated=false; s.interval=1; s.due=todayStr();
+        }
+      });
+      gmSt._completions=(gmSt._completions||0)+1;
       persistThemods().catch(()=>{}); _showTmDone("gm");
     } else { renderTmHome(); }
     return;
