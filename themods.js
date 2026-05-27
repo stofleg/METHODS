@@ -188,7 +188,7 @@ const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || 
 // Retourne la def cible si réelle, sinon la def d'origine.
 function _followODSRenvoi(def, sourceCanon, allDefsMap){
   if(!def) return def;
-  const m = def.match(/\(=\s*([^)]+)\)/) || def.match(/-->\s*([^.]+)\./);
+  const m = def.match(/\(=\s*([^)]+)\)/) || def.match(/-->\s*([^.]+)\./) || def.match(/(?<![=(])\s=\s([a-zàâäéèêëîïôùûüœæç]+)\./);
   if(!m) return def;
   const target = norm(m[1].trim());
   if(!target || target === sourceCanon) return def; // cycle ou cible inconnue
