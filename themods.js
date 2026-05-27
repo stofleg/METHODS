@@ -956,15 +956,17 @@ function renderGMGame(){
   // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
   // Règle : se termine par "). " → pas de vraie def (renvoi, genre, pp.inv., etc.)
   const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback)||_cleanedFallback.endsWith(').');
+  // Une def Firestore valide doit avoir un contenu réel (pas juste "." etc.)
+  const _cdGMValid = _cdGM!==undefined && cleanDef(_cdGM).length > 1;
   let _rawDef;
   if(!_posOnly){
     // ODS a une vraie définition → toujours priorité ODS, ignorer Wiktionnaire
     _rawDef=_gmFallback;
-  } else if(_cdGM!==undefined){
+  } else if(_cdGMValid){
     // ODS = POS seul ou vide → compléter avec def Wiktionnaire (même POS)
     _rawDef=_cleanedFallback ? _cleanedFallback+' '+_cdGM : _cdGM;
   } else {
-    // Ni ODS réel ni Wikt → fallback sur la def hardcodée du jeu
+    // Ni ODS réel ni Wikt valide → fallback sur la def hardcodée du jeu
     _rawDef=_entryDef||_gmFallback;
   }
   defText.textContent=cleanDef(_rawDef)||"…";
