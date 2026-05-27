@@ -908,6 +908,9 @@ function cleanDef(d){
   d=d.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").replace(/^\([^)]*\)\s*/,"");
   d=d.replace(/\s*\(=[^)]*\)/g,"");
   d=d.replace(/\s*-->[^.]*\./g,"");
+  // Strip parenthetical qualifiers (Xxx) when followed by uppercase or end of string.
+  // If followed by lowercase, the content inside is part of the definition — keep it.
+  d=d.replace(/\s*\([^)]+\)(?=\s*[A-ZÀ-ÖØ-ÞŒŸ]|\s*$)/g,"");
   return d.startsWith("->") ? "" : d.trim();
 }
 function letterCount(w){ return w.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").length; }
