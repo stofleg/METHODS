@@ -1,6 +1,7 @@
 'use strict';
 
-const CACHE_NAME = 'blackscrab-v140';
+importScripts('./version.js');
+const CACHE_NAME = BS_CACHE;
 const BASE  = new URL('.', self.location).href;
 const ROOT  = new URL('..', self.location).href;
 
@@ -10,15 +11,16 @@ const SHELL = [
   BASE + 'index.html',
   BASE + 'app.js',
   BASE + 'dict.js',
+  BASE + 'version.js',
   BASE + 'manifest.json',
   BASE + 'icon-192.png',
   BASE + 'icon-512.png',
+  ROOT + 'shared/dict-core.js',
 ];
 
 // Fichiers lourds : mis en cache en arrière-plan puis à la volée
 const DATA = [
   BASE + 'data.js',
-  ROOT + 'ods_data.js',
   ROOT + 'data.js',
 ];
 
