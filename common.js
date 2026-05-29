@@ -497,10 +497,15 @@ function _defLabels(def){
   }
   return out.slice(0,2);
 }
-// Vrai si le texte (titre + description) contient l'un des tokens (mot entier)
+// Vrai si le texte (titre + description) contient l'un des tokens.
+// ≥4 lettres : début de mot suffit (lump → lumpus/lumpfish, pentacle → pentacles).
+// 3 lettres : mot entier exigé (évite le bruit).
 function _imgRelevant(text, tokens){
   const t=" "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
-  return tokens.some(tok=>tok.length>=3 && t.includes(" "+tok+" "));
+  return tokens.some(tok=>{
+    if(tok.length<3) return false;
+    return tok.length>=4 ? t.includes(" "+tok) : t.includes(" "+tok+" ");
+  });
 }
 const _IMG_RE_MIME=/^image\/(jpeg|png|gif|webp)$/;
 async function loadImgStrip(container, words, def){
