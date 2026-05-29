@@ -616,7 +616,7 @@ function renderOdsGame(){
   if(typeof loadImgStrip==="function"){
     const _odsImgStrip=document.createElement("div"); _odsImgStrip.className="img-strip";
     list.appendChild(_odsImgStrip);
-    loadImgStrip(_odsImgStrip, sortedForms.map(f=>f.toLowerCase()));
+    loadImgStrip(_odsImgStrip, sortedForms.map(f=>f.toLowerCase()), _cdOds!==undefined ? _cdOds : entry.def);
   }
 }
 
@@ -981,7 +981,7 @@ function renderGMGame(){
   if(typeof loadImgStrip==="function"){
     const _gmImgStrip=document.createElement("div"); _gmImgStrip.className="img-strip";
     list.appendChild(_gmImgStrip);
-    loadImgStrip(_gmImgStrip, sortedForms.map(f=>f.toLowerCase()));
+    loadImgStrip(_gmImgStrip, sortedForms.map(f=>f.toLowerCase()), _rawDef);
   }
 }
 
