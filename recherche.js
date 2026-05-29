@@ -347,6 +347,79 @@ async function gmBatchWikt(){
   _gmBatchRunning = false;
 }
 
+/* ── Batch ODS → Wiktionnaire ── */
+let _odsBatchRunning = false;
+
+async function odsBatchWikt(){
+  if(!_isAdm() || _odsBatchRunning) return;
+  const DATA = window.SEQODS_DATA;
+  if(!DATA) return;
+
+  const btn  = document.getElementById("ods-batch-wikt-btn");
+  const prog = document.getElementById("ods-batch-progress");
+  _odsBatchRunning = true;
+  if(btn){ btn.disabled=true; btn.textContent="En cours…"; }
+  if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
+
+  function isOdsEmpty(fv){
+    if(!fv) return true;
+    if(fv.includes("(= ")||fv.includes("-->")) return false;
+    let s = fv.replace(/\[[^\]]*\]/g,"").replace(/\([^)]+\)/g,"");
+    s = s.replace(/\b(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\b\.?/gi,"");
+    s = s.replace(/\b(?:Vx|Fam|Arg|Litt|Poét)\b\.?/gi,"");
+    s = s.replace(/[0-9.,:;!?\-/\s]/g,"");
+    return s.length < 3;
+  }
+
+  const seenCanons = new Set();
+  const items = [];
+  for(let i=0; i<DATA.e.length; i++){
+    if(!isOdsEmpty(DATA.f[i])) continue;
+    const canon = DATA.c[i];
+    if(!canon||seenCanons.has(canon)) continue;
+    seenCanons.add(canon);
+    const w = DATA.e[i].split(",")[0].split("/")[0].replace(/^\(SE\)\s*/i,"").trim().toLowerCase();
+    if(w) items.push({canon, display:w});
+  }
+
+  let processed=0, added=0, skipped=0, failed=0;
+  const total = items.length;
+  const updateProg = ()=>{
+    if(prog) prog.textContent=`${processed}/${total}  —  ✓ ${added}  ·  ⊘ ${skipped}  ·  ✕ ${failed}`;
+  };
+
+  async function processOne({canon, display}){
+    if(_rechCache[canon]?.loaded && _rechCache[canon].custom.def!==undefined){ skipped++; processed++; return; }
+    const r = await fbGet("rech_custom", canon);
+    if(r.ok && r.data?.def!==undefined){ skipped++; processed++; return; }
+    if(r.err==="network"){ processed++; return; }
+    try{
+      const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
+      const data = await (await fetch(url)).json();
+      const page = Object.values(data.query?.pages||{})[0];
+      const wikitext = page?.revisions?.[0]?.slots?.main?.["*"]||page?.revisions?.[0]?.["*"]||"";
+      const def = _rechParseWikt(wikitext);
+      if(def){
+        const existing = r.ok&&r.data ? r.data : {};
+        await fbSet("rech_custom", canon, {...existing, def}).catch(()=>{});
+        if(!_rechCache[canon]) _rechCache[canon]={custom:{},excl:[],loaded:true};
+        _rechCache[canon].custom.def = def;
+        added++;
+      } else { failed++; }
+    } catch { failed++; }
+    processed++;
+  }
+
+  const CONCURRENCY = 4;
+  for(let i=0; i<items.length; i+=CONCURRENCY){
+    await Promise.all(items.slice(i,i+CONCURRENCY).map(processOne));
+    updateProg();
+  }
+  if(prog) prog.textContent=`Terminé  —  ✓ ${added}  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+  if(btn){ btn.disabled=false; btn.textContent="Batch ODS → Wiktionnaire"; }
+  _odsBatchRunning = false;
+}
+
 /* ── Wiring ── */
 function wireRechercheAdmin(){
   document.getElementById("rech-modules")?.addEventListener("click", e=>{
@@ -356,6 +429,7 @@ function wireRechercheAdmin(){
   document.getElementById("rech-save-def")?.addEventListener("click", rechSaveDef);
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
+  document.getElementById("ods-batch-wikt-btn")?.addEventListener("click", odsBatchWikt);
 
   // Onglets définition / quiz
   document.getElementById("rech-def-tab-def")?.addEventListener("click", ()=>_rechSwitchDefTab("def"));
