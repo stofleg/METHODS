@@ -572,6 +572,10 @@ function renderOdsGame(){
   const defText=document.createElement("span");
   defText.textContent=cleanDef(_cdOds!==undefined ? _cdOds : entry.def)||"…";
   defDiv.appendChild(defText);
+  const _imgBtnOds=document.createElement("button");
+  _imgBtnOds.className="btn-img-gm"; _imgBtnOds.textContent="🖼";
+  _imgBtnOds.addEventListener("click",()=>openImgSearch(sortedForms[0].toLowerCase()));
+  defDiv.appendChild(_imgBtnOds);
   list.appendChild(defDiv);
   if(_cdOds===undefined) _loadCustomDefIfNeeded(_odsCanon, ()=>renderOdsGame());
 
