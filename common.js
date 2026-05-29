@@ -140,6 +140,13 @@ async function fbDelete(col, id){
     return {ok:r.ok};
   }catch{ return {ok:false, err:"network"}; }
 }
+async function fbDeleteField(col, id, field){
+  try{
+    const url = `${FB_BASE}/${col}/${id}?updateMask.fieldPaths=${encodeURIComponent(field)}`;
+    const r = await fetch(url, {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({fields:{}})});
+    return {ok:r.ok};
+  }catch{ return {ok:false, err:"network"}; }
+}
 
 /* ── Session utilisateur ── */
 const LS_SESSION = "METHODS_SESSION_V1";
