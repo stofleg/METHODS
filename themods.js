@@ -185,14 +185,18 @@ function getNormToAllDefs(){
 const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
 
 const _TYPE_PFX_GM = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
+// Labels d'usage courts (Vx., Fam., Fig., P. anal., etc.) — max 8 lettres après la majuscule
+const _LABEL_PFX_GM = /^[A-ZÀ-ÖØ-ÞŒŸ][a-zàâäéèêëîïôùûüœæç]{0,7}(?:\s+[a-z][a-zàâäéèêëîïôùûüœæç]{0,7})?\.[ ]*/;
+function _gmIsRealDef(d){
+  const c = cleanDef(d); if(!c) return false;
+  let s = c.replace(_TYPE_PFX_GM,"").trim();
+  let p; do { p=s; s=s.replace(_LABEL_PFX_GM,"").trim(); } while(s!==p);
+  return s.length>1 && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s) && !/^\([^)]+\)\.?\s*$/.test(s);
+}
 
 function _gmPickDef(primaryCanon, allForms){
   const allDefsMap = getNormToAllDefs();
-  const isReal = d => {
-    const c = cleanDef(d); if(!c) return false;
-    const s = c.replace(_TYPE_PFX_GM,"").trim();
-    return s.length>1 && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s);
-  };
+  const isReal = d => _gmIsRealDef(d);
   const seen = new Set();
   for(const raw of [primaryCanon, ...allForms.map(f=>norm(f.split(',')[0].trim()))]){
     if(!raw||seen.has(raw)) continue; seen.add(raw);
@@ -924,9 +928,8 @@ function renderGMGame(){
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
   const _cleanedFallback=cleanDef(_gmFallback);
   const _entryDef=(entry.def||'').trim();
-  // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
-  // Règle : se termine par "). " → pas de vraie def (renvoi, genre, pp.inv., etc.)
-  const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback)||_cleanedFallback.endsWith(').');
+  // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS ou label d'usage)
+  const _posOnly=!_gmIsRealDef(_gmFallback);
   // Une def Firestore valide doit avoir un contenu réel (pas juste "." etc.)
   const _cdGMValid = _cdGM!==undefined && cleanDef(_cdGM).length > 1;
   let _rawDef;
