@@ -574,7 +574,7 @@ function renderOdsGame(){
   defDiv.appendChild(defText);
   const _imgBtnOds=document.createElement("button");
   _imgBtnOds.className="btn-img-gm"; _imgBtnOds.textContent="🖼";
-  _imgBtnOds.addEventListener("click",()=>openImgSearch(sortedForms[0].toLowerCase()));
+  _imgBtnOds.addEventListener("click",()=>openImgSearch(sortedForms.map(f=>f.toLowerCase())));
   defDiv.appendChild(_imgBtnOds);
   list.appendChild(defDiv);
   if(_cdOds===undefined) _loadCustomDefIfNeeded(_odsCanon, ()=>renderOdsGame());
@@ -953,7 +953,7 @@ function renderGMGame(){
   defDiv.appendChild(defText);
   const _imgBtnGm=document.createElement("button");
   _imgBtnGm.className="btn-img-gm"; _imgBtnGm.textContent="🖼";
-  _imgBtnGm.addEventListener("click",()=>openImgSearch(sortedForms[0].toLowerCase()));
+  _imgBtnGm.addEventListener("click",()=>openImgSearch(sortedForms.map(f=>f.toLowerCase())));
   defDiv.appendChild(_imgBtnGm);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
