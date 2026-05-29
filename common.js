@@ -432,6 +432,41 @@ function wireDefModal(){
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDef(); });
 }
 
+/* ── Modale images ── */
+async function openImgSearch(word){
+  const modal=document.getElementById("img-modal");
+  const grid=document.getElementById("img-grid");
+  if(!modal||!grid) return;
+  grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Chargement…</span>';
+  modal.classList.add("open");
+  try{
+    const q=encodeURIComponent(word);
+    const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
+    const r=await fetch(url);
+    const j=await r.json();
+    const pages=Object.values(j?.query?.pages||{});
+    const imgs=pages
+      .map(p=>p.imageinfo?.[0])
+      .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
+      .slice(0,12);
+    grid.innerHTML="";
+    if(!imgs.length){
+      grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Aucune image trouvée</span>';
+      return;
+    }
+    imgs.forEach(info=>{
+      const img=document.createElement("img");
+      img.src=info.thumburl; img.loading="lazy";
+      grid.appendChild(img);
+    });
+  }catch{
+    grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Erreur de chargement</span>';
+  }
+}
+function closeImgSearch(){
+  document.getElementById("img-modal")?.classList.remove("open");
+}
+
 /* ── Clavier mobile générique ── */
 function wireKeyboard(kbId, dispId, msgId, onKey){
   const kb = document.getElementById(kbId);

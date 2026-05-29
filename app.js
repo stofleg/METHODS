@@ -260,6 +260,7 @@ async function start(){
   initKeyboardDetection();
   wireDefModal();
   wireDictModal();
+  document.getElementById("img-close")?.addEventListener("click", closeImgSearch);
   initAuth();
   initSelect();
   initNav();
