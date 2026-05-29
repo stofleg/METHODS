@@ -467,6 +467,7 @@ const _IMG_LABEL_WORDS=new Set([...Object.values(_IMG_ABBR),"sud","nord","france
 const _IMG_STOP=new Set([
   "prep","conj","pron","adverbe","adjectif","interj","masc","fem","plur","sing","invar","verbe","nom","loc",
   "action","fait","sorte","genre","celui","celle","ceux","chose","personne","maniere","facon","partie","ensemble",
+  "forme","type","objet","espece","famille","groupe","terme","etat","unite","mesure","sens","nombre",
   "relatif","relative","propre","certain","certaine","plusieurs","petit","petite","grand","grande","autre","quelque",
   "quelqu","dont","avec","sans","pour","dans","sous","leur","leurs","etre","avoir","selon","entre","aussi","ainsi",
   "plus","moins","tres","etc","mais","donc","comme","tout","tous","toute","toutes","elle","elles","cette","cet",
@@ -496,11 +497,12 @@ function _defLabels(def){
   }
   return out.slice(0,2);
 }
-// Vrai si le titre de fichier contient l'un des tokens (mot entier)
-function _imgRelevant(title, tokens){
-  const t=" "+_imgDeburr(title.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
+// Vrai si le texte (titre + description) contient l'un des tokens (mot entier)
+function _imgRelevant(text, tokens){
+  const t=" "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
   return tokens.some(tok=>tok.length>=3 && t.includes(" "+tok+" "));
 }
+const _IMG_RE_MIME=/^image\/(jpeg|png|gif|webp)$/;
 async function loadImgStrip(container, words, def){
   const candidates=(Array.isArray(words)?words:[words]).filter(Boolean);
   const keywords=_defKeywords(def);   // contenu : requête + filtre
@@ -514,20 +516,27 @@ async function loadImgStrip(container, words, def){
   if(_imgStripCache[key]){ render(_imgStripCache[key]); return; }
   try{
     for(const word of candidates){
-      const q=encodeURIComponent([word, ...keywords, ...labels].join(" "));
-      const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=40&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
-      const r=await fetch(url);
-      const j=await r.json();
-      const pages=Object.values(j?.query?.pages||{})
-        .sort((a,b)=>(a.index||0)-(b.index||0)); // ordre de pertinence
-      const imgs=pages
-        .filter(p=>{
-          const i=p.imageinfo?.[0];
-          return i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl
-            && _imgRelevant(p.title||"", matchTokens);
-        })
-        .map(p=>p.imageinfo[0].thumburl)
-        .slice(0,4);
+      const query=encodeURIComponent([word, ...keywords, ...labels].join(" "));
+      // 1) Recherche : on récupère titre + extrait (snippet) de la description
+      const sUrl=`https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${query}&srnamespace=6&srlimit=40&srprop=snippet&format=json&origin=*`;
+      const sj=await (await fetch(sUrl)).json();
+      const results=sj?.query?.search||[];
+      // 2) Pertinence : titre OU description doit contenir le mot ou un mot-clé du sens
+      const kept=results.filter(r=>{
+        const text=(r.title||"")+" "+String(r.snippet||"").replace(/<[^>]+>/g," ");
+        return _imgRelevant(text, matchTokens);
+      });
+      if(!kept.length) continue;
+      // 3) Miniatures pour les fichiers retenus (ordre de pertinence préservé)
+      const titles=kept.slice(0,10).map(r=>r.title);
+      const iUrl=`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles.join("|"))}&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
+      const ij=await (await fetch(iUrl)).json();
+      const byTitle={};
+      Object.values(ij?.query?.pages||{}).forEach(p=>{
+        const i=p.imageinfo?.[0];
+        if(i && _IMG_RE_MIME.test(i.mime) && i.thumburl) byTitle[p.title]=i.thumburl;
+      });
+      const imgs=titles.map(t=>byTitle[t]).filter(Boolean).slice(0,4);
       if(imgs.length){
         _imgStripCache[key]=imgs;
         render(imgs);
