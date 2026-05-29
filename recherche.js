@@ -297,13 +297,9 @@ async function gmBatchWikt(){
       if(d && !seenDisp.has(d)){ seenDisp.add(d); allDisplays.push(d); }
     }
     // Priorité ODS : ne traiter que si la def ODS est insuffisante (POS seul)
-    const hardcoded = (entry.def||'').trim();
     const odsDef = (typeof _gmPickDef==="function") ? _gmPickDef(canon, sortedForms) : '';
-    const odsDefCleaned = (typeof cleanDef==="function") ? cleanDef(odsDef) : odsDef;
-    const odsIsPosOnly = !odsDefCleaned || /^[a-z.\d()\s]+$/.test(odsDefCleaned) || odsDefCleaned.endsWith(').');
     // ODS a une vraie def → pas besoin de Wiktionnaire
-    // Si ODS est POS-only, on fetch Wiktionnaire même si une def hardcodée existe
-    if(!odsIsPosOnly) continue;
+    if(typeof _gmIsRealDef==="function" && _gmIsRealDef(odsDef)) continue;
     // Déterminer le POS ODS pour filtrer la section Wiktionnaire
     const odsDefNorm = odsDef.replace(/^\[[^\]]*\]\s*/,'').trim();
     const odsPOS = (typeof _getPOS==="function") ? _getPOS(odsDefNorm) : null;
@@ -564,6 +560,69 @@ async function gmPurgeWikt(){
   }catch(e){ _reset(); alert("Erreur purge : "+(e?.message||e)); }
 }
 
+/* ── Purge doubles ODS/Wikt ── */
+async function gmPurgeOdsDoubles(){
+  const btn = document.getElementById("gm-purge-ods-doubles-btn");
+  const prog = document.getElementById("gm-batch-progress");
+  const _reset = ()=>{ if(btn){ btn.disabled=false; btn.textContent="Purger doubles ODS/Wikt GM"; } };
+  if(btn){ btn.disabled=true; btn.textContent="Analyse…"; }
+  try{
+    if(!_isAdm()){ _reset(); return; }
+    const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
+    if(!entries.length){ alert("Aucune entrée GM."); _reset(); return; }
+
+    // Identifier les graphies GM dont l'ODS a une vraie def
+    const toCheck = [];
+    const seenCanons = new Set();
+    for(const entry of entries){
+      const sortedForms = [...(entry.forms||[])].filter(f=>f&&f.trim())
+        .sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+      if(!sortedForms.length) continue;
+      const primaryCanon = norm(sortedForms[0]);
+      if(seenCanons.has(primaryCanon)) continue;
+      seenCanons.add(primaryCanon);
+      const odsDef = typeof _gmPickDef==="function" ? _gmPickDef(primaryCanon, sortedForms) : '';
+      if(typeof _gmIsRealDef==="function" && _gmIsRealDef(odsDef)){
+        for(const form of sortedForms){
+          toCheck.push(norm(form.split(',')[0].trim()));
+        }
+      }
+    }
+
+    if(!toCheck.length){
+      if(prog){ prog.style.display=""; prog.textContent="Aucune entrée GM avec def ODS réelle trouvée."; }
+      _reset(); return;
+    }
+    if(!window.confirm(`${toCheck.length} graphies GM ont une def ODS réelle.\nVérifier Firestore et supprimer les defs Wiktionnaire en double ?`)){ _reset(); return; }
+    if(btn) btn.textContent="Purge…";
+    if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
+
+    let deleted=0, notFound=0, done=0;
+    const CONC = 10;
+    for(let i=0; i<toCheck.length; i+=CONC){
+      await Promise.all(toCheck.slice(i, i+CONC).map(async canon=>{
+        const r = await fbGet("rech_custom", canon);
+        if(r.ok && r.data?.def !== undefined){
+          const otherFields = Object.keys(r.data).filter(k=>k!=='def');
+          if(otherFields.length===0){
+            await fbDelete("rech_custom", canon).catch(()=>{});
+          } else {
+            await fbDeleteField("rech_custom", canon, "def").catch(()=>{});
+          }
+          if(_rechCache[canon]) delete _rechCache[canon];
+          deleted++;
+        } else {
+          notFound++;
+        }
+        done++;
+        if(prog) prog.textContent=`Purge… ${done}/${toCheck.length} — ✓ ${deleted} supprimées`;
+      }));
+    }
+    if(prog) prog.textContent=`Terminé — ✓ ${deleted} defs Wikt supprimées · ${notFound} sans def Firestore.`;
+    _reset();
+  }catch(e){ _reset(); alert("Erreur : "+(e?.message||e)); }
+}
+
 /* ── Wiring ── */
 function wireRechercheAdmin(){
   document.getElementById("rech-modules")?.addEventListener("click", e=>{
@@ -575,6 +634,7 @@ function wireRechercheAdmin(){
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
   document.getElementById("ods-batch-wikt-btn")?.addEventListener("click", odsBatchWikt);
   document.getElementById("gm-purge-wikt-btn")?.addEventListener("click", gmPurgeWikt);
+  document.getElementById("gm-purge-ods-doubles-btn")?.addEventListener("click", gmPurgeOdsDoubles);
 
   // Onglets définition / quiz
   document.getElementById("rech-def-tab-def")?.addEventListener("click", ()=>_rechSwitchDefTab("def"));
