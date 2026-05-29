@@ -613,9 +613,11 @@ function renderOdsGame(){
     });
   }
   list.appendChild(tilesDiv);
-  const _odsImgStrip=document.createElement("div"); _odsImgStrip.className="img-strip";
-  list.appendChild(_odsImgStrip);
-  loadImgStrip(_odsImgStrip, sortedForms.map(f=>f.toLowerCase()));
+  if(typeof loadImgStrip==="function"){
+    const _odsImgStrip=document.createElement("div"); _odsImgStrip.className="img-strip";
+    list.appendChild(_odsImgStrip);
+    loadImgStrip(_odsImgStrip, sortedForms.map(f=>f.toLowerCase()));
+  }
 }
 
 function renderTmGame(){
@@ -976,9 +978,11 @@ function renderGMGame(){
     tilesDiv.appendChild(wrap);
   });
   list.appendChild(tilesDiv);
-  const _gmImgStrip=document.createElement("div"); _gmImgStrip.className="img-strip";
-  list.appendChild(_gmImgStrip);
-  loadImgStrip(_gmImgStrip, sortedForms.map(f=>f.toLowerCase()));
+  if(typeof loadImgStrip==="function"){
+    const _gmImgStrip=document.createElement("div"); _gmImgStrip.className="img-strip";
+    list.appendChild(_gmImgStrip);
+    loadImgStrip(_gmImgStrip, sortedForms.map(f=>f.toLowerCase()));
+  }
 }
 
 /* ── Pull-to-refresh : swipe bas sur tv-game pour recharger la def Firestore ── */
