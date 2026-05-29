@@ -432,36 +432,72 @@ function wireDefModal(){
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDef(); });
 }
 
-/* ── Images inline sous les tuiles ── */
+/* ── Images inline sous les tuiles ──
+   Recherche Wikimedia Commons contextualisée par la définition :
+   on enrichit la requête avec les mots-clés du sens (ex. PLACAGE+rugby,
+   FLOUSE+argent) et on ne garde que les images dont le titre a un lien
+   réel avec le mot ou sa définition — sinon on n'illustre pas. */
 const _imgStripCache={};
-async function loadImgStrip(container, words){
-  const candidates=Array.isArray(words)?words:[words];
-  const key=candidates.join("|");
-  if(_imgStripCache[key]){
-    _imgStripCache[key].forEach(src=>{
-      const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
-      container.appendChild(img);
-    });
-    return;
+function _imgDeburr(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,""); }
+// Mots à ignorer pour les mots-clés : grammaire, labels d'usage/domaine, remplissage
+const _IMG_STOP=new Set([
+  // grammaire / POS
+  "prep","conj","pron","adverbe","adjectif","interj","masc","fem","plur","sing","invar","verbe","nom","loc",
+  // labels d'usage / domaine abrégés
+  "fam","vieilli","litt","arg","region","quebec","belgique","suisse","afrique","techn","chim","bot","zool","anat",
+  "math","phys","mus","relig","milit","aviat","inform","pathol","didact","absolt","cour","propr",
+  // remplissage de définition
+  "action","fait","sorte","genre","celui","celle","ceux","chose","personne","maniere","facon","partie","ensemble",
+  "relatif","relative","propre","certain","certaine","plusieurs","petit","petite","grand","grande","autre","quelque",
+  "quelqu","dont","avec","sans","pour","dans","sous","leur","leurs","etre","avoir","selon","entre","aussi","ainsi",
+  "plus","moins","tres","etc","mais","donc","comme","tout","tous","toute","toutes","elle","elles","cette","cet",
+  "ces","son","ses","sur","par","est","sont","une","des","les","aux","qui","que","quoi","quelle","quel",
+]);
+function _defKeywords(def){
+  if(!def) return [];
+  let s=_imgDeburr(String(def).toLowerCase());
+  s=s.replace(/\[[^\]]*\]/g," ").replace(/\([^)]*\)/g," "); // prononciation & parenthèses (synonymes)
+  s=s.replace(/[^a-z\s]/g," ");
+  const out=[],seen=new Set();
+  for(const w of s.split(/\s+/)){
+    if(w.length>=4 && !_IMG_STOP.has(w) && !seen.has(w)){ seen.add(w); out.push(w); }
   }
+  return out.slice(0,3);
+}
+// Vrai si le titre de fichier contient l'un des tokens (mot entier)
+function _imgRelevant(title, tokens){
+  const t=" "+_imgDeburr(title.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
+  return tokens.some(tok=>tok.length>=3 && t.includes(" "+tok+" "));
+}
+async function loadImgStrip(container, words, def){
+  const candidates=(Array.isArray(words)?words:[words]).filter(Boolean);
+  const keywords=_defKeywords(def);
+  const matchTokens=[...candidates.map(w=>_imgDeburr(w).toLowerCase()), ...keywords];
+  const key=candidates.join("|")+"::"+keywords.join("+");
+  const render=srcs=>srcs.forEach(src=>{
+    const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
+    container.appendChild(img);
+  });
+  if(_imgStripCache[key]){ render(_imgStripCache[key]); return; }
   try{
     for(const word of candidates){
-      const q=encodeURIComponent(word);
-      const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
+      const q=encodeURIComponent([word, ...keywords].join(" "));
+      const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=40&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
       const r=await fetch(url);
       const j=await r.json();
-      const pages=Object.values(j?.query?.pages||{});
+      const pages=Object.values(j?.query?.pages||{})
+        .sort((a,b)=>(a.index||0)-(b.index||0)); // ordre de pertinence
       const imgs=pages
-        .map(p=>p.imageinfo?.[0])
-        .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
+        .filter(p=>{
+          const i=p.imageinfo?.[0];
+          return i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl
+            && _imgRelevant(p.title||"", matchTokens);
+        })
+        .map(p=>p.imageinfo[0].thumburl)
         .slice(0,4);
       if(imgs.length){
-        const srcs=imgs.map(i=>i.thumburl);
-        _imgStripCache[key]=srcs;
-        srcs.forEach(src=>{
-          const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
-          container.appendChild(img);
-        });
+        _imgStripCache[key]=imgs;
+        render(imgs);
         return;
       }
     }
