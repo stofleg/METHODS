@@ -1,7 +1,6 @@
 'use strict';
 
-importScripts('./version.js');
-const CACHE_NAME = BS_CACHE;
+const CACHE_NAME = "blackscrab-v1.41";
 const BASE  = new URL('.', self.location).href;
 const ROOT  = new URL('..', self.location).href;
 

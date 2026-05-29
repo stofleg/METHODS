@@ -448,7 +448,7 @@ async function openImgSearch(word){
     const imgs=pages
       .map(p=>p.imageinfo?.[0])
       .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
-      .slice(0,12);
+      .slice(0,4);
     grid.innerHTML="";
     if(!imgs.length){
       grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Aucune image trouvée</span>';
