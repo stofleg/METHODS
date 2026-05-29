@@ -497,56 +497,65 @@ function _defLabels(def){
   }
   return out.slice(0,2);
 }
-// Vrai si le texte (titre + description) contient l'un des tokens.
+// Tokenise un texte (titre + description) en mots déburrés
+function _imgWords(text){
+  return " "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
+}
+// Vrai si le texte contient l'un des tokens.
 // ≥4 lettres : début de mot suffit (lump → lumpus/lumpfish, pentacle → pentacles).
 // 3 lettres : mot entier exigé (évite le bruit).
-function _imgRelevant(text, tokens){
-  const t=" "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
-  return tokens.some(tok=>{
-    if(tok.length<3) return false;
-    return tok.length>=4 ? t.includes(" "+tok) : t.includes(" "+tok+" ");
-  });
+function _imgHasToken(t, tok){
+  if(tok.length<3) return false;
+  return tok.length>=4 ? t.includes(" "+tok) : t.includes(" "+tok+" ");
 }
+function _imgRelevant(t, tokens){ return tokens.some(tok=>_imgHasToken(t, tok)); }
+// Score = nombre de mots-clés du sens présents (sert au classement, pas au filtre)
+function _imgScore(t, tokens){ let n=0; for(const tok of tokens) if(_imgHasToken(t, tok)) n++; return n; }
 const _IMG_RE_MIME=/^image\/(jpeg|png|gif|webp)$/;
 async function loadImgStrip(container, words, def){
   const candidates=(Array.isArray(words)?words:[words]).filter(Boolean);
-  const keywords=_defKeywords(def);   // contenu : requête + filtre
-  const labels=_defLabels(def);       // domaine/registre/région : requête seule
-  const matchTokens=[...candidates.map(w=>_imgDeburr(w).toLowerCase()), ...keywords];
+  const keywords=_defKeywords(def);   // mots de contenu (argent, rugby…)
+  const labels=_defLabels(def);       // domaine/registre/région développés
+  const headTokens=candidates.map(w=>_imgDeburr(w).toLowerCase()); // mots → filtre de lien
+  const rankTokens=[...keywords, ...labels];                       // sens → classement
   const key=candidates.join("|")+"::"+keywords.join("+")+"::"+labels.join("+");
   const render=srcs=>srcs.forEach(src=>{
     const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
     container.appendChild(img);
   });
   if(_imgStripCache[key]){ render(_imgStripCache[key]); return; }
+  const fetchThumbs=async titles=>{
+    const iUrl=`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles.join("|"))}&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
+    const ij=await (await fetch(iUrl)).json();
+    const byTitle={};
+    Object.values(ij?.query?.pages||{}).forEach(p=>{
+      const i=p.imageinfo?.[0];
+      if(i && _IMG_RE_MIME.test(i.mime) && i.thumburl) byTitle[p.title]=i.thumburl;
+    });
+    return titles.map(t=>byTitle[t]).filter(Boolean);
+  };
   try{
+    // On cherche CHAQUE graphie seule (CirrusSearch exige tous les termes d'une
+    // requête : ajouter les mots-clés exclurait les sujets décrits en anglais).
+    // On accumule les fichiers vraiment liés au mot, puis on classe par sens.
+    const pool=[], seen=new Set();
     for(const word of candidates){
-      const query=encodeURIComponent([word, ...keywords, ...labels].join(" "));
-      // 1) Recherche : on récupère titre + extrait (snippet) de la description
-      const sUrl=`https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${query}&srnamespace=6&srlimit=40&srprop=snippet&format=json&origin=*`;
+      const sUrl=`https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(word)}&srnamespace=6&srlimit=30&srprop=snippet&format=json&origin=*`;
       const sj=await (await fetch(sUrl)).json();
-      const results=sj?.query?.search||[];
-      // 2) Pertinence : titre OU description doit contenir le mot ou un mot-clé du sens
-      const kept=results.filter(r=>{
-        const text=(r.title||"")+" "+String(r.snippet||"").replace(/<[^>]+>/g," ");
-        return _imgRelevant(text, matchTokens);
-      });
-      if(!kept.length) continue;
-      // 3) Miniatures pour les fichiers retenus (ordre de pertinence préservé)
-      const titles=kept.slice(0,10).map(r=>r.title);
-      const iUrl=`https://commons.wikimedia.org/w/api.php?action=query&titles=${encodeURIComponent(titles.join("|"))}&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
-      const ij=await (await fetch(iUrl)).json();
-      const byTitle={};
-      Object.values(ij?.query?.pages||{}).forEach(p=>{
-        const i=p.imageinfo?.[0];
-        if(i && _IMG_RE_MIME.test(i.mime) && i.thumburl) byTitle[p.title]=i.thumburl;
-      });
-      const imgs=titles.map(t=>byTitle[t]).filter(Boolean).slice(0,4);
-      if(imgs.length){
-        _imgStripCache[key]=imgs;
-        render(imgs);
-        return;
+      for(const r of (sj?.query?.search||[])){
+        if(seen.has(r.title)) continue;
+        const t=_imgWords((r.title||"")+" "+String(r.snippet||"").replace(/<[^>]+>/g," "));
+        if(!_imgRelevant(t, headTokens)) continue;  // doit vraiment parler du mot
+        seen.add(r.title);
+        pool.push({title:r.title, score:_imgScore(t, rankTokens)});
       }
+      if(pool.length>=20) break;
+    }
+    if(pool.length){
+      pool.sort((a,b)=>b.score-a.score); // tri stable : à score égal, ordre de pertinence Commons
+      const titles=pool.slice(0,10).map(p=>p.title);
+      const imgs=(await fetchThumbs(titles)).slice(0,4);
+      if(imgs.length){ _imgStripCache[key]=imgs; render(imgs); return; }
     }
     _imgStripCache[key]=[];
   }catch{ _imgStripCache[key]=[]; }
