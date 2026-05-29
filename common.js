@@ -432,14 +432,18 @@ function wireDefModal(){
   document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDef(); });
 }
 
-/* ── Modale images ── */
-async function openImgSearch(words){
-  const modal=document.getElementById("img-modal");
-  const grid=document.getElementById("img-grid");
-  if(!modal||!grid) return;
+/* ── Images inline sous les tuiles ── */
+const _imgStripCache={};
+async function loadImgStrip(container, words){
   const candidates=Array.isArray(words)?words:[words];
-  grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Chargement…</span>';
-  modal.classList.add("open");
+  const key=candidates.join("|");
+  if(_imgStripCache[key]){
+    _imgStripCache[key].forEach(src=>{
+      const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
+      container.appendChild(img);
+    });
+    return;
+  }
   try{
     for(const word of candidates){
       const q=encodeURIComponent(word);
@@ -452,22 +456,17 @@ async function openImgSearch(words){
         .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
         .slice(0,4);
       if(imgs.length){
-        grid.innerHTML="";
-        imgs.forEach(info=>{
-          const img=document.createElement("img");
-          img.src=info.thumburl; img.loading="lazy";
-          grid.appendChild(img);
+        const srcs=imgs.map(i=>i.thumburl);
+        _imgStripCache[key]=srcs;
+        srcs.forEach(src=>{
+          const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
+          container.appendChild(img);
         });
         return;
       }
     }
-    grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Aucune image trouvée</span>';
-  }catch{
-    grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Erreur de chargement</span>';
-  }
-}
-function closeImgSearch(){
-  document.getElementById("img-modal")?.classList.remove("open");
+    _imgStripCache[key]=[];
+  }catch{ _imgStripCache[key]=[]; }
 }
 
 /* ── Clavier mobile générique ── */

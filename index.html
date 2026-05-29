@@ -127,14 +127,9 @@ button{font-family:inherit;cursor:pointer;border:none;background:none;}
 a.def-link{color:var(--acc);text-decoration:none;}
 a.def-link:hover{text-decoration:underline;}
 
-/* Modale images */
-#img-modal{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.6);align-items:center;justify-content:center;padding:16px;}
-#img-modal.open{display:flex;}
-#img-panel{background:#111;border-radius:16px;overflow:hidden;width:min(320px,92vw);}
-#img-modal-bar{display:flex;justify-content:flex-end;padding:8px 10px 4px;}
-#img-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:4px;padding:0 8px 8px;}
-#img-grid img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px;}
-.btn-img-gm{font-size:11px;padding:2px 6px;border-radius:6px;background:rgba(255,255,255,.08);border:1px solid var(--stroke);color:var(--muted);cursor:pointer;font-family:inherit;margin-top:8px;}
+/* Images inline */
+.img-strip{display:flex;gap:4px;padding:10px 12px 4px;flex-wrap:wrap;justify-content:center;}
+.img-strip-thumb{width:calc(50% - 2px);max-width:130px;aspect-ratio:1;object-fit:cover;border-radius:8px;}
 
 /* Settings overlay */
 .overlay{display:none;position:fixed;inset:0;z-index:400;align-items:flex-end;justify-content:center;}
@@ -937,16 +932,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   </div>
 </div>
 
-<!-- ══ MODALE IMAGES ══ -->
-<div id="img-modal">
-  <div id="img-panel">
-    <div id="img-modal-bar">
-      <button id="img-close" class="btn" style="font-size:13px;padding:4px 12px;">✕</button>
-    </div>
-    <div id="img-grid"><span style="color:#888;padding:30px;grid-column:1/-1;text-align:center;">Chargement…</span></div>
-  </div>
-</div>
-
 <!-- ══ SETTINGS ══ -->
 <div id="settings" class="overlay">
   <div class="modal-bd" id="settings-bd"></div>
@@ -1089,7 +1074,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v4.99";
+  const CURRENT_CACHE="methods-v500";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
