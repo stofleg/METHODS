@@ -185,13 +185,15 @@ function getNormToAllDefs(){
 const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
 
 const _TYPE_PFX_GM = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
-// Labels d'usage courts (Vx., Fam., Fig., P. anal., etc.) — max 8 lettres après la majuscule
-const _LABEL_PFX_GM = /^[A-ZÀ-ÖØ-ÞŒŸ][a-zàâäéèêëîïôùûüœæç]{0,7}(?:\s+[a-z][a-zàâäéèêëîïôùûüœæç]{0,7})?\.[ ]*/;
 function _gmIsRealDef(d){
   const c = cleanDef(d); if(!c) return false;
-  let s = c.replace(_TYPE_PFX_GM,"").trim();
-  let p; do { p=s; s=s.replace(_LABEL_PFX_GM,"").trim(); } while(s!==p);
-  return s.length>1 && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s) && !/^\([^)]+\)\.?\s*$/.test(s);
+  const s = c.replace(_TYPE_PFX_GM,"").trim();
+  // Une vraie définition : commence par majuscule ou (, pas un simple parenthétique,
+  // et contient au moins 4 lettres consécutives (distingue "Vx. ." de "Crevette grise.")
+  return s.length>3
+    && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s)
+    && !/^\([^)]+\)\.?\s*$/.test(s)
+    && /[A-Za-zÀ-ÿœæŒÆ]{4}/.test(s);
 }
 
 function _gmPickDef(primaryCanon, allForms){
