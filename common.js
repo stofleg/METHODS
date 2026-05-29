@@ -439,30 +439,62 @@ function wireDefModal(){
    réel avec le mot ou sa définition — sinon on n'illustre pas. */
 const _imgStripCache={};
 function _imgDeburr(s){ return String(s).normalize("NFD").replace(/[̀-ͯ]/g,""); }
-// Mots à ignorer pour les mots-clés : grammaire, labels d'usage/domaine, remplissage
+// Abréviations ODS → sens plein. Servent à PRÉCISER la requête (non-excluantes).
+// Clés déburrées/minuscules (Méd.→med, Québ.→queb, Hér.→her, Électr.→electr…).
+const _IMG_ABBR={
+  // domaines
+  med:"medecine",antiq:"antiquite",hist:"histoire",bot:"botanique",biol:"biologie",dr:"droit",
+  chim:"chimie",mar:"marine",zool:"zoologie",geol:"geologie",inf:"informatique",inform:"informatique",
+  phys:"physique",anat:"anatomie",mus:"musique",math:"mathematiques",ling:"linguistique",
+  psych:"psychologie",rel:"religion",relig:"religion",techn:"technique",philos:"philosophie",
+  arch:"architecture",archit:"architecture",mediev:"medieval",biochim:"biochimie",sp:"sport",
+  physiol:"physiologie",her:"heraldique",electr:"electricite",chir:"chirurgie",pharm:"pharmacie",
+  agr:"agriculture",geogr:"geographie",pol:"politique",impr:"imprimerie",phon:"phonetique",
+  text:"textile",mil:"militaire",milit:"militaire",min:"mineralogie",phot:"photographie",
+  fin:"finance",archeol:"archeologie",cin:"cinema",econ:"economie",rhet:"rhetorique",
+  vet:"veterinaire",log:"logique",ven:"venerie",opt:"optique",poet:"poesie",aeron:"aeronautique",
+  aviat:"aviation",feod:"feodalite",mec:"mecanique",astr:"astronomie",electron:"electronique",
+  pathol:"pathologie",
+  // registres / emplois
+  fam:"familier",vx:"vieux",vieilli:"vieux",litt:"litteraire",arg:"argot",pej:"pejoratif",anc:"ancien",
+  // régions
+  queb:"quebec",helv:"suisse",belg:"belgique",afr:"afrique",inde:"inde",amerique:"amerique",
+  asie:"asie",orient:"orient",japon:"japon",antilles:"antilles",bourgogne:"bourgogne",
+};
+// Mots de domaine/registre/région écrits en entier → non-excluants eux aussi
+const _IMG_LABEL_WORDS=new Set([...Object.values(_IMG_ABBR),"sud","nord","france","terre"]);
+// Mots à ignorer totalement : grammaire et remplissage de définition
 const _IMG_STOP=new Set([
-  // grammaire / POS
   "prep","conj","pron","adverbe","adjectif","interj","masc","fem","plur","sing","invar","verbe","nom","loc",
-  // labels d'usage / domaine abrégés
-  "fam","vieilli","litt","arg","region","quebec","belgique","suisse","afrique","techn","chim","bot","zool","anat",
-  "math","phys","mus","relig","milit","aviat","inform","pathol","didact","absolt","cour","propr",
-  // remplissage de définition
   "action","fait","sorte","genre","celui","celle","ceux","chose","personne","maniere","facon","partie","ensemble",
   "relatif","relative","propre","certain","certaine","plusieurs","petit","petite","grand","grande","autre","quelque",
   "quelqu","dont","avec","sans","pour","dans","sous","leur","leurs","etre","avoir","selon","entre","aussi","ainsi",
   "plus","moins","tres","etc","mais","donc","comme","tout","tous","toute","toutes","elle","elles","cette","cet",
   "ces","son","ses","sur","par","est","sont","une","des","les","aux","qui","que","quoi","quelle","quel",
 ]);
-function _defKeywords(def){
-  if(!def) return [];
-  let s=_imgDeburr(String(def).toLowerCase());
+function _defTokens(def){
+  let s=_imgDeburr(String(def||"").toLowerCase());
   s=s.replace(/\[[^\]]*\]/g," ").replace(/\([^)]*\)/g," "); // prononciation & parenthèses (synonymes)
-  s=s.replace(/[^a-z\s]/g," ");
+  return s.replace(/[^a-z\s]/g," ").split(/\s+/).filter(Boolean);
+}
+// Mots de contenu : utilisés dans la requête ET dans le filtre (excluants)
+function _defKeywords(def){
   const out=[],seen=new Set();
-  for(const w of s.split(/\s+/)){
-    if(w.length>=4 && !_IMG_STOP.has(w) && !seen.has(w)){ seen.add(w); out.push(w); }
+  for(const w of _defTokens(def)){
+    if(w.length>=4 && !_IMG_STOP.has(w) && !_IMG_ABBR[w] && !_IMG_LABEL_WORDS.has(w) && !seen.has(w)){
+      seen.add(w); out.push(w);
+    }
   }
   return out.slice(0,3);
+}
+// Labels (domaine/registre/région) développés : requête seulement (non-excluants)
+function _defLabels(def){
+  const out=[],seen=new Set();
+  for(const w of _defTokens(def)){
+    const exp=_IMG_ABBR[w] || (_IMG_LABEL_WORDS.has(w)?w:null);
+    if(exp && !seen.has(exp)){ seen.add(exp); out.push(exp); }
+  }
+  return out.slice(0,2);
 }
 // Vrai si le titre de fichier contient l'un des tokens (mot entier)
 function _imgRelevant(title, tokens){
@@ -471,9 +503,10 @@ function _imgRelevant(title, tokens){
 }
 async function loadImgStrip(container, words, def){
   const candidates=(Array.isArray(words)?words:[words]).filter(Boolean);
-  const keywords=_defKeywords(def);
+  const keywords=_defKeywords(def);   // contenu : requête + filtre
+  const labels=_defLabels(def);       // domaine/registre/région : requête seule
   const matchTokens=[...candidates.map(w=>_imgDeburr(w).toLowerCase()), ...keywords];
-  const key=candidates.join("|")+"::"+keywords.join("+");
+  const key=candidates.join("|")+"::"+keywords.join("+")+"::"+labels.join("+");
   const render=srcs=>srcs.forEach(src=>{
     const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
     container.appendChild(img);
@@ -481,7 +514,7 @@ async function loadImgStrip(container, words, def){
   if(_imgStripCache[key]){ render(_imgStripCache[key]); return; }
   try{
     for(const word of candidates){
-      const q=encodeURIComponent([word, ...keywords].join(" "));
+      const q=encodeURIComponent([word, ...keywords, ...labels].join(" "));
       const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=40&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
       const r=await fetch(url);
       const j=await r.json();
