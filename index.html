@@ -129,7 +129,7 @@ a.def-link:hover{text-decoration:underline;}
 
 /* Images inline */
 .img-strip{display:flex;gap:4px;padding:10px 12px 4px;flex-wrap:wrap;justify-content:center;}
-.img-strip-thumb{width:calc(50% - 2px);max-width:130px;aspect-ratio:1;object-fit:cover;border-radius:8px;}
+.img-strip-thumb{width:calc(50% - 2px);max-width:130px;aspect-ratio:1;object-fit:contain;background:rgba(255,255,255,.04);border-radius:8px;}
 
 /* Settings overlay */
 .overlay{display:none;position:fixed;inset:0;z-index:400;align-items:flex-end;justify-content:center;}
@@ -1074,7 +1074,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v501";
+  const CURRENT_CACHE="methods-v502";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
