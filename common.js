@@ -134,6 +134,13 @@ async function fbSet(col, id, obj){
   }catch{ return {ok:false, err:"network"}; }
 }
 
+async function fbDelete(col, id){
+  try{
+    const r = await fetch(`${FB_BASE}/${col}/${id}`, {method:"DELETE"});
+    return {ok:r.ok};
+  }catch{ return {ok:false, err:"network"}; }
+}
+
 /* ── Session utilisateur ── */
 const LS_SESSION = "METHODS_SESSION_V1";
 let currentUser = null;
@@ -277,7 +284,7 @@ function openDef(canon, displayWord, defText, flechie){
   const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
     ? [{label:null, entryLabel:null, text:_cf(defText)}]
-    : allIdxs.map(i=>{ const f=_cf(getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    : allIdxs.map(i=>{ const f=_cf(_getIdxDef()[i]||getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const _mr=/-->\s+([a-zàâäéèêëîïôùûüœæç][a-zàâäéèêëîïôùûüœæç\s-]*)\./.exec(f); if(_mr&&!/[A-ZÀ-ÖØ-ÞŒŸ]/.test(f.slice(0,_mr.index).replace(/\[[^\]]*\]/g,''))){const td=_cf(getNormToF()[norm(_mr[1].trim())]||'');if(td&&!/-->/.test(td)) return{label:null,entryLabel:null,text:td};} const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;
@@ -540,10 +547,8 @@ function dictSelectWord(w, idx){
   document.getElementById("dict-sugg").innerHTML="";
 
   let allIdxs=_findAllIdxs(w);
-  // If a specific idx was passed (suggestion click), put it first
-  if(idx!==undefined && allIdxs.length>1 && allIdxs[0]!==idx){
-    allIdxs=[idx,...allIdxs.filter(i=>i!==idx)];
-  }
+  // Clic sur une suggestion précise : n'afficher que cette entrée (homographes séparés)
+  if(idx!==undefined && allIdxs.length>1) allIdxs=[idx];
   // Filter/redirect pure conjugation-form entries
   {
     const conjM=_getConjMap();
@@ -558,35 +563,24 @@ function dictSelectWord(w, idx){
 
   if(allIdxs.length>0){
     const cIdx0=allIdxs[0];
-    const display=getNormToE()[w]||w;
+    const display=(_getIdxE()[cIdx0]||getNormToE()[w]||w).replace(/\*/g,"").trim();
     const slash=_wantsSlash(w)&&!display.includes('/');
     document.getElementById("dict-word").textContent=display+(slash?' /':'');
 
     const defEl=document.getElementById("dict-def");
     const _customDef = window._rechCache?.[w]?.loaded ? window._rechCache[w].custom?.def : undefined;
-    if(allIdxs.length===1){
-      const raw=(getNormToF()[w]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
-      defEl.textContent=(_customDef!==undefined ? _customDef : raw)||"(définition absente)";
-    } else {
-      defEl.innerHTML="";
-      allIdxs.forEach((i,n)=>{
-        if(n>0){
-          const hr=document.createElement("hr");
-          hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
-          defEl.appendChild(hr);
-          const dispI=getNormToE()[DATA.c?.[i]]||w;
-          if(dispI!==display){
-            const lbl=document.createElement("small");
-            lbl.style.cssText="color:var(--muted);display:block;font-size:10px;margin-bottom:2px";
-            lbl.textContent=dispI; defEl.appendChild(lbl);
-          }
-        }
-        let raw=(getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
-        if(n===0 && _customDef!==undefined) raw=_customDef;
-        const p=document.createElement("p"); p.style.margin="0";
-        p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
-      });
-    }
+    defEl.innerHTML="";
+    allIdxs.forEach((i,n)=>{
+      if(n>0){
+        const hr=document.createElement("hr");
+        hr.style.cssText="border:none;border-top:1px solid var(--stroke);margin:6px 0 3px";
+        defEl.appendChild(hr);
+      }
+      let raw=(_getIdxDef()[i]||getNormToF()[DATA.c?.[i]]||'').replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'').trim();
+      if(n===0 && _customDef!==undefined) raw=_customDef;
+      const p=document.createElement("p"); p.style.margin="0";
+      p.textContent=raw||"(définition absente)"; defEl.appendChild(p);
+    });
     // Anagrammes
     const anaEl=document.getElementById("dict-ana");
     if(anaEl && DATA.a){
@@ -693,9 +687,9 @@ function _dictRenderSugg(prefix){
     if(lemma&&lemma!==prefix) html+=`<li data-lemma="${lemma}">→ <a class="def-link">${lemma}</a></li>`;
   }
   for(const i of candidates){
-    let label=(getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+    let label=(_getIdxE()[i]||getNormToE()[C[i]]||C[i]).replace(/&/g,"&amp;").replace(/</g,"&lt;");
     if(_wantsSlash(C[i])&&!label.includes("/")) label+=" /";
-    const pos=_posLabel(getNormToF()[C[i]]); if(pos) label+="  "+pos;
+    const pos=_posLabel(_getIdxDef()[i]||getNormToF()[C[i]]); if(pos) label+="  "+pos;
     html+=`<li data-idx="${i}">${label}</li>`;
   }
   sugg.innerHTML=html||"<li class='dict-no-result'>Mot inconnu.</li>";

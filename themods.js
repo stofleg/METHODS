@@ -65,6 +65,7 @@ function _mergeTmStates(a, b){
         const src       = validated ? (as.validated ? as : bs) : ((as.lastSeen||'')>=(bs.lastSeen||'') ? as : bs);
         out.themes[th][lb] = {
           seen, validated,
+          done:       !!(as.done || bs.done),
           lastResult: src.lastResult||'',
           lastSeen:   src.lastSeen||'',
           interval:   Math.max(as.interval||1, bs.interval||1),
@@ -152,14 +153,47 @@ function getNormToF(){
   if(!_normToF){
     _normToF = {};
     const d = window.SEQODS_DATA;
-    // Pair e[i] and f[i] together (both share same misalignment relative to c[])
     (d?.e || []).forEach((raw, i) => {
       if(!raw) return;
       const n = norm(raw.split(',')[0].split('/')[0].trim());
-      if(n && !_normToF[n]) _normToF[n] = d.f?.[i] || "";
+      if(!n) return;
+      const def = d.f?.[i] || "";
+      if(!_normToF[n]) _normToF[n] = def;
+      else if(def && _normToF[n] !== def) _normToF[n] += " / " + def;
     });
   }
   return _normToF;
+}
+
+let _normToAllDefs = null;
+function getNormToAllDefs(){
+  if(!_normToAllDefs){
+    _normToAllDefs = {};
+    const d = window.SEQODS_DATA;
+    (d?.e || []).forEach((raw, i) => {
+      if(!raw) return;
+      const n = norm(raw.split(',')[0].split('/')[0].trim());
+      if(!n) return;
+      const def = d.f?.[i] || "";
+      if(!_normToAllDefs[n]) _normToAllDefs[n] = [];
+      if(def && !_normToAllDefs[n].includes(def)) _normToAllDefs[n].push(def);
+    });
+  }
+  return _normToAllDefs;
+}
+
+const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
+
+function _gmPickDef(primaryCanon, allForms){
+  const allDefsMap = getNormToAllDefs();
+  const isReal = d => { const c=cleanDef(d); return c&&!/^[a-z.\d()\s]+$/.test(c)&&!c.endsWith(').'); };
+  const seen = new Set();
+  for(const raw of [primaryCanon, ...allForms.map(f=>norm(f.split(',')[0].trim()))]){
+    if(!raw||seen.has(raw)) continue; seen.add(raw);
+    const real=(allDefsMap[raw]||[]).find(isReal);
+    if(real) return real;
+  }
+  return (allDefsMap[primaryCanon]||[])[0]||"";
 }
 function tmRefocus(){
   if(window.matchMedia("(pointer:fine)").matches)
@@ -425,6 +459,8 @@ function startSession(theme, session){
   renderTmGame();
   updateTmBtn();
   setTmMsg("");
+  _setQuizMode(false);
+  _showVerdictBar(false, false);
   tmChronoStart();
   if(tmKb) tmKb.clear();
   setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
@@ -480,9 +516,9 @@ function startOds(theme){
   showTmView("tv-game");
   document.getElementById("tm-gtitle").textContent=THEME_NAMES[theme]||theme;
   const lbl=document.getElementById("tm-session-label"); if(lbl) lbl.textContent="";
-  updateTmBtn(); setTmMsg(""); renderOdsGame();
-  if(tmKb) tmKb.clear();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
+  setTmMsg(""); renderOdsGame();
+  _setQuizMode(true);
+  _showVerdictBar(true, false);
 }
 function isOdsResolved(){
   const entry=currentOdsEntry(tmTheme); if(!entry) return false;
@@ -644,11 +680,41 @@ function validateTmWord(raw){
   else persistThemods().catch(()=>{});
 }
 
+/* ── Helpers mode quiz (GM/ODS) ── */
+function _setQuizMode(on){
+  const inp = document.getElementById("tm-inp-bar");
+  const kb  = document.getElementById("tm-kb");
+  const sol = document.getElementById("tm-btn-sol");
+  if(inp) inp.style.display = on ? "none" : "";
+  if(kb)  kb.style.display  = on ? "none" : "";
+  if(sol) sol.style.display = on ? "none" : "";
+}
+function _showVerdictBar(visible, withVerdict){
+  const bar  = document.getElementById("tm-verdict-bar");
+  const btns = document.getElementById("tm-verdict-btns");
+  const solQ = document.getElementById("tm-btn-sol-quiz");
+  if(bar)  bar.style.display  = visible ? "flex" : "none";
+  if(solQ) solQ.style.display = (visible && !withVerdict) ? "" : "none";
+  if(btns) btns.style.display = (visible && withVerdict)  ? "flex" : "none";
+}
+function _advanceOds(ok){
+  const prog=getOdsProgress(tmTheme);
+  prog.done=(prog.done||0)+1; prog.idx=odsEntryIdx+1;
+  odsEntryIdx++; odsFnd=new Set(); tmSolutions=false;
+  const all=getAllOdsEntries(tmTheme);
+  if(odsEntryIdx>=all.length){
+    prog.order=shuffleArray(all.map((_,i)=>i)); prog.idx=0; odsEntryIdx=0;
+  }
+  setTmMsg(ok?"✓ Trouvé !":"À revoir.", ok?"ok":"warn");
+  _showVerdictBar(true, false);
+  renderOdsGame();
+  persistThemods().catch(()=>{});
+}
+
 function showTmSolutions(){
   tmNoHelp=false;
-  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); finalizeGM(false); return; }
-
-  if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); updateTmBtn(); return; }
+  if(tmTheme==="gm"){ tmSolutions=true; renderGMGame(); _showVerdictBar(true, true); return; }
+  if(isOds(tmTheme)){ tmSolutions=true; renderOdsGame(); _showVerdictBar(true, true); return; }
   const sess=tmSession; if(!sess) return;
   tmSolutions=true;
   renderTmGame();
@@ -682,17 +748,11 @@ function isGMResolved(){
 }
 
 function updateTmBtn(){
+  if(tmTheme==="gm"||isOds(tmTheme)) return; // géré par _showVerdictBar
   const sol=document.getElementById("tm-btn-sol");
   const solKb=document.getElementById("tm-btn-sol-kb");
-  const gmLike=tmTheme==="gm"||isOds(tmTheme);
   [sol,solKb].forEach(b=>{
     if(!b) return;
-    if(gmLike){
-      const resolved=tmTheme==="gm"?isGMResolved():isOdsResolved();
-      if(resolved){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
-      else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
-      return;
-    }
     if(tmSolutions){ b.textContent="Jouer"; b.classList.remove("btn-danger"); b.classList.add("btn-primary"); }
     else { b.textContent="Solutions"; b.classList.add("btn-danger"); b.classList.remove("btn-primary"); }
   });
@@ -745,13 +805,13 @@ function getGMSt(idx){
   return s;
 }
 function getGMStats(){
-  const total=getAllGMEntries().length, today=todayStr();
+  const total=getAllGMEntries().length;
   const gmSt=tmState.themes?.gm||{};
   let seen=0, validated=0, toReview=0;
   for(let i=0;i<total;i++){
     const s=gmSt[String(i)]; if(!s||!s.seen) continue;
     seen++;
-    if(s.validated&&s.due>today) validated++; else toReview++;
+    if(s.done) validated++; else toReview++;
   }
   return {seen,validated,toReview,total};
 }
@@ -761,11 +821,11 @@ function gmPickNext(){
   const due=[], unseen=[], locked=[];
   for(let i=0;i<total;i++){
     const s=gmSt[String(i)];
+    if(s?.done) continue;                        // validé définitivement, ne revient plus
     if(!s||!s.seen){ unseen.push(i); continue; }
-    if(s.due<=today) due.push(i);   // révision due (validé ou non)
-    else locked.push(i);             // pas encore dû
+    if(s.due<=today) due.push(i);
+    else locked.push(i);
   }
-  // Révisions dues en priorité, puis nouvelles entrées, puis verrouillées
   const pool=due.length?due:unseen.length?unseen:locked;
   return pool.length ? pool[Math.floor(Math.random()*pool.length)] : null;
 }
@@ -790,12 +850,11 @@ function finalizeGM(ok){
   const s=getGMSt(gmCurrentIdx);
   s.seen=true; s.lastSeen=todayStr();
   if(ok){
-    s.validated=true; s.lastResult="ok";
-    s.interval=Math.max(7,nextInterval(s.interval||1)); s.due=addDays(todayStr(),s.interval);
+    s.done=true; s.validated=true; s.lastResult="ok";
     setTmMsg("✓ Toutes les graphies trouvées !","ok");
   } else {
-    s.validated=false; s.lastResult="help";
-    s.interval=7; s.due=addDays(todayStr(),7);
+    s.done=false; s.validated=false; s.lastResult="help";
+    s.interval=3; s.due=addDays(todayStr(),3);
     setTmMsg("Solutions affichées.","warn");
   }
   updateGMCounter(); persistThemods().catch(()=>{});
@@ -804,6 +863,9 @@ function cleanDef(d){
   if(!d) return "";
   d=d.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,"").replace(/^\([^)]*\)\s*/,"");
   d=d.replace(/\s*\(=[^)]*\)/g,"");
+  d=d.replace(/\s*-->[^.]*\./g,"");
+  d=d.replace(/\s*=\s*[a-zàâäéèêëîïôùûüœæç]+\./g,"");
+  d=d.replace(/\s*\([^)]+\)(?=\s*[A-ZÀ-ÖØ-ÞŒŸ]|\s*$)/g,"");
   return d.startsWith("->") ? "" : d.trim();
 }
 function letterCount(w){ return w.replace(/[Œœ]/g,"OE").replace(/[Ææ]/g,"AE").replace(/[^A-Za-zÀ-ÿ]/g,"").length; }
@@ -815,7 +877,14 @@ function startGM(){
     const {validated,total}=getGMStats();
     if(validated>=total){
       if(!tmState.themes.gm) tmState.themes.gm={};
-      tmState.themes.gm._completions=(tmState.themes.gm._completions||0)+1;
+      const gmSt=tmState.themes.gm;
+      // Réinitialiser pour le prochain cycle
+      Object.keys(gmSt).forEach(k=>{
+        const s=gmSt[k]; if(s&&typeof s==="object"&&s.done){
+          s.done=false; s.validated=false; s.interval=1; s.due=todayStr();
+        }
+      });
+      gmSt._completions=(gmSt._completions||0)+1;
       persistThemods().catch(()=>{}); _showTmDone("gm");
     } else { renderTmHome(); }
     return;
@@ -825,10 +894,10 @@ function startGM(){
   setDictBtnVisible(false);
   showTmView("tv-game");
   document.getElementById("tm-gtitle").textContent="Graphies multiples";
-  updateTmBtn(); setTmMsg(""); renderGMGame(); updateGMCounter();
-  if(tmKb) tmKb.clear();
+  setTmMsg(""); renderGMGame(); updateGMCounter();
+  _setQuizMode(true);
+  _showVerdictBar(true, false);
   tmChronoStart();
-  setTimeout(()=>{ if(window.matchMedia("(pointer:fine)").matches) document.getElementById("tm-saisie")?.focus(); },80);
 }
 
 function renderGMGame(){
@@ -846,7 +915,26 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  defText.textContent=cleanDef(_cdGM||"")||"…";
+  const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
+  const _cleanedFallback=cleanDef(_gmFallback);
+  const _entryDef=(entry.def||'').trim();
+  // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS)
+  // Règle : se termine par "). " → pas de vraie def (renvoi, genre, pp.inv., etc.)
+  const _posOnly=!_cleanedFallback||/^[a-z.\d()\s]+$/.test(_cleanedFallback)||_cleanedFallback.endsWith(').');
+  // Une def Firestore valide doit avoir un contenu réel (pas juste "." etc.)
+  const _cdGMValid = _cdGM!==undefined && cleanDef(_cdGM).length > 1;
+  let _rawDef;
+  if(!_posOnly){
+    // ODS a une vraie définition → toujours priorité ODS, ignorer Wiktionnaire
+    _rawDef=_gmFallback;
+  } else if(_cdGMValid){
+    // ODS = POS seul ou vide → compléter avec def Wiktionnaire (même POS)
+    _rawDef=_cleanedFallback ? _cleanedFallback+' '+_cdGM : _cdGM;
+  } else {
+    // Ni ODS réel ni Wikt valide → fallback sur la def hardcodée du jeu
+    _rawDef=_entryDef||_gmFallback;
+  }
+  defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
@@ -877,6 +965,26 @@ function renderGMGame(){
 
 }
 
+/* ── Pull-to-refresh : swipe bas sur tv-game pour recharger la def Firestore ── */
+function _refreshCurrentDef(){
+  if(tmTheme!=="gm" && !isOds(tmTheme)) return;
+  let primaryCanon=null;
+  if(tmTheme==="gm"){
+    const entry=currentGMEntry(); if(!entry) return;
+    const sorted=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+    primaryCanon=norm(sorted[0]);
+  } else {
+    const entry=currentOdsEntry(tmTheme); if(!entry) return;
+    const sorted=[...entry.forms].sort((a,b)=>norm(a)<norm(b)?-1:norm(a)>norm(b)?1:0);
+    primaryCanon=norm(sorted[0]);
+  }
+  if(!primaryCanon) return;
+  if(!window._rechCache) window._rechCache={};
+  window._rechCache[primaryCanon]={custom:{},excl:[],loaded:false};
+  setTmMsg("↻ Actualisation…","");
+  renderTmGame();
+}
+
 function validateGMWord(n){
   const entry=currentGMEntry(); if(!entry) return;
   if(!entry.forms.find(f=>norm(f)===n)){
@@ -903,6 +1011,18 @@ function initThemods(){
       }
     });
 
+    // Pull-to-refresh : swipe vertical bas, détecté au niveau window
+    let _prSX=0, _prSY=0;
+    window.addEventListener("touchstart", e=>{
+      _prSX=e.touches[0].clientX; _prSY=e.touches[0].clientY;
+    }, {passive:true});
+    window.addEventListener("touchend", e=>{
+      if(!document.querySelector("#v-themods.active")) return;
+      if(!document.querySelector("#tv-game.active")) return;
+      const dx=e.changedTouches[0].clientX-_prSX, dy=e.changedTouches[0].clientY-_prSY;
+      if(dy>60 && Math.abs(dy)>Math.abs(dx)*1.5) _refreshCurrentDef();
+    }, {passive:true});
+
     // Maintient le focus sur la saisie pour tout clic non-interactif en jeu
     document.getElementById("tv-game")?.addEventListener("mousedown", e=>{
       if(!window.matchMedia("(pointer:fine)").matches) return;
@@ -913,25 +1033,26 @@ function initThemods(){
     });
 
     const onSolBtn=()=>{
-      if(tmTheme==="gm"){
-        if(isGMResolved()) startGM();
-        else showTmSolutions();
-      } else if(isOds(tmTheme)){
-        if(isOdsResolved()){
-          const prog=getOdsProgress(tmTheme);
-          odsEntryIdx++; prog.idx=odsEntryIdx;
-          odsFnd=new Set(); tmSolutions=false;
-          updateTmBtn(); setTmMsg(""); renderOdsGame();
-          if(tmKb) tmKb.clear();
-          persistThemods().catch(()=>{});
-        } else { showTmSolutions(); }
-      } else {
-        tmSolutions ? playTheme(tmTheme) : showTmSolutions();
-      }
+      if(tmTheme==="gm"||isOds(tmTheme)) return; // géré par tm-btn-sol-quiz
+      tmSolutions ? playTheme(tmTheme) : showTmSolutions();
       tmRefocus();
     };
     document.getElementById("tm-btn-sol")?.addEventListener("click", onSolBtn);
     document.getElementById("tm-btn-sol-kb")?.addEventListener("click", onSolBtn);
+
+    document.getElementById("tm-btn-sol-quiz")?.addEventListener("click", ()=>{
+      if(!tmSolutions) showTmSolutions();
+    });
+    document.getElementById("tm-btn-found")?.addEventListener("click", ()=>{
+      _showVerdictBar(false, false);
+      if(tmTheme==="gm"){ finalizeGM(true); setTimeout(()=>startGM(), 900); }
+      else if(isOds(tmTheme)){ _advanceOds(true); }
+    });
+    document.getElementById("tm-btn-review")?.addEventListener("click", ()=>{
+      _showVerdictBar(false, false);
+      if(tmTheme==="gm"){ finalizeGM(false); setTimeout(()=>startGM(), 900); }
+      else if(isOds(tmTheme)){ _advanceOds(false); }
+    });
 
     document.getElementById("btn-back-game")?.addEventListener("click",()=>{
       if(isOds(tmTheme)) renderTmOds();

@@ -228,7 +228,7 @@ async function rechFetchWikt(){
   if(btn){ btn.textContent="Générer depuis Wiktionnaire"; btn.disabled=false; }
 }
 
-function _rechParseWikt(wikitext){
+function _rechParseWikt(wikitext, wiktSection){
   if(!wikitext) return null;
   const frIdx = wikitext.indexOf("{{langue|fr}}");
   if(frIdx<0) return null;
@@ -236,7 +236,18 @@ function _rechParseWikt(wikitext){
   const nextLang = after.slice(15).search(/\n==\s*\{\{langue\|(?!fr)/);
   const fr = nextLang>0 ? after.slice(0, nextLang+15) : after;
 
-  for(const line of fr.split("\n")){
+  let searchIn = fr;
+  if(wiktSection){
+    // Chercher la section grammaticale — "nom commun" peut avoir des espaces
+    const sRe = new RegExp('\\{\\{S\\|'+wiktSection.replace(/ /g,'\\s+')+'[^|]*\\|fr', 'i');
+    const sIdx = fr.search(sRe);
+    if(sIdx < 0) return null; // section absente → pas de def de mauvais POS
+    const afterS = fr.slice(sIdx);
+    const nextS = afterS.slice(10).search(/\n===\s*/);
+    searchIn = nextS > 0 ? afterS.slice(0, nextS+10) : afterS;
+  }
+
+  for(const line of searchIn.split("\n")){
     if(!line.startsWith("# ")||line.startsWith("## ")) continue;
     const d = line.slice(2)
       .replace(/\[\[(?:[^\]|]+\|)?([^\]]+)\]\]/g,"$1")
@@ -244,7 +255,7 @@ function _rechParseWikt(wikitext){
       .replace(/'''([^']+)'''/g,"$1")
       .replace(/''([^']+)''/g,"$1")
       .replace(/\s+/g," ").trim();
-    if(d) return d;
+    if(d && d.length > 3) return d;
   }
   return null;
 }
@@ -264,6 +275,10 @@ async function gmBatchWikt(){
   if(btn){ btn.disabled=true; btn.textContent="En cours…"; }
   if(prog){ prog.style.display=""; prog.textContent="Démarrage…"; }
 
+  // Correspondance POS ODS → section Wiktionnaire
+  // Sur fr.wiktionary.org les noms communs utilisent "nom commun", pas "nom"
+  const _posToWiktSec = {'n.m.':'nom commun','n.f.':'nom commun','n.':'nom commun','v.':'verbe','adj.':'adjectif','adv.':'adverbe','interj.':'interjection','loc.':'locution'};
+
   // Dédoublonner par canon ; conserver toutes les graphies comme candidats Wikt
   const seenCanons = new Set();
   const items = [];
@@ -281,54 +296,149 @@ async function gmBatchWikt(){
       const d = f.split(",")[0].trim().toLowerCase().replace(/\*/g,"");
       if(d && !seenDisp.has(d)){ seenDisp.add(d); allDisplays.push(d); }
     }
-    items.push({canon, allDisplays});
+    // Priorité ODS : ne traiter que si la def ODS est insuffisante (POS seul)
+    const hardcoded = (entry.def||'').trim();
+    const odsDef = (typeof _gmPickDef==="function") ? _gmPickDef(canon, sortedForms) : '';
+    const odsDefCleaned = (typeof cleanDef==="function") ? cleanDef(odsDef) : odsDef;
+    const odsIsPosOnly = !odsDefCleaned || /^[a-z.\d()\s]+$/.test(odsDefCleaned) || odsDefCleaned.endsWith(').');
+    // ODS a une vraie def → pas besoin de Wiktionnaire
+    // Si ODS est POS-only, on fetch Wiktionnaire même si une def hardcodée existe
+    if(!odsIsPosOnly) continue;
+    // Déterminer le POS ODS pour filtrer la section Wiktionnaire
+    const odsDefNorm = odsDef.replace(/^\[[^\]]*\]\s*/,'').trim();
+    const odsPOS = (typeof _getPOS==="function") ? _getPOS(odsDefNorm) : null;
+    const wiktSection = odsPOS ? (_posToWiktSec[odsPOS]||null) : null;
+    items.push({canon, allDisplays, wiktSection, forms: sortedForms});
   }
 
   let processed=0, added=0, skipped=0, failed=0;
+  const failedWords = [];
   const total = items.length;
 
   const updateProg = () => {
-    if(prog) prog.textContent =
-      `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+    let txt = `${processed} / ${total}  —  ✓ ${added} ajoutées  ·  ⊘ ${skipped} existantes  ·  ✕ ${failed} sans déf`;
+    if(failedWords.length) txt += `\n✕ ${failedWords.join(', ')}`;
+    if(prog) prog.textContent = txt;
   };
 
-  async function fetchWiktAny(displays){
-    for(const display of displays){
+  async function fetchWiktAny(displays, wiktSection){
+    // Pass 1 : filtré par section POS ; cache les wikitexts pour le pass 2
+    const cached = [];
+    const toTry = [...displays];
+    const tried = new Set();
+    while(toTry.length){
+      const display = toTry.shift();
+      if(tried.has(display)) continue;
+      tried.add(display);
       try{
         const url = "https://fr.wiktionary.org/w/api.php?action=query&prop=revisions&rvprop=content&rvslots=main&format=json&origin=*&titles="+encodeURIComponent(display);
         const resp = await fetch(url);
         const data = await resp.json();
         const page = Object.values(data.query?.pages||{})[0];
         const wikitext = page?.revisions?.[0]?.slots?.main?.["*"] || page?.revisions?.[0]?.["*"] || "";
-        const def = _rechParseWikt(wikitext);
+        const redir = wikitext.match(/^#REDIRECT\s*\[\[([^\]#|]+)/i);
+        if(redir){
+          const target = redir[1].trim().toLowerCase();
+          if(!tried.has(target)) toTry.unshift(target);
+          continue;
+        }
+        if(wikitext) cached.push(wikitext);
+        const def = _rechParseWikt(wikitext, wiktSection);
         if(def) return def;
       }catch{}
+    }
+    // Pass 2 : sans filtre POS, sur les pages déjà téléchargées (0 requête réseau en plus)
+    if(wiktSection){
+      for(const wikitext of cached){
+        const def = _rechParseWikt(wikitext, null);
+        if(def) return def;
+      }
     }
     return null;
   }
 
-  async function processOne({canon, allDisplays}){
-    // Déjà en cache avec une def → skip
-    const cached = _rechCache[canon];
-    if(cached?.loaded && cached.custom.def !== undefined){ skipped++; processed++; return; }
+  // Une def est "effective" si elle contient un vrai contenu après nettoyage des renvois ODS.
+  // Ex. "[pivèr] n.m. (= pivert)." → nettoyé → "n.m. ." → pas effective.
+  function _isEffectiveDef(def){
+    if(!def) return false;
+    const cleaned = def
+      .replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i, "")
+      .replace(/^\([^)]*\)\s*/, "")
+      .replace(/\s*\(=[^)]*\)/g, "")
+      .trim();
+    return cleaned.length > 8 && !cleaned.startsWith("-->") && !cleaned.endsWith(').');
+  }
 
-    // Vérifier Firestore
+  // Construit la def formatée pour une graphie : "POS (= autres_graphies) contenu"
+  // POS : premier token de la def ODS pour ce canon ; contenu : wiktDef sans son propre POS initial
+  function _buildFormDef(wiktDef, fCanon, otherForms){
+    // Extraire le contenu : wiktDef sans son premier token POS s'il est en minuscule
+    let content = wiktDef.replace(/^(?:ou\s+)?\[[^\]]*\]\s*/i,'');
+    if(/^[a-zàâäéèêëîïôùûüœæç]/.test(content)) content = content.replace(/^\S+\s+/,'');
+    content = content.trim();
+    if(!content) return wiktDef;
+    // POS ODS pour ce canon : premier token de la def dans SEQODS_DATA
+    const odsRaw = (typeof getNormToF==='function' ? getNormToF() : {})[fCanon]||'';
+    const odsStripped = odsRaw.replace(/^\[[^\]]*\]\s*/,'').trim();
+    const pos = (odsStripped.match(/^(\S+)\s/)||[])[1]||'';
+    // Marqueur d'équivalence avec les autres graphies (en minuscules)
+    const eqMarker = otherForms.length ? `(= ${otherForms.join(', ')}) ` : '';
+    return (pos ? pos+' '+eqMarker : eqMarker)+content;
+  }
+
+  async function processOne({canon, allDisplays, wiktSection, forms}){
+    // Helper : propager une def source à toutes les formes manquantes dans _rechCache / Firestore
+    async function _propagateToForms(srcDef){
+      for(const form of forms){
+        const fCanon = norm(form.split(',')[0].trim());
+        if(_rechCache[fCanon]?.loaded && _isEffectiveDef(_rechCache[fCanon].custom?.def)) continue;
+        const otherForms = forms.filter(f=>norm(f.split(',')[0].trim())!==fCanon)
+          .map(f=>f.split(',')[0].trim().toLowerCase());
+        const formDef = _buildFormDef(srcDef, fCanon, otherForms);
+        await fbSet("rech_custom", fCanon, {def:formDef}).catch(()=>{});
+        if(!_rechCache[fCanon]) _rechCache[fCanon]={custom:{}, excl:[], loaded:true};
+        _rechCache[fCanon].custom.def = formDef;
+      }
+    }
+
+    // Déjà en cache avec une def effective → propagation éventuelle aux formes manquantes + skip
+    const cached = _rechCache[canon];
+    if(cached?.loaded && _isEffectiveDef(cached.custom.def)){
+      await _propagateToForms(cached.custom.def);
+      skipped++; processed++; return;
+    }
+
+    // Vérifier Firestore — skip seulement si la def est effective (pas un renvoi ODS)
     const r = await fbGet("rech_custom", canon);
-    if(r.ok && r.data?.def !== undefined){
+    if(r.ok && r.data?.def !== undefined && _isEffectiveDef(r.data.def)){
       if(!_rechCache[canon]) _rechCache[canon]={custom:r.data, excl:[], loaded:true};
+      await _propagateToForms(r.data.def);
       skipped++; processed++; return;
     }
 
     // Essayer toutes les graphies sur Wiktionnaire
-    const wiktDef = await fetchWiktAny(allDisplays);
+    const wiktDef = await fetchWiktAny(allDisplays, wiktSection);
 
     if(wiktDef){
       const existing = r.ok && r.data ? r.data : {};
-      await fbSet("rech_custom", canon, {...existing, def: wiktDef}).catch(()=>{});
-      if(!_rechCache[canon]) _rechCache[canon]={custom:{}, excl:[], loaded:true};
-      _rechCache[canon].custom.def = wiktDef;
+      // Stocker pour chaque graphie avec POS et (= xxx) adaptés
+      for(const form of forms){
+        const fCanon = norm(form.split(',')[0].trim());
+        const otherForms = forms.filter(f=>norm(f.split(',')[0].trim())!==fCanon)
+          .map(f=>f.split(',')[0].trim().toLowerCase());
+        const formDef = _buildFormDef(wiktDef, fCanon, otherForms);
+        await fbSet("rech_custom", fCanon, {...(fCanon===canon?existing:{}), def:formDef}).catch(()=>{});
+        if(!_rechCache[fCanon]) _rechCache[fCanon]={custom:{}, excl:[], loaded:true};
+        _rechCache[fCanon].custom.def = formDef;
+      }
       added++;
     } else {
+      // Si une mauvaise def (non effective) est en Firestore, la supprimer pour repartir de zéro
+      if(r.ok && r.data?.def !== undefined && !_isEffectiveDef(r.data.def)){
+        await fbDelete("rech_custom", canon).catch(()=>{});
+        if(_rechCache[canon]) delete _rechCache[canon].custom.def;
+      }
+      failedWords.push(canon);
       failed++;
     }
     processed++;
@@ -420,6 +530,40 @@ async function odsBatchWikt(){
   _odsBatchRunning = false;
 }
 
+/* ── Purge des defs Wiktionnaire GM en Firestore ── */
+async function gmPurgeWikt(){
+  const btn = document.getElementById("gm-purge-wikt-btn");
+  const _reset = ()=>{ if(btn){ btn.disabled=false; btn.textContent="Purger defs Wikt GM"; } };
+  if(btn){ btn.disabled=true; btn.textContent="…"; }
+  try{
+    if(!_isAdm()){ _reset(); return; }
+    const entries = typeof getAllGMEntries==="function" ? getAllGMEntries() : [];
+    if(!entries.length){ alert("Aucune entrée GM."); _reset(); return; }
+    const seenCanons = new Set();
+    for(const entry of entries){
+      for(const f of (entry.forms||[])){
+        const c = norm(f.split(',')[0].trim()); if(c) seenCanons.add(c);
+      }
+    }
+    const allCanons = [...seenCanons];
+    if(!window.confirm(`Supprimer toutes les defs Wiktionnaire GM en Firestore (${allCanons.length} graphies) ?\nLes defs ODS restent affichées en attendant un nouveau batch.`)){ _reset(); return; }
+    if(btn){ btn.textContent="Purge…"; }
+    let deleted=0, errors=0, done=0;
+    const CONC = 20;
+    for(let i=0; i<allCanons.length; i+=CONC){
+      await Promise.all(allCanons.slice(i, i+CONC).map(async canon=>{
+        const r = await fbDelete("rech_custom", canon).catch(()=>({ok:false}));
+        if(r.ok) deleted++; else errors++;
+        if(_rechCache[canon]) delete _rechCache[canon];
+        done++;
+        if(btn) btn.textContent=`Purge… ${done}/${allCanons.length}`;
+      }));
+    }
+    _reset();
+    alert(`Purge terminée : ${deleted} supprimées, ${errors} non trouvées/erreurs.`);
+  }catch(e){ _reset(); alert("Erreur purge : "+(e?.message||e)); }
+}
+
 /* ── Wiring ── */
 function wireRechercheAdmin(){
   document.getElementById("rech-modules")?.addEventListener("click", e=>{
@@ -430,6 +574,7 @@ function wireRechercheAdmin(){
   document.getElementById("rech-wikt-btn")?.addEventListener("click", rechFetchWikt);
   document.getElementById("gm-batch-wikt-btn")?.addEventListener("click", gmBatchWikt);
   document.getElementById("ods-batch-wikt-btn")?.addEventListener("click", odsBatchWikt);
+  document.getElementById("gm-purge-wikt-btn")?.addEventListener("click", gmPurgeWikt);
 
   // Onglets définition / quiz
   document.getElementById("rech-def-tab-def")?.addEventListener("click", ()=>_rechSwitchDefTab("def"));
