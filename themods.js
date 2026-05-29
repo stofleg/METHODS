@@ -184,9 +184,15 @@ function getNormToAllDefs(){
 
 const _getPOS = d => (d.match(/^(n\.[mf]\.|adj\.|v\.|loc\.|adv\.|interj\.)/) || [])[1] || null;
 
+const _TYPE_PFX_GM = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
+
 function _gmPickDef(primaryCanon, allForms){
   const allDefsMap = getNormToAllDefs();
-  const isReal = d => { const c=cleanDef(d); return c&&!/^[a-z.\d()\s]+$/.test(c)&&!c.endsWith(').'); };
+  const isReal = d => {
+    const c = cleanDef(d); if(!c) return false;
+    const s = c.replace(_TYPE_PFX_GM,"").trim();
+    return s.length>1 && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s);
+  };
   const seen = new Set();
   for(const raw of [primaryCanon, ...allForms.map(f=>norm(f.split(',')[0].trim()))]){
     if(!raw||seen.has(raw)) continue; seen.add(raw);
