@@ -233,6 +233,10 @@ function emRenderSlots(){
           b.addEventListener("click",()=>{ emNoHelp=false; emHintUsed[i]=true; emHintMode[i]=(emHintMode[i]==="len")?"none":"len"; emRenderSlots(); emRefocus(); });
           tools.appendChild(b);
         }
+        const imgB=document.createElement("button"); imgB.className="tool-btn"; imgB.textContent="🖼";
+        imgB.addEventListener("mousedown",e=>e.preventDefault());
+        imgB.addEventListener("click",()=>{ openImgSearch(canon); emRefocus(); });
+        tools.appendChild(imgB);
         if(tools.children.length) li.appendChild(tools);
       }
     }

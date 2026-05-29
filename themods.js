@@ -947,6 +947,10 @@ function renderGMGame(){
   }
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
+  const _imgBtnGm=document.createElement("button");
+  _imgBtnGm.className="btn-img-gm"; _imgBtnGm.textContent="🖼";
+  _imgBtnGm.addEventListener("click",()=>openImgSearch(sortedForms[0].toLowerCase()));
+  defDiv.appendChild(_imgBtnGm);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
 
