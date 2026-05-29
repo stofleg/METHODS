@@ -1,5 +1,6 @@
-/* ══ Service Worker METHODS — network-first v4.33 ══ */
-const CACHE_NAME = "methods-v489";
+/* ══ Service Worker METHODS — network-first ══ */
+importScripts('./version.js');
+const CACHE_NAME = APP_CACHE;
 
 /* ── Install : prendre le contrôle immédiatement ── */
 self.addEventListener("install", e => {

@@ -999,6 +999,8 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
           <button id="gm-batch-wikt-btn" class="btn btn-ok" style="font-size:12px;padding:6px 10px;">Batch GM → Wiktionnaire</button>
           <button id="gm-purge-wikt-btn" class="btn btn-warn" style="font-size:12px;padding:6px 10px;">Purger defs Wikt GM</button>
           <div id="gm-batch-progress" style="display:none;font-size:11px;color:var(--muted);line-height:1.5;white-space:pre-wrap;"></div>
+          <button id="ods-batch-wikt-btn" class="btn btn-ok" style="font-size:12px;padding:6px 10px;">Batch ODS → Wiktionnaire</button>
+          <div id="ods-batch-progress" style="display:none;font-size:11px;color:var(--muted);line-height:1.5;white-space:pre-wrap;"></div>
         </div>
       </div>
       <!-- ── Admin stof2 ── -->
@@ -1052,11 +1054,14 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   position:fixed;bottom:4px;left:8px;z-index:9999;
   font-size:9px;font-weight:700;color:rgba(255,255,255,.28);
   font-family:ui-monospace,monospace;letter-spacing:.04em;
-  pointer-events:none;user-select:none;">v4.89</div>
+  pointer-events:none;user-select:none;"></div>
 
+<script src="version.js"></script>
+<script>document.getElementById("version-badge").textContent="v"+APP_VER;</script>
 <script src="data.js"></script>
 <script src="themods_data.js"></script>
 <script src="ods_data.js"></script>
+<script src="shared/dict-core.js"></script>
 <script src="common.js"></script>
 <script src="themods.js"></script>
 <script src="entremods.js"></script>
@@ -1064,7 +1069,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v489";
+  const CURRENT_CACHE=APP_CACHE;
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
