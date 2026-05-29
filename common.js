@@ -433,32 +433,35 @@ function wireDefModal(){
 }
 
 /* ── Modale images ── */
-async function openImgSearch(word){
+async function openImgSearch(words){
   const modal=document.getElementById("img-modal");
   const grid=document.getElementById("img-grid");
   if(!modal||!grid) return;
+  const candidates=Array.isArray(words)?words:[words];
   grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Chargement…</span>';
   modal.classList.add("open");
   try{
-    const q=encodeURIComponent(word);
-    const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
-    const r=await fetch(url);
-    const j=await r.json();
-    const pages=Object.values(j?.query?.pages||{});
-    const imgs=pages
-      .map(p=>p.imageinfo?.[0])
-      .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
-      .slice(0,4);
-    grid.innerHTML="";
-    if(!imgs.length){
-      grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Aucune image trouvée</span>';
-      return;
+    for(const word of candidates){
+      const q=encodeURIComponent(word);
+      const url=`https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${q}&gsrnamespace=6&gsrlimit=20&prop=imageinfo&iiprop=url|mime&iiurlwidth=400&format=json&origin=*`;
+      const r=await fetch(url);
+      const j=await r.json();
+      const pages=Object.values(j?.query?.pages||{});
+      const imgs=pages
+        .map(p=>p.imageinfo?.[0])
+        .filter(i=>i && /^image\/(jpeg|png|gif|webp)$/.test(i.mime) && i.thumburl)
+        .slice(0,4);
+      if(imgs.length){
+        grid.innerHTML="";
+        imgs.forEach(info=>{
+          const img=document.createElement("img");
+          img.src=info.thumburl; img.loading="lazy";
+          grid.appendChild(img);
+        });
+        return;
+      }
     }
-    imgs.forEach(info=>{
-      const img=document.createElement("img");
-      img.src=info.thumburl; img.loading="lazy";
-      grid.appendChild(img);
-    });
+    grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Aucune image trouvée</span>';
   }catch{
     grid.innerHTML='<span style="color:#888;padding:40px;grid-column:1/-1;text-align:center;">Erreur de chargement</span>';
   }
