@@ -497,6 +497,10 @@ function _defLabels(def){
   }
   return out.slice(0,2);
 }
+function _defIsNoun(def){
+  // n., n.m., n.f. (and plural variants) at start or after " et "
+  return /(?:^|\bet\s+)n\.(?:[mf]\.)?/.test(String(def||""));
+}
 // Tokenise un texte (titre + description) en mots déburrés
 function _imgWords(text){
   return " "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
