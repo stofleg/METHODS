@@ -229,10 +229,10 @@ function _buildFinaleGrid(){
     const cell=document.createElement("div"); cell.className="set-fin-cell";
     const lbl=document.createElement("span"); lbl.textContent="-"+k.toUpperCase();
     const inp=document.createElement("input");
-    inp.type="number"; inp.min=4; inp.max=9; inp.dataset.key=k;
+    inp.type="number"; inp.min=4; inp.max=15; inp.dataset.key=k;
     inp.className="set-fin-input";
     inp.addEventListener("change",e=>{
-      const v=Math.min(9,Math.max(4,parseInt(e.target.value)||9));
+      const v=Math.min(15,Math.max(4,parseInt(e.target.value)||15));
       e.target.value=v;
       if(!settings.finaleMaxLen) settings.finaleMaxLen={};
       settings.finaleMaxLen[k]=v;
@@ -252,7 +252,7 @@ function openSettingsPanel(){
   document.getElementById("row-dur").style.display=settings.chronoEnabled?"":"none";
   _buildFinaleGrid();
   document.querySelectorAll(".set-fin-input").forEach(inp=>{
-    inp.value=(settings.finaleMaxLen?.[inp.dataset.key])||9;
+    inp.value=(settings.finaleMaxLen?.[inp.dataset.key])||15;
   });
   document.getElementById("settings")?.classList.add("open");
 }

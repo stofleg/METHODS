@@ -1,2 +1,2 @@
-const APP_VER = "5.11";
-const APP_CACHE = "methods-v511";
+const APP_VER = "5.12";
+const APP_CACHE = "methods-v512";
