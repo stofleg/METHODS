@@ -202,8 +202,11 @@ function _gmPickDef(primaryCanon, allForms){
   const seen = new Set();
   for(const raw of [primaryCanon, ...allForms.map(f=>norm(f.split(',')[0].trim()))]){
     if(!raw||seen.has(raw)) continue; seen.add(raw);
-    const real=(allDefsMap[raw]||[]).find(isReal);
-    if(real) return real;
+    const real=(allDefsMap[raw]||[]).filter(isReal);
+    if(!real.length) continue;
+    // Priorité à la définition nominale (ex. TOASTER n.m. avant v.)
+    const noun=typeof _defIsNoun==="function" ? real.find(_defIsNoun) : null;
+    return noun||real[0];
   }
   return (allDefsMap[primaryCanon]||[])[0]||"";
 }
@@ -931,32 +934,14 @@ function renderGMGame(){
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
   const primaryCanon=norm(sortedForms[0]);
-  const _gmC=window._rechCache?.[primaryCanon]; const _cdGM=_gmC?.loaded ? (_gmC.custom?.defQuiz||_gmC.custom?.def) : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
-  const _cleanedFallback=cleanDef(_gmFallback);
-  const _entryDef=(entry.def||'').trim();
-  // ODS prioritaire dès qu'il a un vrai contenu (pas seulement du POS ou label d'usage)
-  const _posOnly=!_gmIsRealDef(_gmFallback);
-  // Une def Firestore valide doit avoir un contenu réel (pas juste "." etc.)
-  const _cdGMValid = _cdGM!==undefined && cleanDef(_cdGM).length > 1;
-  let _rawDef;
-  if(!_posOnly){
-    // ODS a une vraie définition → toujours priorité ODS, ignorer Wiktionnaire
-    _rawDef=_gmFallback;
-  } else if(_cdGMValid){
-    // ODS = POS seul ou vide → compléter avec def Wiktionnaire (même POS)
-    _rawDef=_cleanedFallback ? _cleanedFallback+' '+_cdGM : _cdGM;
-  } else {
-    // Ni ODS réel ni Wikt valide → fallback sur la def hardcodée du jeu
-    _rawDef=_entryDef||_gmFallback;
-  }
+  const _rawDef=_gmIsRealDef(_gmFallback) ? _gmFallback : (entry.def||_gmFallback);
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
-  if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
 
   const tilesDiv=document.createElement("div");
   tilesDiv.className="gm-tiles";
