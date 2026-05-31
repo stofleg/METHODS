@@ -8,7 +8,10 @@ let _lastSync = 0;
 
 /* ── Settings ── */
 const LS_SETTINGS = "METHODS_SETTINGS_V1";
-let settings = {showAbc:true,showDef:true,showLen:true,chronoEnabled:true,chronoDur:10};
+const FINALE_KEYS = ['eur','age','oir','ier','ique','able','iste','ant','ien','isme',
+                     'ard','eux','in','if','et','ette','ais','ois','erie','ite',
+                     'ide','eau','ot','um','ail','al','ase','ose'];
+let settings = {showAbc:true,showDef:true,showLen:true,chronoEnabled:true,chronoDur:10,finaleMaxLen:{}};
 
 function loadSettings(){
   try{ Object.assign(settings, JSON.parse(localStorage.getItem(LS_SETTINGS)||"{}")); }catch{}
@@ -219,6 +222,26 @@ function initNav(){
 }
 
 /* ── Settings UI ── */
+function _buildFinaleGrid(){
+  const grid=document.getElementById("set-finales-grid");
+  if(!grid||grid.children.length) return;
+  FINALE_KEYS.forEach(k=>{
+    const cell=document.createElement("div"); cell.className="set-fin-cell";
+    const lbl=document.createElement("span"); lbl.textContent="-"+k.toUpperCase();
+    const inp=document.createElement("input");
+    inp.type="number"; inp.min=4; inp.max=9; inp.dataset.key=k;
+    inp.className="set-fin-input";
+    inp.addEventListener("change",e=>{
+      const v=Math.min(9,Math.max(4,parseInt(e.target.value)||9));
+      e.target.value=v;
+      if(!settings.finaleMaxLen) settings.finaleMaxLen={};
+      settings.finaleMaxLen[k]=v;
+      saveSettings();
+    });
+    cell.appendChild(lbl); cell.appendChild(inp);
+    grid.appendChild(cell);
+  });
+}
 function openSettingsPanel(){
   document.getElementById("set-abc").checked=settings.showAbc;
   document.getElementById("set-def").checked=settings.showDef;
@@ -227,6 +250,10 @@ function openSettingsPanel(){
   document.getElementById("set-dur").value=settings.chronoDur;
   document.getElementById("chrono-lbl").textContent=settings.chronoDur+" min";
   document.getElementById("row-dur").style.display=settings.chronoEnabled?"":"none";
+  _buildFinaleGrid();
+  document.querySelectorAll(".set-fin-input").forEach(inp=>{
+    inp.value=(settings.finaleMaxLen?.[inp.dataset.key])||9;
+  });
   document.getElementById("settings")?.classList.add("open");
 }
 function initSettingsUI(){

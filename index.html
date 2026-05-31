@@ -139,6 +139,15 @@ a.def-link:hover{text-decoration:underline;}
 .overlay-panel h3{font-size:16px;font-weight:900;margin-bottom:14px;}
 .set-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:12px;}
 .set-row label{font-size:14px;font-weight:700;}
+.set-finales-title{font-size:13px;font-weight:700;margin:12px 0 7px;color:var(--txt);}
+.set-finales-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;}
+.set-fin-cell{display:flex;align-items:center;justify-content:space-between;gap:3px;
+  padding:3px 6px;border-radius:6px;background:rgba(255,255,255,.05);}
+.set-fin-cell span{font-size:10px;font-weight:700;color:var(--muted);}
+.set-fin-cell input[type=number]{width:28px;font-size:11px;text-align:center;padding:2px 1px;
+  border-radius:4px;border:1px solid var(--stroke);background:transparent;
+  color:var(--txt);font-family:inherit;-moz-appearance:textfield;}
+.set-fin-cell input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 .toggle{position:relative;width:44px;height:24px;flex-shrink:0;}
 .toggle input{opacity:0;position:absolute;width:0;height:0;}
 .tg-track{position:absolute;inset:0;border-radius:24px;background:var(--muted);cursor:pointer;transition:background .2s;}
@@ -949,7 +958,9 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
       <label>Durée : <span id="chrono-lbl">10 min</span></label>
       <input type="range" id="set-dur" min="1" max="30" value="10" style="width:110px;"/>
     </div>
-    <button id="btn-close-settings" class="btn" style="width:100%;margin-top:6px;">Fermer</button>
+    <div class="set-finales-title">Longueur max — Finales</div>
+    <div id="set-finales-grid" class="set-finales-grid"></div>
+    <button id="btn-close-settings" class="btn" style="width:100%;margin-top:10px;">Fermer</button>
   </div>
 </div>
 
@@ -1074,7 +1085,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v510";
+  const CURRENT_CACHE="methods-v511";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
