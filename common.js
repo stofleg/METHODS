@@ -429,7 +429,11 @@ function closeDef(){
 function wireDefModal(){
   $("#def-close")?.addEventListener("click", closeDef);
   $("#def-bd")?.addEventListener("click", closeDef);
-  document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeDef(); });
+  document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeDef(); closeImgZoom(); } });
+}
+function closeImgZoom(){ document.getElementById("img-zoom-ol")?.classList.remove("open"); }
+function wireImgZoom(){
+  document.getElementById("img-zoom-ol")?.addEventListener("click", closeImgZoom);
 }
 
 /* ── Images inline sous les tuiles ──
@@ -525,6 +529,12 @@ async function loadImgStrip(container, words, def){
   const key=candidates.join("|")+"::"+keywords.join("+")+"::"+labels.join("+");
   const render=srcs=>srcs.forEach(src=>{
     const img=document.createElement("img"); img.src=src; img.loading="lazy"; img.className="img-strip-thumb";
+    img.style.cursor="pointer";
+    img.addEventListener("click",()=>{
+      const ol=document.getElementById("img-zoom-ol"); if(!ol) return;
+      const zi=document.getElementById("img-zoom-img"); if(zi) zi.src=src;
+      ol.classList.add("open");
+    });
     container.appendChild(img);
   });
   if(_imgStripCache[key]){ render(_imgStripCache[key]); return; }
@@ -557,9 +567,13 @@ async function loadImgStrip(container, words, def){
     }
     if(pool.length){
       pool.sort((a,b)=>b.score-a.score);
-      const relevant=pool.filter(p=>p.score>0);
-      const titles=relevant.slice(0,10).map(p=>p.title);
-      const imgs=titles.length ? (await fetchThumbs(titles)).slice(0,4) : [];
+      const scored=pool.filter(p=>p.score>0);
+      // Fallback : noms scientifiques/techniques dont la def est en français
+      // mais les fichiers Commons en latin/anglais → accepter si le terme est dans le titre du fichier
+      const toFetch=(scored.length ? scored
+        : pool.filter(p=>headTokens.some(tok=>_imgHasToken(_imgWords(p.title),tok))))
+        .slice(0,10).map(p=>p.title);
+      const imgs=toFetch.length ? (await fetchThumbs(toFetch)).slice(0,4) : [];
       if(imgs.length){ _imgStripCache[key]=imgs; render(imgs); return; }
     }
     _imgStripCache[key]=[];

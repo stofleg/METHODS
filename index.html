@@ -130,6 +130,10 @@ a.def-link:hover{text-decoration:underline;}
 /* Images inline */
 .img-strip{display:flex;gap:4px;padding:10px 12px 4px;flex-wrap:wrap;justify-content:center;}
 .img-strip-thumb{width:calc(50% - 2px);max-width:130px;aspect-ratio:1;object-fit:contain;background:rgba(255,255,255,.04);border-radius:8px;}
+/* Zoom lightbox */
+#img-zoom-ol{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.85);align-items:center;justify-content:center;}
+#img-zoom-ol.open{display:flex;}
+#img-zoom-img{max-width:92vw;max-height:82vh;object-fit:contain;border-radius:12px;box-shadow:0 8px 32px rgba(0,0,0,.6);}
 
 /* Settings overlay */
 .overlay{display:none;position:fixed;inset:0;z-index:400;align-items:flex-end;justify-content:center;}
@@ -957,6 +961,11 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
   </div>
 </div>
 
+<!-- ══ ZOOM IMAGE ══ -->
+<div id="img-zoom-ol">
+  <img id="img-zoom-img" src="" alt=""/>
+</div>
+
 <!-- ══ BOUTON DICT FLOTTANT (desktop) ══ -->
 <button id="btn-dict" class="hidden" aria-label="Recherche">🔍</button>
 
@@ -1078,7 +1087,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v513";
+  const CURRENT_CACHE="methods-v514";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
