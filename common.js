@@ -497,6 +497,10 @@ function _defLabels(def){
   }
   return out.slice(0,2);
 }
+function _defIsNoun(def){
+  // n., n.m., n.f. (and plural variants) at start or after " et "
+  return /(?:^|\bet\s+)n\.(?:[mf]\.)?/.test(String(def||""));
+}
 // Tokenise un texte (titre + description) en mots déburrés
 function _imgWords(text){
   return " "+_imgDeburr(text.toLowerCase()).replace(/[^a-z]+/g," ").trim()+" ";
@@ -552,9 +556,10 @@ async function loadImgStrip(container, words, def){
       if(pool.length>=20) break;
     }
     if(pool.length){
-      pool.sort((a,b)=>b.score-a.score); // tri stable : à score égal, ordre de pertinence Commons
-      const titles=pool.slice(0,10).map(p=>p.title);
-      const imgs=(await fetchThumbs(titles)).slice(0,4);
+      pool.sort((a,b)=>b.score-a.score);
+      const relevant=pool.filter(p=>p.score>0);
+      const titles=relevant.slice(0,10).map(p=>p.title);
+      const imgs=titles.length ? (await fetchThumbs(titles)).slice(0,4) : [];
       if(imgs.length){ _imgStripCache[key]=imgs; render(imgs); return; }
     }
     _imgStripCache[key]=[];
