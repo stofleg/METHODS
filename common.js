@@ -519,6 +519,8 @@ function _imgHasToken(t, tok){
 function _imgRelevant(t, tokens){ return tokens.some(tok=>_imgHasToken(t, tok)); }
 // Score = nombre de mots-clés du sens présents (sert au classement, pas au filtre)
 function _imgScore(t, tokens){ let n=0; for(const tok of tokens) if(_imgHasToken(t, tok)) n++; return n; }
+// Termes signalant un contexte musical/chanson → pénalité si la déf ne parle pas de musique
+const _IMG_ANTI_MUSIC=["chanson","partition","melodie","refrain","opera","chant","hymne","oratorio","cantique","song","music","sheet","lyrics"];
 const _IMG_RE_MIME=/^image\/(jpeg|png|gif|webp)$/;
 async function loadImgStrip(container, words, def){
   const candidates=(Array.isArray(words)?words:[words]).filter(Boolean);
@@ -552,6 +554,11 @@ async function loadImgStrip(container, words, def){
     // On cherche CHAQUE graphie seule (CirrusSearch exige tous les termes d'une
     // requête : ajouter les mots-clés exclurait les sujets décrits en anglais).
     // On accumule les fichiers vraiment liés au mot, puis on classe par sens.
+    // Pénalité musicale : si la déf ne parle pas de musique, les fichiers dont
+    // la description contient des mots musicaux sont pénalisés (ex. MIRONTON :
+    // partitions avec étymologie "ragoût de viande" ≠ vraie photo du plat).
+    const _rkTxt=" "+rankTokens.join(" ")+" ";
+    const _defHasMusic=_IMG_ANTI_MUSIC.some(tok=>_imgHasToken(_rkTxt,tok));
     const pool=[], seen=new Set();
     for(const word of candidates){
       const sUrl=`https://commons.wikimedia.org/w/api.php?action=query&list=search&srsearch=${encodeURIComponent(word)}&srnamespace=6&srlimit=30&srprop=snippet&format=json&origin=*`;
@@ -561,7 +568,8 @@ async function loadImgStrip(container, words, def){
         const t=_imgWords((r.title||"")+" "+String(r.snippet||"").replace(/<[^>]+>/g," "));
         if(!_imgRelevant(t, headTokens)) continue;  // doit vraiment parler du mot
         seen.add(r.title);
-        pool.push({title:r.title, score:_imgScore(t, rankTokens)});
+        const musicPen=_defHasMusic?0:_IMG_ANTI_MUSIC.filter(tok=>_imgHasToken(t,tok)).length;
+        pool.push({title:r.title, score:_imgScore(t, rankTokens)-musicPen});
       }
       if(pool.length>=20) break;
     }
