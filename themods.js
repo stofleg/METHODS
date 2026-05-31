@@ -613,7 +613,7 @@ function renderOdsGame(){
     });
   }
   list.appendChild(tilesDiv);
-  if(typeof loadImgStrip==="function"){
+  if(typeof loadImgStrip==="function" && (allFormsFound||tmSolutions)){
     const _isNoun=typeof _defIsNoun!=="function"||_defIsNoun(entry.def)||(_cdOds!=null&&_defIsNoun(_cdOds));
     if(_isNoun){
       const _odsImgStrip=document.createElement("div"); _odsImgStrip.className="img-strip";
@@ -981,7 +981,7 @@ function renderGMGame(){
     tilesDiv.appendChild(wrap);
   });
   list.appendChild(tilesDiv);
-  if(typeof loadImgStrip==="function"){
+  if(typeof loadImgStrip==="function" && (allFormsFound||tmSolutions)){
     const _isNoun=typeof _defIsNoun!=="function"||(()=>{
       const allDefsMap=getNormToAllDefs();
       const allDefs=sortedForms.flatMap(f=>(allDefsMap[norm(f.split(',')[0].trim())]||[]));
