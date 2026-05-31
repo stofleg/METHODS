@@ -415,7 +415,7 @@ async function playTheme(theme){
   const msg=document.getElementById("tm-home-msg"); if(msg){msg.textContent="";msg.className="tm-msg";}
 
   const excl = await _loadModExcl(theme);
-  const maxLen = (typeof settings!=="undefined" && settings.finaleMaxLen?.[theme]) || 15;
+  const maxLen = (typeof settings!=="undefined" && settings.finaleMaxLen) || 15;
   const filterWords = sess => {
     const words = (sess.words||[]).filter(w=>!excl.has(norm(w)) && w.length<=maxLen);
     return words.length ? {...sess, words} : null;
