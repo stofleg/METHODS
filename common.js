@@ -567,11 +567,14 @@ async function loadImgStrip(container, words, def){
     }
     if(pool.length){
       pool.sort((a,b)=>b.score-a.score);
-      const scored=pool.filter(p=>p.score>0);
-      // Fallback : noms scientifiques/techniques dont la def est en français
-      // mais les fichiers Commons en latin/anglais → accepter si le terme est dans le titre du fichier
-      const toFetch=(scored.length ? scored
-        : pool.filter(p=>headTokens.some(tok=>_imgHasToken(_imgWords(p.title),tok))))
+      const _headInTitle=p=>headTokens.some(tok=>_imgHasToken(_imgWords(p.title),tok));
+      // Tier 1 : score > 0 ET terme dans le titre du fichier (nommé d'après le mot → sans ambiguïté)
+      const tier1=pool.filter(p=>p.score>0 && _headInTitle(p));
+      // Tier 2 : score > 0 seulement (peut inclure des faux positifs étymologiques)
+      const tier2=pool.filter(p=>p.score>0);
+      // Tier 3 : terme dans le titre uniquement (noms scientifiques, def française ≠ labels anglais)
+      const tier3=pool.filter(p=>_headInTitle(p));
+      const toFetch=(tier1.length ? tier1 : tier2.length ? tier2 : tier3)
         .slice(0,10).map(p=>p.title);
       const imgs=toFetch.length ? (await fetchThumbs(toFetch)).slice(0,4) : [];
       if(imgs.length){ _imgStripCache[key]=imgs; render(imgs); return; }
