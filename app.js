@@ -268,6 +268,7 @@ async function start(){
   initKeyboardDetection();
   wireDefModal();
   wireDictModal();
+  if(typeof wireImgZoom==="function") wireImgZoom();
   initAuth();
   initSelect();
   initNav();
