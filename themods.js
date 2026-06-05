@@ -928,14 +928,16 @@ function renderGMGame(){
   const allFormsFound=sortedForms.every(f=>gmFound.has(norm(f)));
 
   const primaryCanon=norm(sortedForms[0]);
+  const _gmC=window._rechCache?.[primaryCanon]; const _cdGM=_gmC?.loaded ? (_gmC.custom?.defQuiz||_gmC.custom?.def) : undefined;
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
-  const _rawDef=_gmIsRealDef(_gmFallback) ? _gmFallback : (entry.def||_gmFallback);
+  const _rawDef=_gmIsRealDef(_gmFallback) ? _gmFallback : (_cdGM && cleanDef(_cdGM).length>1 ? _cdGM : (entry.def||_gmFallback));
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
+  if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
 
   const tilesDiv=document.createElement("div");
   tilesDiv.className="gm-tiles";
