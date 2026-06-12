@@ -1,39 +1,10 @@
 'use strict';
 
-const CACHE_NAME = "blackscrab-v1.44";
-const BASE  = new URL('.', self.location).href;
-const ROOT  = new URL('..', self.location).href;
-
-// Fichiers légers : pré-cachés à l'install (addAll est atomique)
-const SHELL = [
-  BASE,
-  BASE + 'index.html',
-  BASE + 'app.js',
-  BASE + 'dict.js',
-  BASE + 'version.js',
-  BASE + 'manifest.json',
-  BASE + 'icon-192.png',
-  BASE + 'icon-512.png',
-  ROOT + 'shared/dict-core.js',
-];
-
-// Fichiers lourds : mis en cache en arrière-plan puis à la volée
-const DATA = [
-  BASE + 'data.js',
-  ROOT + 'data.js',
-];
+/* ══ Service Worker BlackScrab — network-first ══ */
+const CACHE_NAME = "blackscrab-v1.45";
 
 self.addEventListener('install', e => {
-  // Seul SHELL bloque l'install — atomique et léger
-  e.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(c => c.addAll(SHELL))
-      .then(() => self.skipWaiting())
-  );
-  // DATA : fire-and-forget, n'empêche pas l'install de réussir
-  caches.open(CACHE_NAME).then(c =>
-    Promise.allSettled(DATA.map(url => c.add(url)))
-  );
+  e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', e => {
@@ -47,18 +18,22 @@ self.addEventListener('activate', e => {
   );
 });
 
-// Cache-first avec mise en cache à la volée pour les fichiers non pré-cachés
 self.addEventListener('fetch', e => {
+  if (e.request.method !== 'GET') return;
+
+  const req = e.request.mode === 'navigate'
+    ? new Request(e.request, { cache: 'no-store' })
+    : e.request;
+
   e.respondWith(
-    caches.match(e.request).then(r => {
-      if (r) return r;
-      return fetch(e.request).then(res => {
-        if (res.ok) {
-          const clone = res.clone();
+    fetch(req)
+      .then(resp => {
+        if (resp && resp.status === 200 && resp.type !== 'opaque') {
+          const clone = resp.clone();
           caches.open(CACHE_NAME).then(c => c.put(e.request, clone));
         }
-        return res;
-      });
-    })
+        return resp;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
