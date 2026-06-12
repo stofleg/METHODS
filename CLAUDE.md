@@ -25,7 +25,7 @@
 - PWA dans `blackscrab/` avec son propre `sw.js` et `manifest.json`
 - Dépendances partagées depuis le parent : `../data.js` (SEQODS_DATA pour les définitions), `../ods_data.js`
 - Icônes propres : `blackscrab/icon-192.png`, `blackscrab/icon-512.png` (générées depuis `icon.svg`)
-- Version courante : **v1.45**
+- Version courante : **v1.46**
 - Badge version : `#version-badge` dans `blackscrab/index.html`
 - CACHE_NAME suit le schéma `blackscrab-v{majeur*100+mineur}` (ex. v1.16 → blackscrab-v116)
 - À chaque release : bumper `CACHE_NAME` dans `blackscrab/sw.js` + `CURRENT_CACHE` + `#version-badge` dans `blackscrab/index.html`

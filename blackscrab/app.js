@@ -637,7 +637,11 @@ function submit() {
   }
 
   const doneTirage = findTirage(true, wordSorted);
-  setMsg(doneTirage ? 'déjà terminé' : 'mot hors jeu', doneTirage ? 'warn' : 'error');
+  if (doneTirage) {
+    setMsg(settings.mode === 'expert' ? 'déjà trouvé' : 'déjà terminé', 'warn');
+  } else {
+    setMsg('mot hors jeu', 'error');
+  }
   kbBuf = ''; updateWordDisplay();
 }
 
