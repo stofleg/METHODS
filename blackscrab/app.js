@@ -709,6 +709,7 @@ function refreshSettingsUI() {
 
 function openSettingsPanel(anchorEl, e) {
   e.stopPropagation();
+  document.getElementById('check-panel').classList.add('hidden');
   const panel = document.getElementById('settings-panel');
   if (panel.classList.contains('hidden')) {
     refreshSettingsUI();
@@ -718,6 +719,50 @@ function openSettingsPanel(anchorEl, e) {
   } else {
     panel.classList.add('hidden');
   }
+}
+
+function isValidODS(word) {
+  if (!bsAllMap) return null;
+  const sorted = word.split('').sort().join('');
+  const group = bsAllMap.get(sorted);
+  return group ? group.includes(word) : false;
+}
+
+function wireCheckPanel() {
+  const btn    = document.getElementById('btn-check');
+  const panel  = document.getElementById('check-panel');
+  const input  = document.getElementById('check-input');
+  const result = document.getElementById('check-result');
+
+  btn.addEventListener('click', e => {
+    e.stopPropagation();
+    document.getElementById('settings-panel').classList.add('hidden');
+    if (panel.classList.contains('hidden')) {
+      const bottom = document.getElementById('header').getBoundingClientRect().bottom;
+      panel.style.top = (bottom + 6) + 'px';
+      panel.classList.remove('hidden');
+      input.value = '';
+      result.textContent = '';
+      input.focus();
+    } else {
+      panel.classList.add('hidden');
+    }
+  });
+
+  document.addEventListener('click', e => {
+    if (!panel.classList.contains('hidden') && !panel.contains(e.target) && e.target !== btn)
+      panel.classList.add('hidden');
+  });
+
+  input.addEventListener('input', e => {
+    const word = e.target.value.toUpperCase().replace(/[^A-Z]/g, '');
+    e.target.value = word;
+    if (!word) { result.textContent = ''; return; }
+    const valid = isValidODS(word);
+    if (valid === null) { result.textContent = '?'; result.style.color = 'var(--text-dim)'; return; }
+    result.textContent = valid ? '✓' : '✗';
+    result.style.color = valid ? 'var(--green)' : 'var(--red)';
+  });
 }
 
 function wireSettings() {
@@ -871,6 +916,7 @@ async function init() {
   wireKeyboard();
   wireDesktopInput();
   wireSettings();
+  wireCheckPanel();
   wireDefModal();
 
   // Referme les swipe cards ouvertes quand on touche ailleurs
