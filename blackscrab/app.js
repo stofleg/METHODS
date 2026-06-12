@@ -612,7 +612,7 @@ function submit() {
       kbBuf = ''; updateWordDisplay(); return;
     }
     if (!tirage.words.includes(word)) {
-      setMsg('mot non valide', 'error');
+      setMsg(isValidODS(word) ? 'mot hors jeu' : 'mot invalide', 'error');
       kbBuf = ''; updateWordDisplay(); return;
     }
 
@@ -637,11 +637,10 @@ function submit() {
   }
 
   const doneTirage = findTirage(true, wordSorted);
-  if (doneTirage) {
+  if (doneTirage && doneTirage.foundWords.includes(word)) {
     setMsg('déjà trouvé', 'warn');
   } else {
-    const validODS = isValidODS(word);
-    setMsg(validODS ? 'mot hors jeu' : 'mot non valide', 'error');
+    setMsg(isValidODS(word) ? 'mot hors jeu' : 'mot invalide', 'error');
   }
   kbBuf = ''; updateWordDisplay();
 }
