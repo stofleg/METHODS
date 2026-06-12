@@ -1,2 +1,2 @@
-const BS_VER = "1.44";
-const BS_CACHE = "blackscrab-v1.44";
+const BS_VER = "1.45";
+const BS_CACHE = "blackscrab-v1.45";
