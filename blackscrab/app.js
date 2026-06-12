@@ -612,7 +612,7 @@ function submit() {
       kbBuf = ''; updateWordDisplay(); return;
     }
     if (!tirage.words.includes(word)) {
-      setMsg('mot invalide', 'error');
+      setMsg('mot non valide', 'error');
       kbBuf = ''; updateWordDisplay(); return;
     }
 
@@ -638,9 +638,10 @@ function submit() {
 
   const doneTirage = findTirage(true, wordSorted);
   if (doneTirage) {
-    setMsg(settings.mode === 'expert' ? 'déjà trouvé' : 'déjà terminé', 'warn');
+    setMsg('déjà trouvé', 'warn');
   } else {
-    setMsg('mot hors jeu', 'error');
+    const validODS = isValidODS(word);
+    setMsg(validODS ? 'mot hors jeu' : 'mot non valide', 'error');
   }
   kbBuf = ''; updateWordDisplay();
 }
