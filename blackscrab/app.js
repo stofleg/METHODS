@@ -1,7 +1,7 @@
 'use strict';
 
 /* ── State ────────────────────────────────────────────────────────────── */
-let settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
+let settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10, mode: 'normal' };
 let pool      = [];
 let jokerPool = [];
 let bsAllMap  = null;
@@ -32,9 +32,10 @@ function loadSettings() {
     settings.joker     = !!s.joker;
     settings.chrono    = !!s.chrono;
     settings.chronoMin = Math.max(1, Math.min(21, +s.chronoMin || 10));
+    settings.mode      = s.mode === 'expert' ? 'expert' : 'normal';
     if (settings.minLen > settings.maxLen) settings.maxLen = settings.minLen;
   } catch(e) {
-    settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10 };
+    settings = { minLen: 5, maxLen: 8, maxWords: 5, joker: false, chrono: false, chronoMin: 10, mode: 'normal' };
   }
 }
 
@@ -497,7 +498,10 @@ function renderGrid() {
   const grid = document.getElementById('grid');
   grid.innerHTML = '';
 
-  seance.filter(t => !t.done).forEach(t => {
+  const isExpert = settings.mode === 'expert';
+  const tirages = isExpert ? seance : seance.filter(t => !t.done);
+
+  tirages.forEach(t => {
     const card = document.createElement('div');
     card.className = 'card';
     card.dataset.sorted = t.sorted;
@@ -535,8 +539,14 @@ function renderGrid() {
     card.appendChild(tokWrap);
 
     const badge = document.createElement('div');
-    badge.className = t.foundWords.length > 0 ? 'card-badge' : 'card-circle';
-    if (t.foundWords.length > 0) badge.textContent = t.foundWords.length;
+    if (isExpert) {
+      badge.className = t.foundWords.length > 0 ? 'card-badge' : 'card-circle';
+      if (t.foundWords.length > 0) badge.textContent = t.foundWords.length;
+    } else {
+      const remaining = t.words.length - t.foundWords.length;
+      badge.className = 'card-badge';
+      badge.textContent = remaining;
+    }
     card.appendChild(badge);
 
     grid.appendChild(card);
@@ -616,7 +626,9 @@ function submit() {
     if (tirage.foundWords.length === tirage.words.length) {
       tirage.done = true;
       renderGrid();
-      setTimeout(() => flashAndRemove(tirage.sorted), 50);
+      if (settings.mode !== 'expert') {
+        setTimeout(() => flashAndRemove(tirage.sorted), 50);
+      }
       if (score === target) { setTimeout(() => showRecap(false), 700); }
     } else {
       renderGrid();
@@ -687,6 +699,12 @@ function refreshSettingsUI() {
     chronoBtn.classList.toggle('active', settings.chrono);
   }
   document.getElementById('row-chrono-dur')?.classList.toggle('hidden', !settings.chrono);
+  const modeBtn = document.getElementById('sett-mode');
+  if (modeBtn) {
+    const isExpert = settings.mode === 'expert';
+    modeBtn.textContent = isExpert ? 'Expert' : 'Normal';
+    modeBtn.classList.toggle('active', isExpert);
+  }
 }
 
 function openSettingsPanel(anchorEl, e) {
@@ -724,6 +742,9 @@ function wireSettings() {
   });
   document.getElementById('sett-chrono')?.addEventListener('click', () => {
     settings.chrono = !settings.chrono; refreshSettingsUI();
+  });
+  document.getElementById('sett-mode')?.addEventListener('click', () => {
+    settings.mode = settings.mode === 'expert' ? 'normal' : 'expert'; refreshSettingsUI();
   });
 
   document.getElementById('btn-sett-apply').addEventListener('click', () => {
