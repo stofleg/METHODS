@@ -368,8 +368,12 @@ body.kb-open .tm-hdr .prog-row{ display:none; }
 .gm-pos{font-size:12px;color:var(--muted);font-weight:700;font-variant-numeric:tabular-nums;}
 .gm-row-wrap{display:flex;flex-direction:column;align-items:center;gap:4px;}
 .gm-inflected{font-size:11px;color:var(--muted);letter-spacing:.4px;text-align:center;}
-.gm-illus{padding:4px 16px 18px;display:flex;justify-content:center;}
+.gm-illus{padding:4px 16px 18px;display:flex;flex-direction:column;align-items:center;gap:8px;}
 .gm-illus img{max-width:100%;max-height:32vh;border-radius:10px;border:1px solid var(--stroke);object-fit:contain;cursor:pointer;}
+.gm-illus-bar{display:flex;gap:8px;}
+.gm-illus-btn{font-size:12px;color:var(--muted);background:var(--card,rgba(255,255,255,.05));border:1px solid var(--stroke);border-radius:8px;padding:6px 12px;cursor:pointer;}
+.gm-illus-btn:active{opacity:.7;}
+.gm-imgpick-info{font-size:12px;color:var(--muted);}
 /* sous-vues THEMODS */
 .tmv{display:none;}
 .tmv.active{display:flex;flex:1;flex-direction:column;overflow:hidden;background:var(--card);border:1px solid var(--stroke);border-radius:var(--radius);box-shadow:var(--shadow);}
@@ -931,7 +935,6 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="modal-links" id="def-links">
       <a id="def-wikt" href="#" target="_blank" rel="noopener" class="btn btn-ok" style="font-size:12px;text-decoration:none;">📖 Wiktionnaire</a>
       <a id="def-img" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:12px;text-decoration:none;">🔍 Image</a>
-      <button id="def-paste-img" class="btn" style="font-size:12px;">📋 Coller image</button>
     </div>
     <div id="def-ana" class="modal-sec"></div>
     <div id="def-rall" class="modal-sec"></div>
@@ -1090,7 +1093,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v525";
+  const CURRENT_CACHE="methods-v526";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

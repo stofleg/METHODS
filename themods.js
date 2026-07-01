@@ -252,6 +252,7 @@ function isLongPpInv(n){
 let tmTheme=null, tmSession=null;
 let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmCurrentIdx=0, gmFound=new Set();
+let _gmPickerFor=null;   // primaryCanon pour lequel le sélecteur d'image est ouvert
 let odsEntryIdx=0, odsFnd=new Set();
 
 /* ── Navigation sous-vues ── */
@@ -963,19 +964,45 @@ function renderGMGame(){
   });
   list.appendChild(tilesDiv);
 
-  // Illustration collée par un utilisateur (rech_custom.img de l'une des formes)
-  let _gmImg=null;
+  // Illustration : image choisie (rech_custom.img d'une des formes), sinon
+  // bouton « Illustrer » qui propose des images à toucher pour en choisir une.
+  let _gmImg=null, _gmImgCanon=primaryCanon;
   for(const form of sortedForms){
     const c=norm(form); const cc=window._rechCache?.[c];
-    if(cc?.loaded && cc.custom?.img){ _gmImg=cc.custom.img; break; }
+    if(cc?.loaded && cc.custom?.img){ _gmImg=cc.custom.img; _gmImgCanon=c; break; }
     if(!cc?.loaded) _loadCustomDefIfNeeded(c, ()=>renderGMGame());
   }
+  const ill=document.createElement("div"); ill.className="gm-illus";
+  list.appendChild(ill);
+
   if(_gmImg){
-    const ill=document.createElement("div"); ill.className="gm-illus";
     const im=document.createElement("img"); im.src=_gmImg; im.alt=""; im.loading="lazy";
     im.addEventListener("click",()=>openImgZoom(_gmImg));
     ill.appendChild(im);
-    list.appendChild(ill);
+    const chg=document.createElement("button"); chg.className="gm-illus-btn";
+    chg.textContent="↺ Changer";
+    chg.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; renderGMGame(); });
+    const rm=document.createElement("button"); rm.className="gm-illus-btn";
+    rm.textContent="✕ Retirer";
+    rm.addEventListener("click",()=>{ _removeCustomImg(_gmImgCanon).then(()=>{ _gmPickerFor=null; renderGMGame(); }); });
+    const bar=document.createElement("div"); bar.className="gm-illus-bar";
+    bar.appendChild(chg); bar.appendChild(rm); ill.appendChild(bar);
+  } else if(_gmPickerFor===primaryCanon){
+    const info=document.createElement("div"); info.className="gm-imgpick-info";
+    info.textContent="Recherche d'images…";
+    const row=document.createElement("div"); row.className="img-strip";
+    ill.appendChild(info); ill.appendChild(row);
+    loadImgStrip(row, sortedForms, cleanDef(_rawDef), src=>{
+      info.textContent="Enregistrement…";
+      _saveCustomImg(primaryCanon, src).then(ok=>{ _gmPickerFor=null; renderGMGame(); if(!ok) setTmMsg("Échec de l'enregistrement de l'image.","err"); });
+    }).then(()=>{
+      info.textContent = row.children.length ? "Touche une image pour illustrer :" : "Aucune image trouvée pour ce mot.";
+    });
+  } else {
+    const add=document.createElement("button"); add.className="gm-illus-btn";
+    add.textContent="🖼 Illustrer";
+    add.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; renderGMGame(); });
+    ill.appendChild(add);
   }
 }
 
