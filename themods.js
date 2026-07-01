@@ -1006,20 +1006,29 @@ function renderGMGame(){
     info.textContent="Recherche d'images…";
     const row=document.createElement("div"); row.className="img-strip";
     ill.appendChild(info); ill.appendChild(row);
-    loadImgStrip(row, [term], cleanDef(_rawDef), src=>{
+    const onPick=src=>{
       info.textContent="Enregistrement…";
       _saveCustomImg(primaryCanon, src).then(ok=>{ _gmPickerFor=null; _gmPickTermIdx=0; renderGMGame(); if(!ok) setTmMsg("Échec de l'enregistrement de l'image.","err"); });
-    }).then(()=>{
-      info.textContent = row.children.length
-        ? "Touche une image pour illustrer :"
-        : (sortedForms.length>1 ? `Rien pour « ${term} » — essaie une autre graphie.` : `Aucune image trouvée pour « ${term} ».`);
-    });
+    };
+    _gmRunImageSearch(row, info, term, cleanDef(_rawDef), onPick, sortedForms.length>1);
   } else {
     const add=document.createElement("button"); add.className="gm-illus-btn";
     add.textContent="🖼 Illustrer";
     add.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; _gmPickTermIdx=0; renderGMGame(); });
     ill.appendChild(add);
   }
+}
+
+/* ── Recherche d'images pour illustrer : Google d'abord, repli Wikimedia ── */
+async function _gmRunImageSearch(row, info, term, def, onPick, multiForm){
+  const g=await loadGoogleImgStrip(row, term, onPick);
+  if(g.ok && g.count>0){ info.textContent="Touche une image pour illustrer :"; return; }
+  if(g.reason==="quota") info.textContent="Quota Google atteint — repli Wikimedia…";
+  else if(g.reason!=="noconfig" && !g.ok) info.textContent="Google indisponible — repli Wikimedia…";
+  await loadImgStrip(row, [term], def, onPick);
+  info.textContent = row.children.length
+    ? "Touche une image pour illustrer :"
+    : (multiForm ? `Rien pour « ${term} » — essaie une autre graphie.` : `Aucune image trouvée pour « ${term} ».`);
 }
 
 /* ── Pull-to-refresh : swipe bas sur tv-game pour recharger la def Firestore ── */

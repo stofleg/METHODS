@@ -612,6 +612,46 @@ async function loadImgStrip(container, words, def, onPick){
   }catch{ _imgStripCache[key]=[]; }
 }
 
+/* ── Recherche d'images Google (Custom Search JSON API) ──
+   Config (clé API + id du moteur cx) stockée dans Firestore config/gcse,
+   donc hors du dépôt public et synchronisée sur tous les appareils. */
+async function loadGcseConfig(){
+  if(window._gcseConfig!==undefined) return window._gcseConfig;
+  try{
+    const r=await fbGet("config","gcse");
+    window._gcseConfig = (r.ok && r.data) ? {key:r.data.key||"", cx:r.data.cx||""} : {key:"",cx:""};
+  }catch{ window._gcseConfig={key:"",cx:""}; }
+  return window._gcseConfig;
+}
+async function saveGcseConfig(key, cx){
+  const cfg={key:(key||"").trim(), cx:(cx||"").trim()};
+  const w=await fbSet("config","gcse",cfg);
+  if(w.ok) window._gcseConfig=cfg;
+  return w.ok;
+}
+// Renvoie {ok, count, reason?}. Ajoute des vignettes cliquables dans container.
+async function loadGoogleImgStrip(container, term, onPick){
+  const cfg=await loadGcseConfig();
+  if(!cfg.key||!cfg.cx) return {ok:false, reason:"noconfig"};
+  const url=`https://www.googleapis.com/customsearch/v1?key=${encodeURIComponent(cfg.key)}`
+    +`&cx=${encodeURIComponent(cfg.cx)}&searchType=image&num=8&safe=active&q=${encodeURIComponent(term)}`;
+  try{
+    const r=await fetch(url);
+    if(!r.ok){ return {ok:false, reason:(r.status===429||r.status===403)?"quota":"error", status:r.status}; }
+    const j=await r.json();
+    const items=j.items||[];
+    items.forEach(it=>{
+      const thumb=it.image?.thumbnailLink||it.link;
+      const full=it.link||thumb; if(!thumb) return;
+      const img=document.createElement("img"); img.src=thumb; img.loading="lazy";
+      img.className="img-strip-thumb"; img.style.cursor="pointer";
+      img.addEventListener("click",()=>{ if(onPick) onPick(full); else openImgZoom(full); });
+      container.appendChild(img);
+    });
+    return {ok:true, count:items.length};
+  }catch{ return {ok:false, reason:"network"}; }
+}
+
 /* ── Clavier mobile générique ── */
 function wireKeyboard(kbId, dispId, msgId, onKey){
   const kb = document.getElementById(kbId);

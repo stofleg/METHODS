@@ -964,6 +964,13 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
       <label>Longueur max finales : <span id="finale-len-lbl">15 lettres</span></label>
       <input type="range" id="set-finale-len" min="4" max="15" value="15" style="width:110px;"/>
     </div>
+    <div class="set-row" style="flex-direction:column;align-items:stretch;gap:6px;">
+      <label>Recherche d'images (Google)</label>
+      <input type="text" id="set-gcse-key" placeholder="Clé API Google" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%;font-size:13px;"/>
+      <input type="text" id="set-gcse-cx" placeholder="ID moteur (cx)" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" style="width:100%;font-size:13px;"/>
+      <button id="btn-gcse-save" class="btn" style="font-size:13px;">Enregistrer</button>
+      <span id="gcse-status" style="font-size:11px;color:var(--muted);"></span>
+    </div>
     <button id="btn-close-settings" class="btn" style="width:100%;margin-top:10px;">Fermer</button>
   </div>
 </div>
@@ -1094,7 +1101,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v527";
+  const CURRENT_CACHE="methods-v528";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});
