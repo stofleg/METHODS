@@ -229,6 +229,8 @@ function openSettingsPanel(){
   document.getElementById("row-dur").style.display=settings.chronoEnabled?"":"none";
   const fml=document.getElementById("set-finale-len");
   if(fml){ fml.value=settings.finaleMaxLen||15; document.getElementById("finale-len-lbl").textContent=(settings.finaleMaxLen||15)+" lettres"; }
+  const gk=document.getElementById("set-gcse-key"), gx=document.getElementById("set-gcse-cx");
+  if(gk&&gx){ loadGcseConfig().then(cfg=>{ gk.value=cfg.key||""; gx.value=cfg.cx||""; }); }
   document.getElementById("settings")?.classList.add("open");
 }
 function initSettingsUI(){
@@ -259,6 +261,14 @@ function initSettingsUI(){
     settings.finaleMaxLen=v;
     document.getElementById("finale-len-lbl").textContent=v+" lettres";
     saveSettings();
+  });
+  document.getElementById("btn-gcse-save")?.addEventListener("click",async()=>{
+    const st=document.getElementById("gcse-status");
+    const key=document.getElementById("set-gcse-key")?.value||"";
+    const cx=document.getElementById("set-gcse-cx")?.value||"";
+    if(st) st.textContent="Enregistrement…";
+    const ok=await saveGcseConfig(key,cx);
+    if(st) st.textContent=ok?"✓ Enregistré":"⚠︎ Échec";
   });
 }
 
