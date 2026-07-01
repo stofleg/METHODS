@@ -253,6 +253,7 @@ let tmTheme=null, tmSession=null;
 let tmFound=new Set(), tmSolutions=false, tmNoHelp=true;
 let gmCurrentIdx=0, gmFound=new Set();
 let _gmPickerFor=null;   // primaryCanon pour lequel le sélecteur d'image est ouvert
+let _gmPickTermIdx=0;    // index de la graphie recherchée dans le sélecteur
 let odsEntryIdx=0, odsFnd=new Set();
 
 /* ── Navigation sous-vues ── */
@@ -981,27 +982,42 @@ function renderGMGame(){
     ill.appendChild(im);
     const chg=document.createElement("button"); chg.className="gm-illus-btn";
     chg.textContent="↺ Changer";
-    chg.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; renderGMGame(); });
+    chg.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; _gmPickTermIdx=0; renderGMGame(); });
     const rm=document.createElement("button"); rm.className="gm-illus-btn";
     rm.textContent="✕ Retirer";
     rm.addEventListener("click",()=>{ _removeCustomImg(_gmImgCanon).then(()=>{ _gmPickerFor=null; renderGMGame(); }); });
     const bar=document.createElement("div"); bar.className="gm-illus-bar";
     bar.appendChild(chg); bar.appendChild(rm); ill.appendChild(bar);
   } else if(_gmPickerFor===primaryCanon){
+    // Pastilles : une par graphie, pour chercher les images terme par terme
+    if(sortedForms.length>1){
+      const terms=document.createElement("div"); terms.className="gm-illus-bar";
+      sortedForms.forEach((form,i)=>{
+        const chip=document.createElement("button");
+        chip.className="gm-illus-btn"+(i===_gmPickTermIdx?" active":"");
+        chip.textContent=form;
+        chip.addEventListener("click",()=>{ _gmPickTermIdx=i; renderGMGame(); });
+        terms.appendChild(chip);
+      });
+      ill.appendChild(terms);
+    }
+    const term=sortedForms[_gmPickTermIdx]||sortedForms[0];
     const info=document.createElement("div"); info.className="gm-imgpick-info";
     info.textContent="Recherche d'images…";
     const row=document.createElement("div"); row.className="img-strip";
     ill.appendChild(info); ill.appendChild(row);
-    loadImgStrip(row, sortedForms, cleanDef(_rawDef), src=>{
+    loadImgStrip(row, [term], cleanDef(_rawDef), src=>{
       info.textContent="Enregistrement…";
-      _saveCustomImg(primaryCanon, src).then(ok=>{ _gmPickerFor=null; renderGMGame(); if(!ok) setTmMsg("Échec de l'enregistrement de l'image.","err"); });
+      _saveCustomImg(primaryCanon, src).then(ok=>{ _gmPickerFor=null; _gmPickTermIdx=0; renderGMGame(); if(!ok) setTmMsg("Échec de l'enregistrement de l'image.","err"); });
     }).then(()=>{
-      info.textContent = row.children.length ? "Touche une image pour illustrer :" : "Aucune image trouvée pour ce mot.";
+      info.textContent = row.children.length
+        ? "Touche une image pour illustrer :"
+        : (sortedForms.length>1 ? `Rien pour « ${term} » — essaie une autre graphie.` : `Aucune image trouvée pour « ${term} ».`);
     });
   } else {
     const add=document.createElement("button"); add.className="gm-illus-btn";
     add.textContent="🖼 Illustrer";
-    add.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; renderGMGame(); });
+    add.addEventListener("click",()=>{ _gmPickerFor=primaryCanon; _gmPickTermIdx=0; renderGMGame(); });
     ill.appendChild(add);
   }
 }
