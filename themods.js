@@ -16,7 +16,7 @@ function _loadCustomDefIfNeeded(canon, onLoaded){
     if(!window._rechCache[canon]) window._rechCache[canon]={custom:{},excl:[],loaded:false};
     window._rechCache[canon].custom = r.ok && r.data ? r.data : {};
     window._rechCache[canon].loaded = true;
-    const _c=window._rechCache[canon].custom; if(_c.def!==undefined||_c.defQuiz!==undefined) onLoaded();
+    const _c=window._rechCache[canon].custom; if(_c.def!==undefined||_c.defQuiz!==undefined||_c.img!==undefined) onLoaded();
   }).catch(()=>{ _customDefPending.delete(canon); });
 }
 
@@ -962,6 +962,21 @@ function renderGMGame(){
     tilesDiv.appendChild(wrap);
   });
   list.appendChild(tilesDiv);
+
+  // Illustration collée par un utilisateur (rech_custom.img de l'une des formes)
+  let _gmImg=null;
+  for(const form of sortedForms){
+    const c=norm(form); const cc=window._rechCache?.[c];
+    if(cc?.loaded && cc.custom?.img){ _gmImg=cc.custom.img; break; }
+    if(!cc?.loaded) _loadCustomDefIfNeeded(c, ()=>renderGMGame());
+  }
+  if(_gmImg){
+    const ill=document.createElement("div"); ill.className="gm-illus";
+    const im=document.createElement("img"); im.src=_gmImg; im.alt=""; im.loading="lazy";
+    im.addEventListener("click",()=>openImgZoom(_gmImg));
+    ill.appendChild(im);
+    list.appendChild(ill);
+  }
 }
 
 /* ── Pull-to-refresh : swipe bas sur tv-game pour recharger la def Firestore ── */

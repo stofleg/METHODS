@@ -429,11 +429,71 @@ function closeDef(){
 function wireDefModal(){
   $("#def-close")?.addEventListener("click", closeDef);
   $("#def-bd")?.addEventListener("click", closeDef);
+  $("#def-paste-img")?.addEventListener("click", pasteImageForDef);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeDef(); closeImgZoom(); } });
 }
 function closeImgZoom(){ document.getElementById("img-zoom-ol")?.classList.remove("open"); }
+function openImgZoom(src){
+  const ol=document.getElementById("img-zoom-ol"); if(!ol) return;
+  const zi=document.getElementById("img-zoom-img"); if(zi) zi.src=src;
+  ol.classList.add("open");
+}
 function wireImgZoom(){
   document.getElementById("img-zoom-ol")?.addEventListener("click", closeImgZoom);
+}
+
+/* ── Image collée par l'utilisateur pour illustrer une entrée ──
+   Flux : copier une image (appui long sur Google Images) → « Coller image »
+   dans la fiche du mot. L'image est redimensionnée, envoyée sur Firebase
+   Storage, et son URL stockée dans rech_custom/{canon}.img — donc synchronisée
+   sur tous les appareils et réutilisée pour illustrer le quiz. */
+function _blobToImage(blob){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(blob);
+    img.onload=()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror=e=>{ URL.revokeObjectURL(url); rej(e); };
+    img.src=url;
+  });
+}
+async function _resizeToJpeg(blob, maxDim=1000, quality=0.82){
+  const img=await _blobToImage(blob);
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h);
+  return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/jpeg",quality));
+}
+async function pasteImageForDef(){
+  const canon=_openDefCanon; const btn=document.getElementById("def-paste-img");
+  if(!canon||!btn) return;
+  const orig=btn.dataset.orig||btn.textContent; btn.dataset.orig=orig;
+  const flash=(txt,ms=2200)=>{ btn.textContent=txt; setTimeout(()=>{ btn.textContent=btn.dataset.orig; }, ms); };
+  if(!navigator.clipboard||!navigator.clipboard.read){ flash("⚠︎ Presse-papier indispo"); return; }
+  try{
+    btn.textContent="⏳ Lecture…";
+    const items=await navigator.clipboard.read();
+    let blob=null;
+    for(const it of items){
+      const type=it.types.find(t=>t.startsWith("image/"));
+      if(type){ blob=await it.getType(type); break; }
+    }
+    if(!blob){ flash("⚠︎ Aucune image copiée"); return; }
+    btn.textContent="⏳ Envoi…";
+    const jpeg=await _resizeToJpeg(blob);
+    const url=await fbStorageUpload("rech_img/"+canon+".jpg", jpeg);
+    const cur=(await fbGet("rech_custom",canon)).data||{};
+    const merged={...cur, img:url};
+    const w=await fbSet("rech_custom",canon,merged);
+    if(!w.ok){ flash("⚠︎ Échec enregistrement"); return; }
+    if(!window._rechCache) window._rechCache={};
+    if(!window._rechCache[canon]) window._rechCache[canon]={custom:{},excl:[],loaded:false};
+    window._rechCache[canon].custom=merged; window._rechCache[canon].loaded=true;
+    flash("✓ Image ajoutée");
+    if(typeof renderTmGame==="function" && document.querySelector("#tv-game.active")) renderTmGame();
+  }catch(e){
+    console.error("[pasteImageForDef]",e);
+    flash("⚠︎ Erreur");
+  }
 }
 
 /* ── Images inline sous les tuiles ──
