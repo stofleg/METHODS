@@ -130,6 +130,11 @@ a.def-link:hover{text-decoration:underline;}
 /* Images inline */
 .img-strip{display:flex;gap:4px;padding:10px 12px 4px;flex-wrap:wrap;justify-content:center;}
 .img-strip-thumb{width:calc(50% - 2px);max-width:130px;aspect-ratio:1;object-fit:contain;background:rgba(255,255,255,.04);border-radius:8px;}
+/* Coller une image */
+#def-paste-wrap{margin-top:8px;}
+#def-paste-zone{display:none;min-height:46px;border:1px dashed var(--stroke);border-radius:8px;padding:10px;font-size:13px;color:var(--txt);outline:none;-webkit-user-select:text;user-select:text;}
+#def-paste-zone:empty:before{content:attr(data-ph);color:var(--muted);}
+#def-paste-status{display:block;font-size:11px;color:var(--muted);margin-top:4px;}
 /* Zoom lightbox */
 #img-zoom-ol{display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.85);align-items:center;justify-content:center;}
 #img-zoom-ol.open{display:flex;}
@@ -936,6 +941,11 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
     <div class="modal-links" id="def-links">
       <a id="def-wikt" href="#" target="_blank" rel="noopener" class="btn btn-ok" style="font-size:12px;text-decoration:none;">📖 Wiktionnaire</a>
       <a id="def-img" href="#" target="_blank" rel="noopener" class="btn btn-primary" style="font-size:12px;text-decoration:none;">🔍 Image</a>
+      <button id="def-paste-img" class="btn" style="font-size:12px;">📋 Coller une image</button>
+    </div>
+    <div id="def-paste-wrap">
+      <div id="def-paste-zone" contenteditable="true" data-ph="Colle l'image ici (appui long → Coller)"></div>
+      <span id="def-paste-status"></span>
     </div>
     <div id="def-ana" class="modal-sec"></div>
     <div id="def-rall" class="modal-sec"></div>
@@ -1101,7 +1111,7 @@ span.hook{color:var(--accent);font-size:.85em;font-weight:900;vertical-align:mid
 <script src="app.js"></script>
 <script>
 if("serviceWorker" in navigator){
-  const CURRENT_CACHE="methods-v532";
+  const CURRENT_CACHE="methods-v533";
   function doRegister(){
     navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
       .then(reg=>reg.update()).catch(()=>{});

@@ -395,6 +395,7 @@ function openDef(canon, displayWord, defText, flechie){
   }
 
   _openDefCanon = canon;
+  { const _pz=$("#def-paste-zone"); if(_pz){ _pz.style.display="none"; _pz.textContent=""; } const _ps=$("#def-paste-status"); if(_ps) _ps.textContent=""; }
   $("#def-modal").classList.add("open");
 
   // Chargement lazy de la déf custom si pas encore en cache
@@ -430,6 +431,36 @@ function wireDefModal(){
   $("#def-close")?.addEventListener("click", closeDef);
   $("#def-bd")?.addEventListener("click", closeDef);
   document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeDef(); closeImgZoom(); } });
+
+  // ── Coller une image ──
+  const btn=$("#def-paste-img"), zone=$("#def-paste-zone"), status=$("#def-paste-status");
+  if(btn && zone){
+    btn.addEventListener("click", async ()=>{
+      zone.style.display="block"; zone.textContent="";
+      if(status) status.textContent="Touche le cadre puis « Coller ».";
+      try{ zone.focus(); }catch{}
+      // Tentative directe (desktop / navigateurs qui l'autorisent)
+      if(navigator.clipboard?.read){
+        try{
+          const items=await navigator.clipboard.read();
+          for(const it of items){
+            const type=it.types.find(t=>t.startsWith("image/"));
+            if(type){ const blob=await it.getType(type); zone.style.display="none"; await _storeImageForCanon(_openDefCanon, blob, status); return; }
+          }
+        }catch{}
+      }
+    });
+    zone.addEventListener("paste", async e=>{
+      const blob=_imageFromClipboard(e);
+      if(blob){
+        e.preventDefault();
+        zone.textContent=""; zone.style.display="none";
+        await _storeImageForCanon(_openDefCanon, blob, status);
+      } else if(status){
+        status.textContent="Aucune image dans le presse-papier.";
+      }
+    });
+  }
 }
 function closeImgZoom(){ document.getElementById("img-zoom-ol")?.classList.remove("open"); }
 function openImgZoom(src){
@@ -459,6 +490,49 @@ async function _saveCustomImg(canon, url){
 async function _removeCustomImg(canon){
   await fbDeleteField("rech_custom", canon, "img");
   if(window._rechCache?.[canon]?.custom) delete window._rechCache[canon].custom.img;
+}
+
+/* ── Coller une image (depuis Google Images p.ex.) pour illustrer une entrée ──
+   L'image (blob) est redimensionnée, envoyée sur Firebase Storage, et son URL
+   stockée dans rech_custom/{canon}.img. */
+function _blobToImage(blob){
+  return new Promise((res,rej)=>{
+    const img=new Image(); const url=URL.createObjectURL(blob);
+    img.onload=()=>{ URL.revokeObjectURL(url); res(img); };
+    img.onerror=e=>{ URL.revokeObjectURL(url); rej(e); };
+    img.src=url;
+  });
+}
+async function _resizeToJpeg(blob, maxDim=1000, quality=0.82){
+  const img=await _blobToImage(blob);
+  let w=img.naturalWidth||img.width, h=img.naturalHeight||img.height;
+  if(Math.max(w,h)>maxDim){ const s=maxDim/Math.max(w,h); w=Math.round(w*s); h=Math.round(h*s); }
+  const c=document.createElement("canvas"); c.width=w; c.height=h;
+  c.getContext("2d").drawImage(img,0,0,w,h);
+  return await new Promise((res,rej)=>c.toBlob(b=>b?res(b):rej(new Error("toBlob")),"image/jpeg",quality));
+}
+async function _storeImageForCanon(canon, blob, statusEl){
+  const setS=t=>{ if(statusEl) statusEl.textContent=t; };
+  if(!canon){ setS("⚠︎ Ouvre d'abord un mot."); return false; }
+  try{
+    setS("⏳ Traitement…");
+    const jpeg=await _resizeToJpeg(blob);
+    setS("⏳ Envoi…");
+    const url=await fbStorageUpload("rech_img/"+canon+".jpg", jpeg);
+    const ok=await _saveCustomImg(canon, url);
+    if(!ok){ setS("⚠︎ Échec enregistrement"); return false; }
+    setS("✓ Image ajoutée");
+    if(typeof renderTmGame==="function" && document.querySelector("#tv-game.active")) renderTmGame();
+    return true;
+  }catch(e){ console.error("[storeImage]",e); setS("⚠︎ Erreur"); return false; }
+}
+// Extrait un blob image d'un ClipboardEvent (items puis files).
+function _imageFromClipboard(e){
+  const items=(e.clipboardData||window.clipboardData||{}).items||[];
+  for(const it of items){ if(it.type && it.type.startsWith("image/")) return it.getAsFile(); }
+  const files=e.clipboardData?.files||[];
+  for(const f of files){ if(f.type && f.type.startsWith("image/")) return f; }
+  return null;
 }
 
 /* ── Images inline sous les tuiles ──
