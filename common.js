@@ -652,6 +652,26 @@ async function loadGoogleImgStrip(container, term, onPick){
   }catch{ return {ok:false, reason:"network"}; }
 }
 
+/* ── Recherche d'images Openverse (large, agrège Flickr/musées/Wikimedia…) ──
+   API publique CORS, sans clé. Renvoie {ok, count, reason?}. */
+async function loadOpenverseImgStrip(container, term, onPick){
+  const url=`https://api.openverse.org/v1/images/?q=${encodeURIComponent(term)}&page_size=8&mature=false`;
+  try{
+    const r=await fetch(url, {headers:{Accept:"application/json"}});
+    if(!r.ok) return {ok:false, reason:(r.status===429?"quota":"error"), status:r.status};
+    const j=await r.json();
+    const items=j.results||[];
+    items.forEach(it=>{
+      const thumb=it.thumbnail||it.url; const full=it.url||it.thumbnail; if(!thumb) return;
+      const img=document.createElement("img"); img.src=thumb; img.loading="lazy";
+      img.className="img-strip-thumb"; img.style.cursor="pointer";
+      img.addEventListener("click",()=>{ if(onPick) onPick(full); else openImgZoom(full); });
+      container.appendChild(img);
+    });
+    return {ok:true, count:items.length};
+  }catch{ return {ok:false, reason:"network"}; }
+}
+
 /* ── Clavier mobile générique ── */
 function wireKeyboard(kbId, dispId, msgId, onKey){
   const kb = document.getElementById(kbId);
