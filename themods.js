@@ -235,8 +235,12 @@ function _gmPickDef(primaryCanon, allForms, targetPos){
     const real=(allDefsMap[raw]||[]).filter(isReal);
     if(!real.length) continue;
     if(hasTarget){
-      const match=real.find(d=>_gmPosMatch(d, targetPos));
-      if(match) return match;
+      const matches=real.filter(d=>_gmPosMatch(d, targetPos));
+      if(matches.length){
+        // parmi les défs de la bonne nature, priorité au nom (cas usuel des GM)
+        const noun=typeof _defIsNoun==="function" ? matches.find(_defIsNoun) : null;
+        return noun||matches[0];
+      }
       continue; // pas de déf ODS de la bonne nature pour cette forme → forme suivante
     }
     // Sans nature connue : priorité à la définition nominale (ex. TOASTER n.m. avant v.)
@@ -245,6 +249,31 @@ function _gmPickDef(primaryCanon, allForms, targetPos){
   }
   // Aucune correspondance de nature : laisser entry.def prendre le relais
   return hasTarget ? "" : ((allDefsMap[primaryCanon]||[])[0]||"");
+}
+
+// Natures ODS des formes + préfixe réel (« n.m. », « adj. et n. »…) par nature.
+function _gmOdsNatureInfo(sortedForms){
+  const allDefsMap=getNormToAllDefs();
+  const set=new Set(), pref={};
+  for(const form of sortedForms){
+    const c=norm(form.split(',')[0].trim());
+    for(const def of (allDefsMap[c]||[])){
+      const cd=cleanDef(def); const ps=_gmPosSet(cd);
+      if(!ps.size) continue;
+      const m=cd.match(_TYPE_PFX_GM); const p=m?m[0].trim():"";
+      ps.forEach(x=>{ set.add(x); if(p && !pref[x]) pref[x]=p; });
+    }
+  }
+  return {set, pref};
+}
+// Préfixe de nature à coller devant une déf en prose — seulement si NON ambigu
+// (une seule valeur possible, ex. « n.m. » ou « adj. et n. »). Renvoie "" si
+// homonymie de natures distinctes (n. vs v.) : on ne fabrique pas une nature.
+function _gmPickNaturePrefix(info, target){
+  const vals=new Set();
+  const src = (target && target.size) ? [...target] : Object.keys(info.pref);
+  src.forEach(t=>{ if(info.pref[t]) vals.add(info.pref[t]); });
+  return vals.size===1 ? [...vals][0] : "";
 }
 function tmRefocus(){
   if(window.matchMedia("(pointer:fine)").matches)
@@ -970,10 +999,18 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  const _gmTargetPos=_gmPosSet(entry.def);   // nature voulue, d'après la déf curée de l'entrée
+  const _odsNat=_gmOdsNatureInfo(sortedForms);        // natures ODS des formes
+  const _entryNat=_gmPosSet(entry.def);               // nature de la déf curée
+  const _gmTargetPos=_entryNat.size ? _entryNat : _odsNat.set;   // à défaut, nature ODS
   const _gmFallback=_gmPickDef(primaryCanon, sortedForms, _gmTargetPos);
-  const _rawDef=_gmIsRealDef(_gmFallback) ? _gmFallback : (_cdGM && cleanDef(_cdGM).length>1 ? _cdGM : (entry.def||_gmFallback));
-  defText.textContent=cleanDef(_rawDef)||"…";
+  let _rawDef=cleanDef(_gmIsRealDef(_gmFallback) ? _gmFallback : (_cdGM && cleanDef(_cdGM).length>1 ? _cdGM : (entry.def||_gmFallback)));
+  // Design : garder la nature en tête, texte (Wiktionnaire/ODS) collé derrière.
+  // Si le texte affiché n'a pas de nature, on préfixe avec la nature ODS (si non ambiguë).
+  if(_rawDef && _gmPosSet(_rawDef).size===0){
+    const pref=_gmPickNaturePrefix(_odsNat, _gmTargetPos);
+    if(pref) _rawDef=pref+" "+_rawDef;
+  }
+  defText.textContent=_rawDef||"…";
   defDiv.appendChild(defText);
   list.appendChild(defDiv);
   if(_cdGM===undefined) _loadCustomDefIfNeeded(primaryCanon, ()=>renderGMGame());
