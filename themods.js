@@ -196,18 +196,27 @@ function _gmIsRealDef(d){
     && /[A-Za-zÀ-ÿœæŒÆ]{4}/.test(s);
 }
 
-// Ensemble des natures (n/v/adj/adv/…) en tête d'une définition (gère "adj. et n.")
+// Ensemble des natures (n/v/adj/adv/…) présentes dans l'en-tête d'une définition.
+// Balaye les 60 premiers caractères pour trouver la nature même précédée de
+// catégories ou d'une numérotation (« (SE) v. », « 1. n. », « (DE) loc. »…).
 function _gmPosSet(d){
   const c = cleanDef(d); if(!c) return new Set();
-  const m = c.match(_TYPE_PFX_GM);
-  const pfx = (m ? m[0] : "").toLowerCase();
+  const head = c.slice(0,60).toLowerCase();
   const set = new Set();
-  if(/\bn\./.test(pfx))      set.add("n");
-  if(/\bv\./.test(pfx))      set.add("v");
-  if(/\badj\./.test(pfx))    set.add("adj");
-  if(/\badv\./.test(pfx))    set.add("adv");
-  if(/\binterj\./.test(pfx)) set.add("interj");
-  if(/\bloc\./.test(pfx))    set.add("loc");
+  const re = /(?:^|[\s.\d)\]\/])(n\.[mf]?\.?|v\.|adj\.|adv\.|interj\.|loc\.|prép\.|prep\.|conj\.|pron\.)/g;
+  let m;
+  while((m=re.exec(head))){
+    const t=m[1];
+    if(t.startsWith("n."))          set.add("n");
+    else if(t.startsWith("adv"))    set.add("adv");
+    else if(t.startsWith("adj"))    set.add("adj");
+    else if(t.startsWith("interj")) set.add("interj");
+    else if(t.startsWith("loc"))    set.add("loc");
+    else if(t.startsWith("pron"))   set.add("pron");
+    else if(t.startsWith("pr"))     set.add("prep");
+    else if(t.startsWith("conj"))   set.add("conj");
+    else if(t.startsWith("v"))      set.add("v");
+  }
   return set;
 }
 const _gmPosMatch = (d, target) => { for(const p of _gmPosSet(d)) if(target.has(p)) return true; return false; };
