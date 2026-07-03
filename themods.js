@@ -196,19 +196,46 @@ function _gmIsRealDef(d){
     && /[A-Za-zÀ-ÿœæŒÆ]{4}/.test(s);
 }
 
-function _gmPickDef(primaryCanon, allForms){
+// Ensemble des natures (n/v/adj/adv/…) en tête d'une définition (gère "adj. et n.")
+function _gmPosSet(d){
+  const c = cleanDef(d); if(!c) return new Set();
+  const m = c.match(_TYPE_PFX_GM);
+  const pfx = (m ? m[0] : "").toLowerCase();
+  const set = new Set();
+  if(/\bn\./.test(pfx))      set.add("n");
+  if(/\bv\./.test(pfx))      set.add("v");
+  if(/\badj\./.test(pfx))    set.add("adj");
+  if(/\badv\./.test(pfx))    set.add("adv");
+  if(/\binterj\./.test(pfx)) set.add("interj");
+  if(/\bloc\./.test(pfx))    set.add("loc");
+  return set;
+}
+const _gmPosMatch = (d, target) => { for(const p of _gmPosSet(d)) if(target.has(p)) return true; return false; };
+
+// Choisit une définition ODS pour l'entrée GM.
+// targetPos (Set) = nature(s) voulue(s), déduite de la déf curée de l'entrée :
+// on renvoie une déf ODS de MÊME nature (évite le piège n./v. homonymes) ; si
+// aucune ne correspond, on renvoie "" pour laisser entry.def (nature correcte) primer.
+function _gmPickDef(primaryCanon, allForms, targetPos){
   const allDefsMap = getNormToAllDefs();
   const isReal = d => _gmIsRealDef(d);
+  const hasTarget = targetPos && targetPos.size>0;
   const seen = new Set();
   for(const raw of [primaryCanon, ...allForms.map(f=>norm(f.split(',')[0].trim()))]){
     if(!raw||seen.has(raw)) continue; seen.add(raw);
     const real=(allDefsMap[raw]||[]).filter(isReal);
     if(!real.length) continue;
-    // Priorité à la définition nominale (ex. TOASTER n.m. avant v.)
+    if(hasTarget){
+      const match=real.find(d=>_gmPosMatch(d, targetPos));
+      if(match) return match;
+      continue; // pas de déf ODS de la bonne nature pour cette forme → forme suivante
+    }
+    // Sans nature connue : priorité à la définition nominale (ex. TOASTER n.m. avant v.)
     const noun=typeof _defIsNoun==="function" ? real.find(_defIsNoun) : null;
     return noun||real[0];
   }
-  return (allDefsMap[primaryCanon]||[])[0]||"";
+  // Aucune correspondance de nature : laisser entry.def prendre le relais
+  return hasTarget ? "" : ((allDefsMap[primaryCanon]||[])[0]||"");
 }
 function tmRefocus(){
   if(window.matchMedia("(pointer:fine)").matches)
@@ -934,7 +961,8 @@ function renderGMGame(){
   const defDiv=document.createElement("div");
   defDiv.className="gm-def";
   const defText=document.createElement("span");
-  const _gmFallback=_gmPickDef(primaryCanon, sortedForms);
+  const _gmTargetPos=_gmPosSet(entry.def);   // nature voulue, d'après la déf curée de l'entrée
+  const _gmFallback=_gmPickDef(primaryCanon, sortedForms, _gmTargetPos);
   const _rawDef=_gmIsRealDef(_gmFallback) ? _gmFallback : (_cdGM && cleanDef(_cdGM).length>1 ? _cdGM : (entry.def||_gmFallback));
   defText.textContent=cleanDef(_rawDef)||"…";
   defDiv.appendChild(defText);
