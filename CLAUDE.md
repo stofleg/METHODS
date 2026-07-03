@@ -16,7 +16,7 @@
 - Auth : Firestore REST API (pas de SDK Firebase)
 
 ## Versionnage
-- Version courante : **v5.32**
+- Version courante : **v5.33**
 - Badge version : `#version-badge` dans index.html
 - CACHE_NAME suit le schéma `methods-v{majeur*100+mineur}` (ex. v4.0 → methods-v400)
 - À chaque release : bumper `CACHE_NAME` dans `sw.js` + `CURRENT_CACHE` + `#version-badge` dans `index.html`
@@ -38,3 +38,4 @@
 - `.emv.active { overflow:hidden }` — ne jamais ajouter de boutons flex sans `flex-shrink:0` dans les headers ENTREMODS
 - Clavier mobile (`em-kb`, `tm-kb`) : visible seulement sur mobile (`max-width:640px`), géré par `wireKeyboard()` dans `common.js`
 - Illustrations GM : bouton « 🖼 Illustrer » sous les propositions → recherche d'images en cascade : Google Custom Search (si moteur legacy configuré) → Openverse (`loadOpenverseImgStrip`, sans clé) → Wikimedia (`loadImgStrip`). L'URL choisie est stockée dans `rech_custom/{canon}.img`. NB : Google a supprimé l'option « rechercher sur tout le web » des nouveaux moteurs Custom Search → Openverse est désormais la source principale. Config Google legacy (clé + cx) dans Firestore `config/gcse`, éditable dans Paramètres — jamais dans le dépôt public.
+- Coller une image : dans la fiche de définition, bouton « 📋 Coller une image » → révèle `#def-paste-zone` (contenteditable). L'événement `paste` (fiable sur WebKit/iOS, contrairement à `clipboard.read()`) fournit le blob → redimensionné (`_resizeToJpeg`) → `fbStorageUpload("rech_img/{canon}.jpg")` → `_saveCustomImg`. Permet d'utiliser une image copiée depuis Google Images.
