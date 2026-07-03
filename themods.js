@@ -1095,10 +1095,13 @@ function renderGMGame(){
 
 /* ── Recherche d'images pour illustrer : Google d'abord, repli Wikimedia ── */
 async function _gmRunImageSearch(row, info, term, def, onPick, multiForm){
+  // 1. Google (uniquement si un moteur "tout le web" est configuré — legacy)
   const g=await loadGoogleImgStrip(row, term, onPick);
   if(g.ok && g.count>0){ info.textContent="Touche une image pour illustrer :"; return; }
-  if(g.reason==="quota") info.textContent="Quota Google atteint — repli Wikimedia…";
-  else if(g.reason!=="noconfig" && !g.ok) info.textContent="Google indisponible — repli Wikimedia…";
+  // 2. Openverse (large, sans clé)
+  const o=await loadOpenverseImgStrip(row, term, onPick);
+  if(o.ok && o.count>0){ info.textContent="Touche une image pour illustrer :"; return; }
+  // 3. Wikimedia (repli)
   await loadImgStrip(row, [term], def, onPick);
   info.textContent = row.children.length
     ? "Touche une image pour illustrer :"
