@@ -91,9 +91,11 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
 .sol-tag{font-size:10px;color:var(--muted);border:1px solid var(--stroke);border-radius:5px;padding:1px 5px;}
 .sol-def{font-size:13px;color:var(--muted);line-height:1.4;margin-top:4px;}
 .sol-def.def-loading{opacity:.55;font-style:italic;}
-.sol-btns{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;}
-.mini{font-size:12px;background:var(--surface2);color:var(--txt);border:1px solid var(--stroke);
-  border-radius:7px;padding:5px 9px;cursor:pointer;text-decoration:none;display:inline-block;}
+.sol-btns{display:flex;gap:6px;flex-wrap:nowrap;margin-top:8px;}
+.mini{font-size:11px;background:var(--surface2);color:var(--txt);border:1px solid var(--stroke);
+  border-radius:7px;padding:5px 8px;cursor:pointer;text-decoration:none;white-space:nowrap;
+  flex:0 0 auto;text-align:center;}
+.sol-btns .dku{flex:1 1 auto;min-width:0;}
 .mini:active{opacity:.7;}
 .mini.dku{color:var(--warn);}
 .mini.dku.on{background:var(--warn);color:var(--bg);border-color:var(--warn);}

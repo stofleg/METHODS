@@ -365,12 +365,12 @@ function renderSolution(w){
 
   const btns=el("div","sol-btns");
   const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
-  const wk=el("a","mini","📖 Wiktionnaire"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
+  const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
   btns.appendChild(img); btns.appendChild(wk);
-  const dku=el("button","mini dku"+(store.dku[w]?" on":""), store.dku[w]?"définition non connue ✓":"définition non connue");
+  const dku=el("button","mini dku"+(store.dku[w]?" on":""),"❓ Déf inconnue");
   dku.addEventListener("click",()=>{
-    if(store.dku[w]){ delete store.dku[w]; dku.classList.remove("on"); dku.textContent="définition non connue"; }
-    else { store.dku[w]=1; dku.classList.add("on"); dku.textContent="définition non connue ✓"; }
+    if(store.dku[w]){ delete store.dku[w]; dku.classList.remove("on"); }
+    else { store.dku[w]=1; dku.classList.add("on"); }
     save();
   });
   btns.appendChild(dku);

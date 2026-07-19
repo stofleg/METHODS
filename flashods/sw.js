@@ -1,7 +1,7 @@
 'use strict';
 
 /* ══ Service Worker FLASHODS — network-first ══ */
-const CACHE_NAME = "flashods-v6";
+const CACHE_NAME = "flashods-v7";
 
 self.addEventListener('install', e => {
   e.waitUntil(self.skipWaiting());
