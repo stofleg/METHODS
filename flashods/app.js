@@ -5,14 +5,59 @@
    Persistance : localStorage (pas de répétition espacée). */
 
 const LS_KEY = "flashods-v1";
-let store = { rate:{}, dku:{}, seen:{} };   // rate:{key:1} · dku:{word:1} · seen:{"L:g":{key:1}}
+const LS_SYNC = "flashods-sync";
+let store = { rate:{}, dku:{}, seen:{}, _ts:0 };   // rate:{key:1} · dku:{word:1} · seen:{"L:g":{key:1}}
+let syncId = "flashods-cl";
 
+function normalizeStore(s){ s=s||{}; s.rate=s.rate||{}; s.dku=s.dku||{}; s.seen=s.seen||{}; s._ts=s._ts||0; return s; }
 function load(){
-  try{ store = Object.assign({rate:{},dku:{},seen:{}}, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
-  catch{ store = {rate:{},dku:{},seen:{}}; }
-  store.rate=store.rate||{}; store.dku=store.dku||{}; store.seen=store.seen||{};
+  try{ store = normalizeStore(JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
+  catch{ store = normalizeStore({}); }
+  try{ syncId = localStorage.getItem(LS_SYNC) || syncId; }catch{}
 }
-function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch{} }
+function saveLocal(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch{} }
+function save(){ store._ts = Date.now(); saveLocal(); schedulePush(); }
+
+/* ── Synchro Firestore (dernière écriture gagnante par horodatage) ── */
+function setSyncStatus(txt){ const el=document.getElementById("sync-status"); if(el) el.textContent=txt; }
+async function fbLoadStore(){
+  try{
+    const r=await fetch(FB_BASE+"/flashods/"+encodeURIComponent(syncId));
+    if(!r.ok) return null;
+    const f=(await r.json()).fields||{};
+    if(!f.data) return null;
+    return { store:normalizeStore(JSON.parse(f.data.stringValue)), ts:parseInt(f.ts&&f.ts.integerValue||"0") };
+  }catch{ return null; }
+}
+async function fbSaveStore(){
+  const body={ fields:{ data:{stringValue:JSON.stringify(store)}, ts:{integerValue:String(store._ts||0)} } };
+  const r=await fetch(FB_BASE+"/flashods/"+encodeURIComponent(syncId),
+    {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)});
+  if(!r.ok) throw new Error("save "+r.status);
+}
+let _pushT=null;
+function schedulePush(){
+  clearTimeout(_pushT); setSyncStatus("… synchro");
+  _pushT=setTimeout(()=>{ fbSaveStore().then(()=>setSyncStatus("✓ synchro")).catch(()=>setSyncStatus("⚠︎ hors ligne")); }, 1500);
+}
+async function syncPull(){
+  setSyncStatus("… synchro");
+  const remote=await fbLoadStore();
+  if(remote && remote.store && (remote.ts||0) > (store._ts||0)){
+    store=remote.store; saveLocal();
+    if(!g) renderHome();
+  }
+  setSyncStatus("✓ synchro");
+}
+function changeSyncCode(){
+  const cur=syncId;
+  const v=prompt("Code de synchro (identique sur tous tes appareils) :", cur);
+  if(v===null) return;
+  const code=v.trim().toLowerCase().replace(/[^a-z0-9_-]/g,"") || "flashods-cl";
+  syncId=code; try{ localStorage.setItem(LS_SYNC, code); }catch{}
+  syncPull();
+  renderHome();
+}
 
 /* ── Données ── */
 let ENTRIES;                 // Set des entrées (canoniques)
@@ -184,6 +229,14 @@ function renderHome(){
   rb.appendChild(rl); rb.appendChild(el("div","g-count",String(dkuWords.length)));
   rb.addEventListener("click",()=>startDku(curLen));
   m.appendChild(rb);
+
+  // Ligne de synchro
+  const sync=el("div","sync-line");
+  const st=el("span","sync-st"); st.id="sync-status"; st.textContent="✓ synchro";
+  const code=el("button","sync-code","code : "+syncId);
+  code.addEventListener("click",changeSyncCode);
+  sync.appendChild(st); sync.appendChild(code);
+  m.appendChild(sync);
 }
 
 /* ── Progression par groupe ── */
@@ -400,5 +453,6 @@ function init(){
   if(typeof wireDefModal==="function") wireDefModal();
   document.getElementById("btn-home").addEventListener("click",showHome);
   showHome();
+  syncPull();
 }
 document.addEventListener("DOMContentLoaded", init);
