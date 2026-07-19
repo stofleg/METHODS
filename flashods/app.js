@@ -95,13 +95,18 @@ function renderHome(){
   m.appendChild(seg);
 
   for(const gid of [1,2,3,4]){
-    const keys=GROUPS[curLen][gid];
-    const b=el("button","grp-btn"); b.disabled=keys.length===0;
+    const total=GROUPS[curLen][gid].length;
+    const done=seenCount(curLen,gid);
+    const rk=rateCount(curLen,gid);
+    const b=el("button","grp-btn"); b.disabled=total===0;
     const left=el("div");
     left.appendChild(el("div","g-name",GROUP_LABELS[gid].name));
     left.appendChild(el("div","g-sub",GROUP_LABELS[gid].sub));
+    let prog = "vus "+done+" / "+total + (done>=total&&total>0 ? " ✓" : "");
+    if(rk) prog += " · "+rk+" raté"+(rk>1?"s":"");
+    left.appendChild(el("div","g-prog",prog));
     b.appendChild(left);
-    b.appendChild(el("div","g-count",String(keys.length)));
+    b.appendChild(el("div","g-count",String(total)));
     b.addEventListener("click",()=>startPlay(curLen,gid,"group"));
     m.appendChild(b);
   }
@@ -117,15 +122,35 @@ function renderHome(){
   m.appendChild(rb);
 }
 
+/* ── Progression par groupe ── */
+function seenSet(L,group){ const sk=L+":"+group; return store.seen[sk]||(store.seen[sk]={}); }
+function seenCount(L,group){ return Object.keys(seenSet(L,group)).length; }
+function rateCount(L,group){ return GROUPS[L][group].filter(k=>store.rate[k]).length; }
+
+function progLabel(){
+  if(g.mode==="group") return GROUP_LABELS[g.group].name+" · "+(g.baseDone+g.pos+1)+" / "+g.total;
+  if(g.mode==="rate")  return "Ratés · "+(g.pos+1)+" / "+g.queue.length;
+  return "Définitions non connues · "+(g.pos+1)+" / "+g.queue.length;
+}
+
 /* ── Lancer une session de tirages ── */
 function startPlay(L,group,mode){
-  let keys;
-  if(mode==="rate") keys=GROUPS[L][group].filter(k=>store.rate[k]);
-  else keys=GROUPS[L][group].slice();
-  if(!keys.length){ showHome(); return; }
-  g={ L, group, mode, queue:shuffle(keys), pos:0 };
-  showGame(); renderCard();
+  if(mode==="rate"){
+    const keys=GROUPS[L][group].filter(k=>store.rate[k]);
+    if(!keys.length){ showHome(); return; }
+    g={ L, group, mode, queue:shuffle(keys), pos:0, total:keys.length, baseDone:0 };
+    showGame(); renderCard(); return;
+  }
+  // mode "group" : reprendre sur les tirages non encore vus
+  const seen=seenSet(L,group);
+  const total=GROUPS[L][group].length;
+  const unseen=GROUPS[L][group].filter(k=>!seen[k]);
+  g={ L, group, mode:"group", queue:shuffle(unseen), pos:0, total, baseDone:total-unseen.length };
+  showGame();
+  if(!unseen.length) endScreen();   // tout vu → écran de fin (rejeu / ratés / reset)
+  else renderCard();
 }
+function resetGroup(L,group){ delete store.seen[L+":"+group]; save(); }
 
 /* Construit la vue jeu : zone défilante + pied fixe. Renvoie {scroll,foot}. */
 function gameScreen(){
@@ -143,8 +168,7 @@ function renderCard(){
   const nSol=words.length;
 
   const wrap=el("div","card-wrap");
-  const modeLabel = g.mode==="rate" ? "Ratés · " : "";
-  wrap.appendChild(el("div","prog", modeLabel + GROUP_LABELS[g.group].name + " · " + (g.pos+1) + " / " + g.queue.length));
+  wrap.appendChild(el("div","prog", progLabel()));
 
   const tir=el("div","tirage");
   key.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
@@ -165,13 +189,14 @@ function renderCard(){
 function reveal(found){
   g.revealed=true; g.found=found;
   const key=g.key;
-  if(!found){ store.rate[key]=1; save(); }          // Abandon → raté auto
-  // marquer comme vu
-  const sk=g.L+":"+g.group; (store.seen[sk]||(store.seen[sk]={}))[key]=1; save();
+  if(found) delete store.rate[key];                 // Trouvé → plus raté
+  else store.rate[key]=1;                            // Abandon → raté auto
+  seenSet(g.L,g.group)[key]=1;                        // marquer comme vu
+  save();
 
   const {scroll,foot}=gameScreen();
   const wrap=el("div","card-wrap");
-  wrap.appendChild(el("div","prog", GROUP_LABELS[g.group].name + " · " + (g.pos+1) + " / " + g.queue.length));
+  wrap.appendChild(el("div","prog", progLabel()));
 
   const tir=el("div","tirage");
   key.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
@@ -245,17 +270,18 @@ function next(){
 function endScreen(){
   const m=$game(); m.innerHTML="";
   const e=el("div","end");
+  const total=GROUPS[g.L][g.group].length;
   e.appendChild(el("h2","Groupe terminé !"));
-  const rateKeys = GROUPS[g.L][g.group].filter(k=>store.rate[k]);
-  e.appendChild(el("div","hint", g.queue.length+" tirage(s) revu(s). Ratés dans ce groupe : "+rateKeys.length));
+  const rk=rateCount(g.L,g.group);
+  e.appendChild(el("div","hint", total+" tirage(s) vus. Ratés dans ce groupe : "+rk));
   const box=el("div"); box.style.marginTop="18px";
-  if(rateKeys.length){
-    const b=el("button","start-btn","↻ Rejouer les ratés ("+rateKeys.length+")");
+  if(rk){
+    const b=el("button","start-btn","↻ Rejouer les ratés ("+rk+")");
     b.addEventListener("click",()=>startPlay(g.L,g.group,"rate"));
     box.appendChild(b);
   }
-  const again=el("button","start-btn sec","Recommencer le groupe");
-  again.addEventListener("click",()=>startPlay(g.L,g.group,"group"));
+  const again=el("button","start-btn sec","Recommencer le groupe (remet à zéro)");
+  again.addEventListener("click",()=>{ resetGroup(g.L,g.group); startPlay(g.L,g.group,"group"); });
   const home=el("button","start-btn sec","Accueil");
   home.addEventListener("click",showHome);
   box.appendChild(again); box.appendChild(home);
