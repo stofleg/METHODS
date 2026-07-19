@@ -161,10 +161,13 @@ a.def-link{color:var(--gold);text-decoration:none;}
 <script src="../blackscrab/dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = FLASHODS_CACHE;
+  // Pas de service worker : on désinstalle tout SW précédent et on vide ses
+  // caches, pour toujours charger la dernière version depuis le réseau.
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
-    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{});
+  }
+  if (window.caches && caches.keys) {
+    caches.keys().then(ks => ks.forEach(k => { if (k.indexOf('flashods') === 0) caches.delete(k); })).catch(()=>{});
   }
 </script>
 </body>
