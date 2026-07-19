@@ -1,0 +1,9 @@
+{
+  "name": "FLASHODS",
+  "short_name": "FLASHODS",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0d1a0f",
+  "theme_color": "#0d1a0f",
+  "orientation": "portrait"
+}
