@@ -127,8 +127,17 @@ function startPlay(L,group,mode){
   showGame(); renderCard();
 }
 
-function renderCard(){
+/* Construit la vue jeu : zone défilante + pied fixe. Renvoie {scroll,foot}. */
+function gameScreen(){
   const m=$game(); m.innerHTML="";
+  const scroll=el("div","g-scroll");
+  const foot=el("div","g-foot");
+  m.appendChild(scroll); m.appendChild(foot);
+  return {scroll,foot};
+}
+
+function renderCard(){
+  const {scroll,foot}=gameScreen();
   const key=g.queue[g.pos]; g.key=key; g.revealed=false;
   const words=RACKS[g.L].get(key)||[];
   const nSol=words.length;
@@ -142,6 +151,7 @@ function renderCard(){
   wrap.appendChild(tir);
 
   wrap.appendChild(el("div","hint", nSol>1 ? (nSol+" solutions à trouver") : "1 solution"));
+  scroll.appendChild(wrap);
 
   const act=el("div","actions");
   const bGive=el("button","btn-give","Abandon");
@@ -149,9 +159,7 @@ function renderCard(){
   bGive.addEventListener("click",()=>reveal(false));
   bFound.addEventListener("click",()=>reveal(true));
   act.appendChild(bGive); act.appendChild(bFound);
-  wrap.appendChild(act);
-
-  m.appendChild(wrap);
+  foot.appendChild(act);
 }
 
 function reveal(found){
@@ -161,7 +169,7 @@ function reveal(found){
   // marquer comme vu
   const sk=g.L+":"+g.group; (store.seen[sk]||(store.seen[sk]={}))[key]=1; save();
 
-  const m=$game(); m.innerHTML="";
+  const {scroll,foot}=gameScreen();
   const wrap=el("div","card-wrap");
   wrap.appendChild(el("div","prog", GROUP_LABELS[g.group].name + " · " + (g.pos+1) + " / " + g.queue.length));
 
@@ -179,6 +187,7 @@ function reveal(found){
   const words=(RACKS[g.L].get(key)||[]).slice()
     .sort((a,b)=> (ENTRIES.has(b)?1:0)-(ENTRIES.has(a)?1:0) || (a<b?-1:1));
   for(const w of words) wrap.appendChild(renderSolution(w));
+  scroll.appendChild(wrap);
 
   const rv=el("div","rv-actions");
   if(found){
@@ -189,9 +198,7 @@ function reveal(found){
   const bN=el("button","btn-next", g.pos+1>=g.queue.length ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
-  wrap.appendChild(rv);
-
-  m.appendChild(wrap);
+  foot.appendChild(rv);
 }
 function renderReveal2(btn){ // après "marquer comme raté"
   btn.textContent="✓ raté"; btn.disabled=true; btn.style.opacity=".5";
@@ -264,25 +271,26 @@ function startDku(L){
   showGame(); renderDku();
 }
 function renderDku(){
-  const m=$game(); m.innerHTML="";
+  const {scroll,foot}=gameScreen();
   const w=g.queue[g.pos];
   const wrap=el("div","card-wrap");
   wrap.appendChild(el("div","prog","Définitions non connues · "+(g.pos+1)+" / "+g.queue.length));
   const tir=el("div","tirage");
   (entryInfo(w)?entryInfo(w).disp:w).split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
   wrap.appendChild(tir);
+  scroll.appendChild(wrap);
   const act=el("div","actions");
   const b=el("button","btn-found","Voir la définition");
   b.addEventListener("click",()=>revealDku(w));
   act.appendChild(b);
-  wrap.appendChild(act);
-  m.appendChild(wrap);
+  foot.appendChild(act);
 }
 function revealDku(w){
-  const m=$game(); m.innerHTML="";
+  const {scroll,foot}=gameScreen();
   const wrap=el("div","card-wrap");
   wrap.appendChild(el("div","prog","Définitions non connues · "+(g.pos+1)+" / "+g.queue.length));
   wrap.appendChild(renderSolution(w));
+  scroll.appendChild(wrap);
   const rv=el("div","rv-actions");
   const learned=el("button","btn-markrate","Définition apprise");
   learned.style.color="var(--green)"; learned.style.borderColor="var(--green)";
@@ -290,8 +298,7 @@ function revealDku(w){
   const bN=el("button","btn-next", g.pos+1>=g.queue.length?"Terminer":"Suivant");
   bN.addEventListener("click",dkuNext);
   rv.appendChild(learned); rv.appendChild(bN);
-  wrap.appendChild(rv);
-  m.appendChild(wrap);
+  foot.appendChild(rv);
 }
 function dkuNext(){ g.pos++; if(g.pos>=g.queue.length) showHome(); else renderDku(); }
 
