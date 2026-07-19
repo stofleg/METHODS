@@ -54,11 +54,75 @@ function buildData(){
   }
 }
 
-/* Infos d'une entrée : forme affichée + définition */
+/* Infos d'une entrée : forme affichée COMPLÈTE (ex. "RAPPEUR, EUSE") */
 function entryInfo(canon){
   const i=CANON_IDX.get(canon); if(i===undefined) return null;
   const D=window.SEQODS_DATA;
-  return { disp:(D.e[i]||canon).split(",")[0].trim(), def:D.f[i]||"" };
+  return { disp:D.e[i]||canon, def:D.f[i]||"" };
+}
+
+/* ── Résolution des définitions ──
+   Objectif : montrer une VRAIE définition, pas juste « (= rappeur) ».
+   1) déf ODS avec glose (en suivant les renvois « (= …) ») ;
+   2) sinon déf personnalisée (Wiktionnaire) depuis Firestore rech_custom
+      — même source que METHODS. */
+const FB_BASE = "https://firestore.googleapis.com/v1/projects/methods-8e4b1/databases/(default)/documents";
+const _fnorm = w => (w||"").toUpperCase().replace(/Œ/g,"OE").replace(/Æ/g,"AE").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
+const _POS_PFX = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
+function _gloss(def){
+  let s=String(def||"");
+  s=s.replace(/\[[^\]]*\]/g," ")                    // prononciation [..]
+     .replace(/\(=\s*[^)]*\)/g," ")                 // renvois (= ..)
+     .replace(/-->[^.]*\.?/g," ")                   // redirections
+     .replace(/-\s*Féminin accepté\.?\s*\(\d+\)/gi," ")
+     .replace(/^\s*\/\s*\S+/,"")                    // "/ aiguiller" en tête
+     .replace(_POS_PFX,"")                          // nature
+     .replace(/\b\d+\.?/g," ");                     // numéros / renvois conj
+  return s.replace(/\s+/g," ").trim();
+}
+const _isGloss = def => { const gg=_gloss(def); return gg.length>3 && /[A-Za-zÀ-ÿ]{4}/.test(gg); };
+function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":(window.SEQODS_DATA.f[i]||""); }
+function refsOf(def){
+  const out=[]; const s=String(def||"");
+  (s.match(/\(=\s*([^)]*)\)/g)||[]).forEach(seg=>{
+    seg.replace(/\(=\s*|\)/g,"").split(/[,;]/).forEach(x=>{ const c=_fnorm(x); if(c) out.push(c); });
+  });
+  let r=/\/\s*([A-Za-zà-ÿ]+)/.exec(s); if(r){ const c=_fnorm(r[1]); if(c) out.push(c); }
+  r=/-->\s*([A-Za-zà-ÿ]+)/.exec(s);   if(r){ const c=_fnorm(r[1]); if(c) out.push(c); }
+  return out;
+}
+function bestOdsGloss(canon){
+  const seen=new Set(); const q=[canon]; let n=0;
+  while(q.length && n<8){ const c=q.shift(); if(seen.has(c))continue; seen.add(c); n++;
+    const d=rawDef(c); if(!d) continue;
+    if(_isGloss(d)) return d;
+    refsOf(d).forEach(x=>{ if(!seen.has(x)) q.push(x); });
+  }
+  return null;
+}
+const _customCache=new Map();
+async function _fbGetDef(canon){
+  try{
+    const r=await fetch(FB_BASE+"/rech_custom/"+encodeURIComponent(canon));
+    if(!r.ok) return null;
+    const f=(await r.json()).fields||{};
+    return (f.defQuiz&&f.defQuiz.stringValue) || (f.def&&f.def.stringValue) || null;
+  }catch{ return null; }
+}
+async function resolveCustom(canon){
+  if(_customCache.has(canon)) return _customCache.get(canon);
+  const cands=[canon, ...refsOf(rawDef(canon))];
+  let res=null;
+  for(const c of cands){ const t=await _fbGetDef(c); if(t){ res=t; break; } }
+  _customCache.set(canon,res); return res;
+}
+// Remplit un élément .sol-def : glose ODS si dispo, sinon custom Firestore.
+function fillDef(canon, elDef){
+  const ods=bestOdsGloss(canon);
+  if(ods){ elDef.textContent=ods; return; }
+  elDef.textContent=rawDef(canon)||"…";
+  elDef.classList.add("def-loading");
+  resolveCustom(canon).then(t=>{ if(t){ elDef.textContent=t; } elDef.classList.remove("def-loading"); });
 }
 
 /* ── Utilitaires ── */
@@ -243,8 +307,8 @@ function renderSolution(w){
   if(!isEntry) top.appendChild(el("span","sol-tag","forme"));
   box.appendChild(top);
 
-  if(isEntry && info && info.def) box.appendChild(el("div","sol-def", info.def));
-  else if(!isEntry) box.appendChild(el("div","sol-def","Forme fléchie — touche le mot pour la fiche."));
+  if(isEntry){ const d=el("div","sol-def","…"); box.appendChild(d); fillDef(w, d); }
+  else box.appendChild(el("div","sol-def","Forme fléchie — touche le mot pour la fiche."));
 
   const btns=el("div","sol-btns");
   const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
@@ -302,7 +366,7 @@ function renderDku(){
   const wrap=el("div","card-wrap");
   wrap.appendChild(el("div","prog","Définitions non connues · "+(g.pos+1)+" / "+g.queue.length));
   const tir=el("div","tirage");
-  (entryInfo(w)?entryInfo(w).disp:w).split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
+  w.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
   wrap.appendChild(tir);
   scroll.appendChild(wrap);
   const act=el("div","actions");
