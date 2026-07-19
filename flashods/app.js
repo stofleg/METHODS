@@ -433,6 +433,37 @@ function revealDku(w){
 }
 function dkuNext(){ g.pos++; if(g.pos>=g.queue.length) showHome(); else renderDku(); }
 
+/* ── Recherche dictionnaire ── */
+let _DICT=null;
+function dictSet(){ if(!_DICT) _DICT=new Set(window.SEQODS_DATA.d||[]); return _DICT; }
+function openSearch(){
+  const ov=document.getElementById("search-ov"); if(!ov) return;
+  ov.classList.add("open");
+  const inp=document.getElementById("search-inp");
+  document.getElementById("search-res").innerHTML="";
+  if(inp){ inp.value=""; setTimeout(()=>inp.focus(),50); }
+}
+function closeSearch(){ document.getElementById("search-ov")?.classList.remove("open"); }
+function doSearch(){
+  const res=document.getElementById("search-res"); if(!res) return;
+  res.innerHTML="";
+  const w=_fnorm(document.getElementById("search-inp").value);
+  if(!w) return;
+  if(!dictSet().has(w)){ res.appendChild(el("div","search-msg no","✗ mot non valide")); return; }
+  res.appendChild(el("div","search-msg ok","✓ mot valide"));
+  res.appendChild(renderSolution(w));
+}
+function wireSearch(){
+  document.getElementById("btn-search")?.addEventListener("click",openSearch);
+  document.getElementById("search-close")?.addEventListener("click",closeSearch);
+  document.getElementById("search-bd")?.addEventListener("click",closeSearch);
+  const inp=document.getElementById("search-inp");
+  if(inp){
+    inp.addEventListener("input",doSearch);
+    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doSearch(); } });
+  }
+}
+
 /* ── Init ── */
 function init(){
   if(!window.SEQODS_DATA){ $home().innerHTML="<p style='color:var(--red);padding:20px'>Données ODS introuvables.</p>"; return; }
@@ -440,6 +471,7 @@ function init(){
   buildData();
   if(typeof wireDefModal==="function") wireDefModal();
   document.getElementById("btn-home").addEventListener("click",showHome);
+  wireSearch();
   showHome();
   syncPull();
 }
