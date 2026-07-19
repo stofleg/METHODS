@@ -319,12 +319,6 @@ function reveal(found){
   key.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
   wrap.appendChild(tir);
 
-  const status=el("div","hint");
-  status.style.display="flex"; status.style.justifyContent="center";
-  if(store.rate[key]) status.appendChild(el("span","rate-badge","raté"));
-  else status.appendChild(el("span",null,"trouvé ✓"));
-  wrap.appendChild(status);
-
   // Solutions : entrées d'abord, puis formes
   const words=(RACKS[g.L].get(key)||[]).slice()
     .sort((a,b)=> (ENTRIES.has(b)?1:0)-(ENTRIES.has(a)?1:0) || (a<b?-1:1));
@@ -334,19 +328,13 @@ function reveal(found){
   const rv=el("div","rv-actions");
   if(found){
     const bR=el("button","btn-markrate","Marquer comme raté");
-    bR.addEventListener("click",()=>{ store.rate[key]=1; save(); renderReveal2(bR); });
+    bR.addEventListener("click",()=>{ store.rate[key]=1; save(); bR.textContent="✓ raté"; bR.disabled=true; bR.style.opacity=".5"; });
     rv.appendChild(bR);
   }
   const bN=el("button","btn-next", g.pos+1>=g.queue.length ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
   foot.appendChild(rv);
-}
-function renderReveal2(btn){ // après "marquer comme raté"
-  btn.textContent="✓ raté"; btn.disabled=true; btn.style.opacity=".5";
-  const badge=$game().querySelector(".rate-badge");
-  const status=$game().querySelector(".card-wrap .hint");
-  if(status && !badge){ status.innerHTML=""; status.appendChild(el("span","rate-badge","raté")); }
 }
 
 function renderSolution(w){
