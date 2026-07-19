@@ -1,1 +1,1 @@
-const FLASHODS_VER = "1.0";
+const FLASHODS_VER = "1.1";
