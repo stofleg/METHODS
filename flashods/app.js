@@ -563,7 +563,7 @@ function wordChips(title, words){
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
     const a=el("a","chip",x); a.href="#";
-    a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} });
+    a.addEventListener("click",ev=>{ ev.preventDefault(); openCard(x); });
     sec.appendChild(a);
   });
   return sec;
