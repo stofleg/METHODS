@@ -36,6 +36,17 @@ header{display:flex;align-items:center;justify-content:space-between;gap:8px;fle
 main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
 .hidden{display:none!important;}
 
+/* Pull-to-refresh */
+#ptr{position:fixed;top:calc(env(safe-area-inset-top) + 4px);left:0;right:0;display:flex;
+  justify-content:center;z-index:600;pointer-events:none;transform:translateY(-60px);transition:transform .12s;}
+#ptr .sp{width:28px;height:28px;border-radius:50%;border:3px solid var(--stroke);
+  border-top-color:var(--gold);opacity:0;transition:opacity .15s;background:var(--surface);}
+#ptr.show .sp{opacity:1;}
+#ptr.ready .sp{border-top-color:var(--green);}
+#ptr.spinning{transform:translateY(6px);}
+#ptr.spinning .sp{opacity:1;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
 /* Vue jeu : contenu défilant + barre de boutons fixe en bas */
 #view-game{display:flex;flex-direction:column;overflow:hidden;padding:0;}
 .g-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
@@ -174,6 +185,8 @@ a.def-link{color:var(--gold);text-decoration:none;}
 </style>
 </head>
 <body>
+
+<div id="ptr"><div class="sp"></div></div>
 
 <header>
   <div id="logo">
