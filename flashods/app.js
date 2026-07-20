@@ -363,6 +363,9 @@ function renderSolution(w){
   });
   btns.appendChild(dku);
   box.appendChild(btns);
+
+  const ral=wordChips("Rallonges (devant)", rallongesOf(w)); if(ral) box.appendChild(ral);
+  const cou=wordChips("Cousins", cousinsOf(w)); if(cou) box.appendChild(cou);
   return box;
 }
 
@@ -433,35 +436,62 @@ function revealDku(w){
 }
 function dkuNext(){ g.pos++; if(g.pos>=g.queue.length) showHome(); else renderDku(); }
 
-/* ── Recherche dictionnaire ── */
+/* ── Recherche dictionnaire (clavier custom, façon METHODS) ── */
 let _DICT=null;
 function dictSet(){ if(!_DICT) _DICT=new Set(window.SEQODS_DATA.d||[]); return _DICT; }
+let searchBuf="";
+function updateSearchDisp(){ const d=document.getElementById("search-disp"); if(d) d.textContent=searchBuf; }
 function openSearch(){
   const ov=document.getElementById("search-ov"); if(!ov) return;
-  ov.classList.add("open");
-  const inp=document.getElementById("search-inp");
+  searchBuf=""; updateSearchDisp();
   document.getElementById("search-res").innerHTML="";
-  if(inp){ inp.value=""; setTimeout(()=>inp.focus(),50); }
+  ov.classList.add("open");
 }
 function closeSearch(){ document.getElementById("search-ov")?.classList.remove("open"); }
 function doSearch(){
-  const res=document.getElementById("search-res"); if(!res) return;
-  res.innerHTML="";
-  const w=_fnorm(document.getElementById("search-inp").value);
-  if(!w) return;
+  const res=document.getElementById("search-res"); if(!res) return; res.innerHTML="";
+  const w=searchBuf; if(!w) return;
   if(!dictSet().has(w)){ res.appendChild(el("div","search-msg no","✗ mot non valide")); return; }
   res.appendChild(el("div","search-msg ok","✓ mot valide"));
   res.appendChild(renderSolution(w));
 }
+function searchKey(k){
+  if(k==="CLR") searchBuf="";
+  else if(k==="DEL") searchBuf=searchBuf.slice(0,-1);
+  else if(/^[A-Z]$/.test(k)) searchBuf+=k;
+  updateSearchDisp(); doSearch();
+}
 function wireSearch(){
   document.getElementById("btn-search")?.addEventListener("click",openSearch);
   document.getElementById("search-close")?.addEventListener("click",closeSearch);
-  document.getElementById("search-bd")?.addEventListener("click",closeSearch);
-  const inp=document.getElementById("search-inp");
-  if(inp){
-    inp.addEventListener("input",doSearch);
-    inp.addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); doSearch(); } });
+  const kb=document.getElementById("search-kb");
+  if(kb){
+    const press=e=>{ const b=e.target.closest(".skk"); if(!b) return; e.preventDefault(); searchKey(b.dataset.k); };
+    kb.addEventListener("touchstart",press,{passive:false});
+    kb.addEventListener("mousedown",press);
+    kb.addEventListener("click",e=>{ if(e.target.closest(".skk")) e.preventDefault(); });
   }
+}
+
+/* ── Rallonges (avant) & cousins (1 lettre de différence) ── */
+const _AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+function rallongesOf(w){ return ((window.SEQODS_DATA.r||{})[w]||[]).filter(x=>x.endsWith(w)); }
+function cousinsOf(w){
+  const D=dictSet(); const out=[];
+  for(let i=0;i<w.length;i++){ const a=w.slice(0,i), b=w.slice(i+1);
+    for(const c of _AZ){ if(c===w[i]) continue; const v=a+c+b; if(D.has(v)) out.push(v); } }
+  return out;
+}
+function wordChips(title, words){
+  if(!words || !words.length) return null;
+  const sec=el("div","sol-extra");
+  sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
+  words.slice(0,80).forEach(x=>{
+    const a=el("a","chip",x); a.href="#";
+    a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} });
+    sec.appendChild(a);
+  });
+  return sec;
 }
 
 /* ── Init ── */
