@@ -212,13 +212,11 @@ a.def-link{color:var(--gold);text-decoration:none;}
 <script src="../blackscrab/dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  // Pas de service worker : on désinstalle tout SW précédent et on vide ses
-  // caches, pour toujours charger la dernière version depuis le réseau.
+  // Service worker network-first : le PWA installé se met à jour tout seul.
+  const CURRENT_CACHE = FLASHODS_CACHE;
   if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.getRegistrations().then(rs => rs.forEach(r => r.unregister())).catch(()=>{});
-  }
-  if (window.caches && caches.keys) {
-    caches.keys().then(ks => ks.forEach(k => { if (k.indexOf('flashods') === 0) caches.delete(k); })).catch(()=>{});
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
   }
 </script>
 </body>
