@@ -107,22 +107,33 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
   font-size:16px;font-weight:800;cursor:pointer;margin:6px;}
 .start-btn.sec{background:transparent;color:var(--txt);border:1px solid var(--stroke);}
 
-/* Recherche dictionnaire */
-.ov{display:none;position:fixed;inset:0;z-index:400;align-items:flex-start;justify-content:center;}
-.ov.open{display:flex;}
-.ov-bd{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
-.ov-panel{position:relative;z-index:1;background:var(--surface);border:1px solid var(--stroke);
-  border-radius:0 0 16px 16px;padding:16px;width:100%;max-width:560px;
-  margin-top:calc(env(safe-area-inset-top) + 56px);max-height:80svh;overflow-y:auto;}
-.ov-top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;}
-.ov-top h3{color:var(--gold);font-size:15px;}
-#search-inp{width:100%;background:var(--surface2);border:1px solid var(--stroke);border-radius:10px;
-  color:var(--txt);font-size:18px;font-weight:700;letter-spacing:2px;padding:12px;outline:none;
-  -webkit-user-select:text;user-select:text;text-transform:uppercase;}
-#search-inp:focus{border-color:var(--gold);}
-.search-msg{font-size:13px;font-weight:800;margin:14px 0 6px;}
+/* Recherche dictionnaire (plein écran + clavier) */
+#search-ov{display:none;position:fixed;inset:0;z-index:400;background:var(--bg);flex-direction:column;}
+#search-ov.open{display:flex;}
+.s-top{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;border-bottom:1px solid var(--stroke);}
+.s-title{color:var(--gold);font-weight:800;font-size:16px;}
+.s-disp{min-height:38px;font-size:24px;font-weight:900;letter-spacing:5px;color:var(--txt);
+  text-align:center;padding:12px;}
+.s-res{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px 8px;}
+.search-msg{font-size:13px;font-weight:800;margin:6px 0 8px;}
 .search-msg.ok{color:var(--green);}
 .search-msg.no{color:var(--red);}
+.s-kb{flex-shrink:0;background:var(--surface);border-top:1px solid var(--stroke);
+  padding:6px 4px calc(env(safe-area-inset-bottom) + 6px);display:flex;flex-direction:column;gap:5px;}
+.s-row{display:flex;gap:4px;justify-content:center;}
+.skk{flex:1;max-width:40px;height:48px;background:var(--surface2);color:var(--txt);
+  border:1px solid var(--stroke);border-radius:8px;font-size:17px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.skk:active{opacity:.6;}
+.skk.wide{max-width:58px;font-size:14px;}
+.skk.clr{background:#6a2838;}
+.skk.del{background:var(--surface2);}
+/* Rallonges / cousins */
+.sol-extra{margin-top:8px;font-size:12px;line-height:1.8;}
+.sol-extra-t{color:var(--muted);font-weight:700;}
+.chip{display:inline-block;color:var(--gold);text-decoration:none;background:var(--surface2);
+  border:1px solid var(--stroke);border-radius:6px;padding:2px 7px;margin:0 4px 3px 0;}
 
 /* Def modal (réutilise blackscrab/dict.js) */
 #def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
@@ -153,16 +164,23 @@ a.def-link{color:var(--gold);text-decoration:none;}
   </div>
 </header>
 
-<div id="search-ov" class="ov">
-  <div class="ov-bd" id="search-bd"></div>
-  <div class="ov-panel">
-    <div class="ov-top">
-      <h3>Rechercher dans le dictionnaire</h3>
-      <button id="search-close" class="hdr-btn">Fermer</button>
+<div id="search-ov">
+  <div class="s-top">
+    <span class="s-title">🔍 Dictionnaire</span>
+    <button id="search-close" class="hdr-btn">Fermer</button>
+  </div>
+  <div id="search-disp" class="s-disp"></div>
+  <div id="search-res" class="s-res"></div>
+  <div id="search-kb" class="s-kb">
+    <div class="s-row">
+      <button class="skk" data-k="A">A</button><button class="skk" data-k="Z">Z</button><button class="skk" data-k="E">E</button><button class="skk" data-k="R">R</button><button class="skk" data-k="T">T</button><button class="skk" data-k="Y">Y</button><button class="skk" data-k="U">U</button><button class="skk" data-k="I">I</button><button class="skk" data-k="O">O</button><button class="skk" data-k="P">P</button>
     </div>
-    <input id="search-inp" type="text" placeholder="Un mot…"
-      autocomplete="off" autocorrect="off" autocapitalize="characters" spellcheck="false" inputmode="text">
-    <div id="search-res"></div>
+    <div class="s-row">
+      <button class="skk" data-k="Q">Q</button><button class="skk" data-k="S">S</button><button class="skk" data-k="D">D</button><button class="skk" data-k="F">F</button><button class="skk" data-k="G">G</button><button class="skk" data-k="H">H</button><button class="skk" data-k="J">J</button><button class="skk" data-k="K">K</button><button class="skk" data-k="L">L</button><button class="skk" data-k="M">M</button>
+    </div>
+    <div class="s-row">
+      <button class="skk wide clr" data-k="CLR">✕</button><button class="skk" data-k="W">W</button><button class="skk" data-k="X">X</button><button class="skk" data-k="C">C</button><button class="skk" data-k="V">V</button><button class="skk" data-k="B">B</button><button class="skk" data-k="N">N</button><button class="skk wide del" data-k="DEL">⌫</button>
+    </div>
   </div>
 </div>
 
