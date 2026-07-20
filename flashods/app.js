@@ -259,11 +259,30 @@ function renderDouteux(m){
 }
 
 /* Modale « fiche complète » d'une entrée (carte hors jeu) */
+const rackKey = w => w.split("").sort().join("");
+function tirageEl(key, onClick){
+  const t=el("div","tirage"+(onClick?" clickable":""));
+  key.split("").forEach(c=> t.appendChild(el("div","tile",c)) );
+  if(onClick) t.addEventListener("click",onClick);
+  return t;
+}
+function rackWords(key){
+  return ((window.SEQODS_DATA.a||{})[key]||[key]).slice()
+    .sort((a,b)=> (ENTRIES.has(b)?1:0)-(ENTRIES.has(a)?1:0) || (a<b?-1:1));
+}
 function openCard(w){
   const body=document.getElementById("card-modal-body"); if(!body) return;
+  const key=rackKey(w);
   body.innerHTML="";
   const t=document.getElementById("card-title"); if(t) t.textContent=(entryInfo(w)?entryInfo(w).disp:w);
-  body.appendChild(renderSolution(w));
+  const content=el("div");
+  let navFn;
+  const showRack=()=>{ content.innerHTML=""; rackWords(key).forEach(x=> content.appendChild(renderSolution(x, navFn))); };
+  navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); const p=document.getElementById("card-panel"); if(p) p.scrollTop=0; };
+  body.appendChild(tirageEl(key, showRack));
+  body.appendChild(el("div","tirage-hint","Touche le tirage pour toutes les solutions"));
+  body.appendChild(content);
+  navFn(w);   // fiche du mot cliqué
   if(store.douteux[w]){
     const rm=el("button","mini","✕ retirer des douteux"); rm.style.marginTop="10px";
     rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); closeCard(); renderHome(); });
@@ -349,29 +368,20 @@ function reveal(found){
   const wrap=el("div","card-wrap");
   wrap.appendChild(el("div","prog", progLabel()));
 
-  const tir=el("div","tirage");
-  key.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
-  wrap.appendChild(tir);
-
-  // Solutions : entrées d'abord, puis formes
-  const words=(RACKS[g.L].get(key)||[]).slice()
+  // Tirage-quiz épinglé (cliquable → revenir aux solutions d'origine)
+  const solWords=(RACKS[g.L].get(key)||[]).slice()
     .sort((a,b)=> (ENTRIES.has(b)?1:0)-(ENTRIES.has(a)?1:0) || (a<b?-1:1));
-  for(const w of words) wrap.appendChild(renderSolution(w));
+  const content=el("div");
+  let navFn;
+  const showOriginal=()=>{ content.innerHTML=""; solWords.forEach(x=> content.appendChild(renderSolution(x, navFn))); scroll.scrollTop=0; };
+  navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); scroll.scrollTop=0; };
+  wrap.appendChild(tirageEl(key, showOriginal));
+  wrap.appendChild(el("div","tirage-hint","Touche une rallonge/un cousin pour l'explorer · touche le tirage pour revenir"));
+  wrap.appendChild(content);
   scroll.appendChild(wrap);
+  showOriginal();
 
   const rv=el("div","rv-actions");
-  // Douteux : tague toutes les entrées du tirage
-  const ents=(RACKS[g.L].get(key)||[]).filter(x=>ENTRIES.has(x));
-  const allD=ents.length>0 && ents.every(x=>store.douteux[x]);
-  const bD=el("button","btn-douteux"+(allD?" on":""), allD?"✓ douteux":"Douteux");
-  bD.addEventListener("click",()=>{
-    const on=ents.every(x=>store.douteux[x]);
-    ents.forEach(x=>{ if(on) delete store.douteux[x]; else store.douteux[x]=1; });
-    save();
-    bD.textContent = on ? "Douteux" : "✓ douteux";
-    bD.classList.toggle("on", !on);
-  });
-  rv.appendChild(bD);
   if(found){
     const bR=el("button","btn-markrate","Raté");
     bR.addEventListener("click",()=>{ store.rate[key]=1; save(); bR.textContent="✓ raté"; bR.disabled=true; bR.style.opacity=".5"; });
@@ -383,7 +393,7 @@ function reveal(found){
   foot.appendChild(rv);
 }
 
-function renderSolution(w){
+function renderSolution(w, navFn){
   const isEntry=ENTRIES.has(w);
   const box=el("div","sol"+(isEntry?"":" form"));
   const top=el("div","sol-top");
@@ -401,7 +411,14 @@ function renderSolution(w){
   const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
   const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
   btns.appendChild(img); btns.appendChild(wk);
-  const dku=el("button","mini dku"+(store.dku[w]?" on":""),"❓ Déf inconnue");
+  const dou=el("button","mini dou"+(store.douteux[w]?" on":""),"⚠︎ Douteux");
+  dou.addEventListener("click",()=>{
+    if(store.douteux[w]){ delete store.douteux[w]; dou.classList.remove("on"); }
+    else { store.douteux[w]=1; dou.classList.add("on"); }
+    save();
+  });
+  btns.appendChild(dou);
+  const dku=el("button","mini dku"+(store.dku[w]?" on":""),"❓ Déf");
   dku.addEventListener("click",()=>{
     if(store.dku[w]){ delete store.dku[w]; dku.classList.remove("on"); }
     else { store.dku[w]=1; dku.classList.add("on"); }
@@ -410,8 +427,8 @@ function renderSolution(w){
   btns.appendChild(dku);
   box.appendChild(btns);
 
-  const ral=wordChips("Rallonges (devant)", rallongesOf(w)); if(ral) box.appendChild(ral);
-  const cou=wordChips("Cousins", cousinsOf(w)); if(cou) box.appendChild(cou);
+  const ral=wordChips("Rallonges (devant)", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
+  const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
   return box;
 }
 
@@ -557,13 +574,13 @@ function cousinsOf(w){
     for(const c of _AZ){ if(c===w[i]) continue; const v=a+c+b; if(D.has(v)) out.push(v); } }
   return out;
 }
-function wordChips(title, words){
+function wordChips(title, words, navFn){
   if(!words || !words.length) return null;
   const sec=el("div","sol-extra");
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
     const a=el("a","chip",x); a.href="#";
-    a.addEventListener("click",ev=>{ ev.preventDefault(); openCard(x); });
+    a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||openCard)(x); });
     sec.appendChild(a);
   });
   return sec;
