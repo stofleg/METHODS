@@ -439,6 +439,19 @@ function dkuNext(){ g.pos++; if(g.pos>=g.queue.length) showHome(); else renderDk
 /* ── Recherche dictionnaire (clavier custom, façon METHODS) ── */
 let _DICT=null;
 function dictSet(){ if(!_DICT) _DICT=new Set(window.SEQODS_DATA.d||[]); return _DICT; }
+let _SORTED=null;
+function sortedDict(){ if(!_SORTED) _SORTED=(window.SEQODS_DATA.d||[]).slice().sort(); return _SORTED; }
+function candidates(prefix, limit){
+  if(!prefix) return [];
+  const arr=sortedDict();
+  let lo=0, hi=arr.length;
+  while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<prefix) lo=m+1; else hi=m; }
+  const out=[];
+  for(let i=lo;i<arr.length && out.length<limit;i++){
+    if(arr[i].startsWith(prefix)) out.push(arr[i]); else break;
+  }
+  return out;
+}
 let searchBuf="";
 function updateSearchDisp(){ const d=document.getElementById("search-disp"); if(d) d.textContent=searchBuf; }
 function openSearch(){
@@ -451,9 +464,25 @@ function closeSearch(){ document.getElementById("search-ov")?.classList.remove("
 function doSearch(){
   const res=document.getElementById("search-res"); if(!res) return; res.innerHTML="";
   const w=searchBuf; if(!w) return;
-  if(!dictSet().has(w)){ res.appendChild(el("div","search-msg no","✗ mot non valide")); return; }
-  res.appendChild(el("div","search-msg ok","✓ mot valide"));
-  res.appendChild(renderSolution(w));
+  const valid=dictSet().has(w);
+  if(valid){
+    res.appendChild(el("div","search-msg ok","✓ mot valide"));
+    res.appendChild(renderSolution(w));
+  }
+  // Candidats : mots commençant par la saisie
+  const cands=candidates(w,80).filter(x=>x!==w);
+  if(cands.length){
+    const sec=el("div","sol-extra");
+    sec.appendChild(el("span","sol-extra-t","Commençant par "+w+" ("+cands.length+(cands.length>=80?"+":"")+") : "));
+    cands.forEach(x=>{
+      const a=el("a","chip",x); a.href="#";
+      a.addEventListener("click",ev=>{ ev.preventDefault(); searchBuf=x; updateSearchDisp(); doSearch(); res.scrollTop=0; });
+      sec.appendChild(a);
+    });
+    res.appendChild(sec);
+  } else if(!valid){
+    res.appendChild(el("div","search-msg no","✗ aucun mot"));
+  }
 }
 function searchKey(k){
   if(k==="CLR") searchBuf="";
