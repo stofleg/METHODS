@@ -115,6 +115,10 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
 .s-title{color:var(--gold);font-weight:800;font-size:16px;}
 .s-disp{min-height:38px;font-size:24px;font-weight:900;letter-spacing:5px;color:var(--txt);
   text-align:center;padding:12px;}
+.s-disp::after{content:'|';color:var(--gold);margin-left:2px;animation:blink 1s step-start infinite;}
+.s-disp:empty::before{content:'Tape un mot…';color:var(--muted);font-weight:400;
+  font-size:15px;letter-spacing:0;}
+@keyframes blink{50%{opacity:0;}}
 .s-res{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0 14px 8px;}
 .search-msg{font-size:13px;font-weight:800;margin:6px 0 8px;}
 .search-msg.ok{color:var(--green);}
