@@ -6,10 +6,10 @@
 
 const LS_KEY = "flashods-v1";
 const LS_SYNC = "flashods-sync";
-let store = { rate:{}, dku:{}, seen:{}, _ts:0 };   // rate:{key:1} · dku:{word:1} · seen:{"L:g":{key:1}}
+let store = { rate:{}, dku:{}, douteux:{}, seen:{}, _ts:0 };   // rate:{key:1} · dku:{word:1} · douteux:{word:1} · seen:{"L:g":{key:1}}
 let syncId = "flashods-cl";
 
-function normalizeStore(s){ s=s||{}; s.rate=s.rate||{}; s.dku=s.dku||{}; s.seen=s.seen||{}; s._ts=s._ts||0; return s; }
+function normalizeStore(s){ s=s||{}; s.rate=s.rate||{}; s.dku=s.dku||{}; s.douteux=s.douteux||{}; s.seen=s.seen||{}; s._ts=s._ts||0; return s; }
 function load(){
   try{ store = normalizeStore(JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
   catch{ store = normalizeStore({}); }
@@ -192,16 +192,16 @@ function showGame(){ $home().classList.add("hidden"); $game().classList.remove("
 
 /* ── Accueil ── */
 let curLen = 7;
+let homeTab = 7;   // 7 | 8 | 'd' (douteux)
 function renderHome(){
   const m=$home(); m.innerHTML="";
 
   const seg=el("div","seg");
-  [7,8].forEach(L=>{
-    const b=el("button",(L===curLen?"active":""),L+" lettres");
-    b.addEventListener("click",()=>{ curLen=L; renderHome(); });
-    seg.appendChild(b);
-  });
+  const addSeg=(val,label)=>{ const b=el("button",(homeTab===val?"active":""),label); b.addEventListener("click",()=>{ homeTab=val; if(val===7||val===8) curLen=val; renderHome(); }); seg.appendChild(b); };
+  addSeg(7,"7 lettres"); addSeg(8,"8 lettres"); addSeg('d',"Douteux");
   m.appendChild(seg);
+
+  if(homeTab==='d'){ renderDouteux(m); appendSync(m); return; }
 
   for(const gid of [1,2,3,4]){
     const total=GROUPS[curLen][gid].length;
@@ -230,13 +230,31 @@ function renderHome(){
   rb.addEventListener("click",()=>startDku(curLen));
   m.appendChild(rb);
 
-  // Ligne de synchro
+  appendSync(m);
+}
+function appendSync(m){
   const sync=el("div","sync-line");
   const st=el("span","sync-st"); st.id="sync-status"; st.textContent="✓ synchro";
   const code=el("button","sync-code","code : "+syncId);
   code.addEventListener("click",changeSyncCode);
   sync.appendChild(st); sync.appendChild(code);
   m.appendChild(sync);
+}
+function renderDouteux(m){
+  const words=Object.keys(store.douteux).sort();
+  m.appendChild(el("div","home-sep","Mots douteux ("+words.length+")"));
+  if(!words.length){
+    m.appendChild(el("p",null,"Aucun mot douteux. Marque-en pendant le jeu avec « Douteux »."));
+    return;
+  }
+  words.forEach(w=>{
+    const box=renderSolution(w);
+    const rm=el("button","mini","✕ retirer des douteux");
+    rm.style.marginTop="8px";
+    rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); renderHome(); });
+    box.appendChild(rm);
+    m.appendChild(box);
+  });
 }
 
 /* ── Progression par groupe ── */
@@ -326,8 +344,20 @@ function reveal(found){
   scroll.appendChild(wrap);
 
   const rv=el("div","rv-actions");
+  // Douteux : tague toutes les entrées du tirage
+  const ents=(RACKS[g.L].get(key)||[]).filter(x=>ENTRIES.has(x));
+  const allD=ents.length>0 && ents.every(x=>store.douteux[x]);
+  const bD=el("button","btn-douteux"+(allD?" on":""), allD?"✓ douteux":"Douteux");
+  bD.addEventListener("click",()=>{
+    const on=ents.every(x=>store.douteux[x]);
+    ents.forEach(x=>{ if(on) delete store.douteux[x]; else store.douteux[x]=1; });
+    save();
+    bD.textContent = on ? "Douteux" : "✓ douteux";
+    bD.classList.toggle("on", !on);
+  });
+  rv.appendChild(bD);
   if(found){
-    const bR=el("button","btn-markrate","Marquer comme raté");
+    const bR=el("button","btn-markrate","Raté");
     bR.addEventListener("click",()=>{ store.rate[key]=1; save(); bR.textContent="✓ raté"; bR.disabled=true; bR.style.opacity=".5"; });
     rv.appendChild(bR);
   }
