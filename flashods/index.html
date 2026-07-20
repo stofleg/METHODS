@@ -142,6 +142,19 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
 .chip{display:inline-block;color:var(--gold);text-decoration:none;background:var(--surface2);
   border:1px solid var(--stroke);border-radius:6px;padding:2px 7px;margin:0 4px 3px 0;}
 
+/* Liste douteux + modale fiche */
+.dou-row{display:flex;align-items:center;justify-content:space-between;gap:8px;
+  background:var(--surface);border:1px solid var(--stroke);border-radius:10px;
+  padding:12px 14px;margin-bottom:6px;}
+.dou-word{font-size:16px;font-weight:800;color:var(--gold);letter-spacing:.5px;cursor:pointer;flex:1;}
+.dou-rm{background:transparent;color:var(--muted);border:1px solid var(--stroke);border-radius:6px;
+  padding:6px 10px;font-size:13px;cursor:pointer;flex-shrink:0;}
+#card-modal{display:none;position:fixed;inset:0;z-index:480;align-items:flex-end;justify-content:center;}
+#card-modal.open{display:flex;}
+#card-bd{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+#card-panel{position:relative;z-index:1;background:var(--surface);border:1px solid var(--stroke);
+  border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:640px;max-height:82svh;overflow-y:auto;}
+
 /* Def modal (réutilise blackscrab/dict.js) */
 #def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
 #def-modal.open{display:flex;}
@@ -209,6 +222,14 @@ a.def-link{color:var(--gold);text-decoration:none;}
     </div>
     <div id="def-rall" class="modal-sec"></div>
     <div id="def-flechie"></div>
+  </div>
+</div>
+
+<div id="card-modal">
+  <div id="card-bd"></div>
+  <div id="card-panel">
+    <div class="def-top"><h2 id="card-title">Fiche</h2><button id="card-close" class="hdr-btn">Fermer</button></div>
+    <div id="card-modal-body"></div>
   </div>
 </div>
 

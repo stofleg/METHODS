@@ -248,14 +248,30 @@ function renderDouteux(m){
     return;
   }
   words.forEach(w=>{
-    const box=renderSolution(w);
-    const rm=el("button","mini","✕ retirer des douteux");
-    rm.style.marginTop="8px";
+    const row=el("div","dou-row");
+    const name=el("span","dou-word", entryInfo(w)?entryInfo(w).disp:w);
+    name.addEventListener("click",()=>openCard(w));
+    const rm=el("button","dou-rm","✕");
     rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); renderHome(); });
-    box.appendChild(rm);
-    m.appendChild(box);
+    row.appendChild(name); row.appendChild(rm);
+    m.appendChild(row);
   });
 }
+
+/* Modale « fiche complète » d'une entrée (carte hors jeu) */
+function openCard(w){
+  const body=document.getElementById("card-modal-body"); if(!body) return;
+  body.innerHTML="";
+  const t=document.getElementById("card-title"); if(t) t.textContent=(entryInfo(w)?entryInfo(w).disp:w);
+  body.appendChild(renderSolution(w));
+  if(store.douteux[w]){
+    const rm=el("button","mini","✕ retirer des douteux"); rm.style.marginTop="10px";
+    rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); closeCard(); renderHome(); });
+    body.appendChild(rm);
+  }
+  document.getElementById("card-modal").classList.add("open");
+}
+function closeCard(){ document.getElementById("card-modal")?.classList.remove("open"); }
 
 /* ── Progression par groupe ── */
 function seenSet(L,group){ const sk=L+":"+group; return store.seen[sk]||(store.seen[sk]={}); }
@@ -560,6 +576,8 @@ function init(){
   buildData();
   if(typeof wireDefModal==="function") wireDefModal();
   document.getElementById("btn-home").addEventListener("click",showHome);
+  document.getElementById("card-close")?.addEventListener("click",closeCard);
+  document.getElementById("card-bd")?.addEventListener("click",closeCard);
   wireSearch();
   showHome();
   syncPull();
