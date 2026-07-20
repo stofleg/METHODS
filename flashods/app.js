@@ -579,7 +579,7 @@ function wordChips(title, words, navFn){
   const sec=el("div","sol-extra");
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
-    const a=el("a","chip",x); a.href="#";
+    const a=el("a","chip"+(ENTRIES.has(x)?"":" form"),x); a.href="#";
     a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||openCard)(x); });
     sec.appendChild(a);
   });
