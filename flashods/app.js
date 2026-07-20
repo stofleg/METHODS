@@ -280,7 +280,6 @@ function openCard(w){
   const showRack=()=>{ content.innerHTML=""; rackWords(key).forEach(x=> content.appendChild(renderSolution(x, navFn))); };
   navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); const p=document.getElementById("card-panel"); if(p) p.scrollTop=0; };
   body.appendChild(tirageEl(key, showRack));
-  body.appendChild(el("div","tirage-hint","Touche le tirage pour toutes les solutions"));
   body.appendChild(content);
   navFn(w);   // fiche du mot cliqué
   if(store.douteux[w]){
@@ -376,7 +375,6 @@ function reveal(found){
   const showOriginal=()=>{ content.innerHTML=""; solWords.forEach(x=> content.appendChild(renderSolution(x, navFn))); scroll.scrollTop=0; };
   navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); scroll.scrollTop=0; };
   wrap.appendChild(tirageEl(key, showOriginal));
-  wrap.appendChild(el("div","tirage-hint","Touche une rallonge/un cousin pour l'explorer · touche le tirage pour revenir"));
   wrap.appendChild(content);
   scroll.appendChild(wrap);
   showOriginal();
