@@ -427,6 +427,8 @@ function renderSolution(w, navFn){
 
   const ral=wordChips("Rallonges (devant)", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
   const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
+  const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
+  const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
   return box;
 }
 
@@ -572,6 +574,10 @@ function cousinsOf(w){
     for(const c of _AZ){ if(c===w[i]) continue; const v=a+c+b; if(D.has(v)) out.push(v); } }
   return out;
 }
+// Aphérèse : mot obtenu en retirant la 1re lettre (ENOUAGE → NOUAGE)
+function apheresesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(1); if(D.has(v)) return [v]; } return []; }
+// Apocope : mot obtenu en retirant la dernière lettre
+function apocopesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(0,-1); if(D.has(v)) return [v]; } return []; }
 function wordChips(title, words, navFn){
   if(!words || !words.length) return null;
   const sec=el("div","sol-extra");
