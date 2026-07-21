@@ -733,7 +733,7 @@ function init(){
   document.addEventListener("touchend",e=>{
     if(!st) return; st=false; if(!gameActive()) return;
     const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if(Math.abs(dx)<55 || Math.abs(dx)<=Math.abs(dy)*1.4) return;
+    if(Math.abs(dx)<45 || Math.abs(dx)<=Math.abs(dy)*1.2) return;
     if(dx>0) goBack();        // swipe droite → fiche précédente
     else returnForward();     // swipe gauche → retour à la fiche en cours
   },{passive:true});
