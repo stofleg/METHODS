@@ -462,8 +462,8 @@ function renderSolution(w, navFn){
   btns.appendChild(dku);
   box.appendChild(btns);
 
-  const ral=wordChips("Rallonges (devant)", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
-  const ralF=wordChips("Rallonges (derrière)", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
+  const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
+  const ralF=wordChips("Rallonges finales", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
   const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
   const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
   const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
