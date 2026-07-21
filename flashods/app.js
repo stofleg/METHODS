@@ -699,16 +699,25 @@ function init(){
   document.getElementById("card-bd")?.addEventListener("click",closeCard);
   wireSearch();
   initPTR();
-  // Swipe vers la droite dans le jeu → fiche précédente
-  const gv=document.getElementById("view-game");
-  if(gv){
-    let sx=0,sy=0,st=false;
-    gv.addEventListener("touchstart",e=>{ if(e.touches.length!==1){st=false;return;} sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=true; },{passive:true});
-    gv.addEventListener("touchend",e=>{ if(!st) return; st=false;
-      const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-      if(dx>60 && Math.abs(dx)>Math.abs(dy)*1.5) prevCard();
-    },{passive:true});
-  }
+  // Swipe vers la droite → fiche précédente (actif dès que le jeu est visible,
+  // que la solution soit affichée ou non ; ignoré si recherche/modale ouverte)
+  let sx=0,sy=0,st=false;
+  const gameActive=()=>{
+    const gv=document.getElementById("view-game");
+    if(!gv || gv.classList.contains("hidden")) return false;
+    if(document.getElementById("search-ov")?.classList.contains("open")) return false;
+    if(document.getElementById("card-modal")?.classList.contains("open")) return false;
+    return true;
+  };
+  document.addEventListener("touchstart",e=>{
+    if(e.touches.length!==1 || !gameActive()){ st=false; return; }
+    sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=true;
+  },{passive:true});
+  document.addEventListener("touchend",e=>{
+    if(!st) return; st=false; if(!gameActive()) return;
+    const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+    if(dx>55 && Math.abs(dx)>Math.abs(dy)*1.4) prevCard();
+  },{passive:true});
   showHome();
   syncPull();
 }
