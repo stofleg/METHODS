@@ -375,13 +375,15 @@ function renderCard(){
   foot.appendChild(act);
 }
 
-function reveal(found){
+function reveal(found, review){
   g.revealed=true; g.found=found;
   const key=g.key;
-  if(found) delete store.rate[key];                 // Trouvé → plus raté
-  else store.rate[key]=1;                            // Abandon → raté auto
-  seenSet(g.L,g.group)[key]=1;                        // marquer comme vu
-  save();
+  if(!review){
+    if(found) delete store.rate[key];                 // Trouvé → plus raté
+    else store.rate[key]=1;                            // Abandon → raté auto
+    seenSet(g.L,g.group)[key]=1;                        // marquer comme vu
+    save();
+  }
 
   const {scroll,foot}=gameScreen();
   const wrap=el("div","card-wrap");
@@ -400,11 +402,13 @@ function reveal(found){
   showOriginal();
 
   const rv=el("div","rv-actions");
-  if(found){
-    const bR=el("button","btn-markrate","Raté");
-    bR.addEventListener("click",()=>{ store.rate[key]=1; save(); bR.textContent="✓ raté"; bR.disabled=true; bR.style.opacity=".5"; });
-    rv.appendChild(bR);
-  }
+  const bR=el("button","btn-markrate"+(store.rate[key]?" on":""), store.rate[key]?"✓ raté":"Raté");
+  bR.addEventListener("click",()=>{
+    if(store.rate[key]) delete store.rate[key]; else store.rate[key]=1;
+    save();
+    bR.textContent=store.rate[key]?"✓ raté":"Raté"; bR.classList.toggle("on", !!store.rate[key]);
+  });
+  rv.appendChild(bR);
   const bN=el("button","btn-next", g.pos+1>=g.queue.length ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
@@ -469,6 +473,12 @@ function next(){
   g.pos++;
   if(g.pos>=g.queue.length) endScreen();
   else renderCard();
+}
+// Swipe droite → fiche précédente (ré-affichée, tags conservés)
+function prevCard(){
+  if(!g) return;
+  if(g.mode==="dku"){ if(g.pos>0){ g.pos--; revealDku(g.queue[g.pos]); } return; }
+  if(g.mode==="group"||g.mode==="rate"){ if(g.pos>0){ g.pos--; reveal(true, true); } }
 }
 
 function endScreen(){
@@ -689,6 +699,16 @@ function init(){
   document.getElementById("card-bd")?.addEventListener("click",closeCard);
   wireSearch();
   initPTR();
+  // Swipe vers la droite dans le jeu → fiche précédente
+  const gv=document.getElementById("view-game");
+  if(gv){
+    let sx=0,sy=0,st=false;
+    gv.addEventListener("touchstart",e=>{ if(e.touches.length!==1){st=false;return;} sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=true; },{passive:true});
+    gv.addEventListener("touchend",e=>{ if(!st) return; st=false;
+      const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
+      if(dx>60 && Math.abs(dx)>Math.abs(dy)*1.5) prevCard();
+    },{passive:true});
+  }
   showHome();
   syncPull();
 }
