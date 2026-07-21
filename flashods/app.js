@@ -458,6 +458,7 @@ function renderSolution(w, navFn){
   box.appendChild(btns);
 
   const ral=wordChips("Rallonges (devant)", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
+  const ralF=wordChips("Rallonges (derrière)", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
   const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
   const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
   const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
@@ -600,6 +601,18 @@ function wireSearch(){
 /* ── Rallonges (avant) & cousins (1 lettre de différence) ── */
 const _AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 function rallongesOf(w){ return ((window.SEQODS_DATA.r||{})[w]||[]).filter(x=>x.endsWith(w)); }
+// Rallonges finales : mots commençant par w (lettres ajoutées à la fin),
+// en excluant les simples formes fléchies de l'entrée (ex. ECUELLE → ECUELLEE, pas ECUELLES).
+function rallongesFinOf(w){
+  const arr=sortedDict(); const out=[];
+  let lo=0,hi=arr.length; while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<w) lo=m+1; else hi=m; }
+  for(let i=lo;i<arr.length && arr[i].startsWith(w) && out.length<200;i++){
+    const v=arr[i]; if(v.length<=w.length) continue;
+    if(typeof findLemma==="function" && findLemma(v)===w) continue; // forme fléchie de l'entrée
+    out.push(v);
+  }
+  return out;
+}
 function cousinsOf(w){
   const D=dictSet(); const out=[];
   for(let i=0;i<w.length;i++){ const a=w.slice(0,i), b=w.slice(i+1);
