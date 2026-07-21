@@ -377,7 +377,7 @@ function renderCard(){
 
 function reveal(found, review){
   g.revealed=true; g.found=found;
-  const key=g.key;
+  const key=g.queue[g.pos]; g.key=key;
   if(!review){
     if(found) delete store.rate[key];                 // Trouvé → plus raté
     else store.rate[key]=1;                            // Abandon → raté auto
