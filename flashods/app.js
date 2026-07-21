@@ -61,7 +61,8 @@ function changeSyncCode(){
 
 /* ── Données ── */
 let ENTRIES;                 // Set des entrées (canoniques)
-let CANON_IDX;               // canon -> index dans e/f
+let CANON_IDX;               // canon -> premier index dans e/f
+let CANON_ALL;               // canon -> tous les index (entrées multiples)
 let GROUPS = {7:{1:[],2:[],3:[],4:[]}, 8:{1:[],2:[],3:[],4:[]}};
 let RACKS  = {7:new Map(),   8:new Map()};   // clé triée -> [mots]
 
@@ -85,7 +86,8 @@ function classifyRack(words){
 function buildData(){
   const D=window.SEQODS_DATA;
   ENTRIES=new Set(D.c);
-  CANON_IDX=new Map(); D.c.forEach((c,i)=>{ if(!CANON_IDX.has(c)) CANON_IDX.set(c,i); });
+  CANON_IDX=new Map(); CANON_ALL=new Map();
+  D.c.forEach((c,i)=>{ if(!CANON_IDX.has(c)) CANON_IDX.set(c,i); (CANON_ALL.get(c)||CANON_ALL.set(c,[]).get(c)).push(i); });
   for(const w of D.d){
     const L=w.length; if(L!==7 && L!==8) continue;
     const k=w.split("").sort().join("");
@@ -161,13 +163,31 @@ async function resolveCustom(canon){
   for(const c of cands){ const t=await _fbGetDef(c); if(t){ res=t; break; } }
   _customCache.set(canon,res); return res;
 }
-// Remplit un élément .sol-def : glose ODS si dispo, sinon custom Firestore.
+// Glose en partant d'une déf précise (suit ses renvois). null si aucune.
+function bestOdsGlossDef(startDef){
+  if(_isGloss(startDef)) return startDef;
+  const seen=new Set(); const q=refsOf(startDef).slice(); let n=0;
+  while(q.length && n<8){ const c=q.shift(); if(seen.has(c))continue; seen.add(c); n++;
+    const d=rawDef(c); if(!d) continue;
+    if(_isGloss(d)) return d;
+    refsOf(d).forEach(x=>{ if(!seen.has(x)) q.push(x); });
+  }
+  return null;
+}
+// Remplit une ligne à partir d'une déf : glose ODS sinon custom Firestore.
+function fillDefLine(def, canon, line){
+  const g=bestOdsGlossDef(def);
+  if(g){ line.textContent=g; return; }
+  line.textContent=def||"…"; line.classList.add("def-loading");
+  resolveCustom(canon).then(t=>{ if(t) line.textContent=t; line.classList.remove("def-loading"); });
+}
+// .sol-def : une déf par entrée (mots à entrées multiples : PALPER, SON…), empilées.
 function fillDef(canon, elDef){
-  const ods=bestOdsGloss(canon);
-  if(ods){ elDef.textContent=ods; return; }
-  elDef.textContent=rawDef(canon)||"…";
-  elDef.classList.add("def-loading");
-  resolveCustom(canon).then(t=>{ if(t){ elDef.textContent=t; } elDef.classList.remove("def-loading"); });
+  const idxs=CANON_ALL.get(canon)||[];
+  if(idxs.length<=1){ fillDefLine(rawDef(canon), canon, elDef); return; }
+  elDef.textContent="";
+  const D=window.SEQODS_DATA;
+  idxs.forEach(i=>{ const line=el("div","def-line"); fillDefLine(D.f[i]||"", canon, line); elDef.appendChild(line); });
 }
 
 /* ── Utilitaires ── */
