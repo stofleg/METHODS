@@ -396,9 +396,11 @@ function renderSolution(w, navFn){
   const box=el("div","sol"+(isEntry?"":" form"));
   const top=el("div","sol-top");
   const info=isEntry?entryInfo(w):null;
-  const word=el("span","sol-word", info?info.disp:w);
+  const isPP=/p\.p\.inv/i.test(rawDef(w));
+  const word=el("span","sol-word"+(isPP?" ppinv":""), info?info.disp:w);
   word.addEventListener("click",()=>{ try{ openDef(w); }catch(e){} });
   top.appendChild(word);
+  if(isPP) top.appendChild(el("span","sol-tag","p.p.inv."));
   if(!isEntry) top.appendChild(el("span","sol-tag","forme"));
   box.appendChild(top);
 
