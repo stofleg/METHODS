@@ -608,7 +608,8 @@ function rallongesFinOf(w){
   let lo=0,hi=arr.length; while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<w) lo=m+1; else hi=m; }
   for(let i=lo;i<arr.length && arr[i].startsWith(w) && out.length<200;i++){
     const v=arr[i]; if(v.length<=w.length) continue;
-    if(typeof findLemma==="function" && findLemma(v)===w) continue; // forme fléchie de l'entrée
+    if(!ENTRIES.has(v)) continue;                                   // seulement des entrées
+    if(typeof findLemma==="function" && findLemma(v)===w) continue; // pas une forme fléchie de l'entrée
     out.push(v);
   }
   return out;
