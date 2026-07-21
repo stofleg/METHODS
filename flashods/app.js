@@ -396,7 +396,8 @@ function renderSolution(w, navFn){
   const box=el("div","sol"+(isEntry?"":" form"));
   const top=el("div","sol-top");
   const info=isEntry?entryInfo(w):null;
-  const isPP=/p\.p\.inv/i.test(rawDef(w));
+  const _ppm=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i);
+  const isPP=!!_ppm && !/mais/i.test(_ppm[0]);
   const word=el("span","sol-word"+(isPP?" ppinv":""), info?info.disp:w);
   word.addEventListener("click",()=>{ try{ openDef(w); }catch(e){} });
   top.appendChild(word);
