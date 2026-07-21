@@ -327,14 +327,14 @@ function startPlay(L,group,mode){
   if(mode==="rate"){
     const keys=GROUPS[L][group].filter(k=>store.rate[k]);
     if(!keys.length){ showHome(); return; }
-    g={ L, group, mode, queue:shuffle(keys), pos:0, total:keys.length, baseDone:0 };
+    g={ L, group, mode, queue:shuffle(keys), pos:0, max:0, total:keys.length, baseDone:0, done:new Set() };
     showGame(); renderCard(); return;
   }
   // mode "group" : reprendre sur les tirages non encore vus
   const seen=seenSet(L,group);
   const total=GROUPS[L][group].length;
   const unseen=GROUPS[L][group].filter(k=>!seen[k]);
-  g={ L, group, mode:"group", queue:shuffle(unseen), pos:0, total, baseDone:total-unseen.length };
+  g={ L, group, mode:"group", queue:shuffle(unseen), pos:0, max:0, total, baseDone:total-unseen.length, done:new Set() };
   showGame();
   if(!unseen.length) endScreen();   // tout vu → écran de fin (rejeu / ratés / reset)
   else renderCard();
@@ -382,6 +382,7 @@ function reveal(found, review){
     if(found) delete store.rate[key];                 // Trouvé → plus raté
     else store.rate[key]=1;                            // Abandon → raté auto
     seenSet(g.L,g.group)[key]=1;                        // marquer comme vu
+    if(g.done) g.done.add(g.pos);                       // fiche révélée (mémorise son état)
     save();
   }
 
@@ -409,7 +410,7 @@ function reveal(found, review){
     bR.textContent=store.rate[key]?"✓ raté":"Raté"; bR.classList.toggle("on", !!store.rate[key]);
   });
   rv.appendChild(bR);
-  const bN=el("button","btn-next", g.pos+1>=g.queue.length ? "Terminer" : "Suivant");
+  const bN=el("button","btn-next", (g.max||0)+1>=g.queue.length ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
   foot.appendChild(rv);
@@ -469,16 +470,32 @@ function renderSolution(w, navFn){
   return box;
 }
 
-function next(){
-  g.pos++;
-  if(g.pos>=g.queue.length) endScreen();
+// Affiche la fiche à la position pos, dans son dernier état
+// (solution si déjà révélée, sinon quiz).
+function showCardAt(pos){
+  g.pos=pos;
+  if(g.done && g.done.has(pos)) reveal(true, true);
   else renderCard();
 }
-// Swipe droite → fiche précédente (ré-affichée, tags conservés)
-function prevCard(){
+// Swipe droite → fiche précédente
+function goBack(){
   if(!g) return;
   if(g.mode==="dku"){ if(g.pos>0){ g.pos--; revealDku(g.queue[g.pos]); } return; }
-  if(g.mode==="group"||g.mode==="rate"){ if(g.pos>0){ g.pos--; reveal(true, true); } }
+  if(g.pos>0) showCardAt(g.pos-1);
+}
+// Swipe gauche → revient vers la fiche en cours (borné à la position atteinte),
+// dans son dernier état ; ne crée pas de nouveau quiz.
+function returnForward(){
+  if(!g) return;
+  if(g.mode==="dku"){ if(g.pos<g.queue.length-1){ g.pos++; revealDku(g.queue[g.pos]); } return; }
+  if(g.pos < (g.max||0)) showCardAt(g.pos+1);
+}
+// Bouton Suivant → quiz suivant (nouvelle fiche, face quiz)
+function next(){
+  if(!g) return;
+  if(g.mode==="dku"){ if(g.pos<g.queue.length-1){ g.pos++; revealDku(g.queue[g.pos]); } else showHome(); return; }
+  if((g.max||0)+1 < g.queue.length){ g.max=(g.max||0)+1; showCardAt(g.max); }
+  else endScreen();
 }
 
 function endScreen(){
@@ -716,7 +733,9 @@ function init(){
   document.addEventListener("touchend",e=>{
     if(!st) return; st=false; if(!gameActive()) return;
     const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
-    if(dx>55 && Math.abs(dx)>Math.abs(dy)*1.4) prevCard();
+    if(Math.abs(dx)<55 || Math.abs(dx)<=Math.abs(dy)*1.4) return;
+    if(dx>0) goBack();        // swipe droite → fiche précédente
+    else returnForward();     // swipe gauche → retour à la fiche en cours
   },{passive:true});
   showHome();
   syncPull();
