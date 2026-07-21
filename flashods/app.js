@@ -452,6 +452,7 @@ function renderSolution(w, navFn){
   const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
   const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
   const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
+  const fle=wordChips("Formes fléchies", formesOf(w), navFn); if(fle) box.appendChild(fle);
   return box;
 }
 
@@ -601,6 +602,25 @@ function cousinsOf(w){
 function apheresesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(1); if(D.has(v)) return [v]; } return []; }
 // Apocope : mot obtenu en retirant la dernière lettre
 function apocopesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(0,-1); if(D.has(v)) return [v]; } return []; }
+// Formes fléchies : toutes les formes partageant le(s) lemme(s) du mot
+// (ex. FILOCHE → FILOCHES, et formes de FILOCHER dont FILOCHE est une conjugaison)
+function formesOf(w){
+  if(typeof findLemma!=="function") return [];
+  const lemmas=new Set([w]);
+  const l1=findLemma(w); if(l1) lemmas.add(l1);
+  if(typeof _findConjLemma==="function"){ const l2=_findConjLemma(w); if(l2) lemmas.add(l2); }
+  const arr=sortedDict(); const forms=new Set(); let scanned=0;
+  lemmas.forEach(L=>{
+    const stem=L.slice(0, Math.max(3, L.length-2));
+    let lo=0,hi=arr.length; while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<stem) lo=m+1; else hi=m; }
+    for(let i=lo;i<arr.length && arr[i].startsWith(stem) && scanned<800;i++,scanned++){
+      const cand=arr[i]; if(cand===w) continue;
+      const cl=findLemma(cand)||cand;
+      if(cl===L || cl===w) forms.add(cand);
+    }
+  });
+  return [...forms].sort();
+}
 function wordChips(title, words, navFn){
   if(!words || !words.length) return null;
   const sec=el("div","sol-extra");
