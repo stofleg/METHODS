@@ -183,13 +183,20 @@ function fillDefLine(def, canon, line){
   line.textContent=def||"…"; line.classList.add("def-loading");
   resolveCustom(canon).then(t=>{ if(t) line.textContent=t; line.classList.remove("def-loading"); });
 }
-// .sol-def : une déf par entrée (mots à entrées multiples : PALPER, SON…), empilées.
+// .sol-def : une déf par entrée (mots à entrées multiples : AMPOULE/AMPOULÉ…),
+// chaque entrée précédée de sa forme affichée.
 function fillDef(canon, elDef){
   const idxs=CANON_ALL.get(canon)||[];
   if(idxs.length<=1){ fillDefLine(rawDef(canon), canon, elDef); return; }
   elDef.textContent="";
   const D=window.SEQODS_DATA;
-  idxs.forEach(i=>{ const line=el("div","def-line"); fillDefLine(D.f[i]||"", canon, line); elDef.appendChild(line); });
+  idxs.forEach(i=>{
+    const line=el("div","def-line");
+    line.appendChild(el("div","def-entry", D.e[i]||canon));
+    const dd=el("div"); line.appendChild(dd);
+    fillDefLine(D.f[i]||"", canon, dd);
+    elDef.appendChild(line);
+  });
 }
 
 /* ── Utilitaires ── */
