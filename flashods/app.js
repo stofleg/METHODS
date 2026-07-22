@@ -129,6 +129,8 @@ function _gloss(def){
 }
 const _isGloss = def => { const gg=_gloss(def); return gg.length>3 && /[A-Za-zÀ-ÿ]{4}/.test(gg); };
 function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":(window.SEQODS_DATA.f[i]||""); }
+// Verbe à participe passé invariable (hors « (p.p.inv. mais …) »)
+function isPpinv(w){ const m=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i); return !!m && !/mais/i.test(m[0]); }
 function refsOf(def){
   const out=[]; const s=String(def||"");
   (s.match(/\(=\s*([^)]*)\)/g)||[]).forEach(seg=>{
@@ -421,12 +423,9 @@ function renderSolution(w, navFn){
   const box=el("div","sol"+(isEntry?"":" form"));
   const top=el("div","sol-top");
   const info=isEntry?entryInfo(w):null;
-  const _ppm=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i);
-  const isPP=!!_ppm && !/mais/i.test(_ppm[0]);
-  const word=el("span","sol-word"+(isPP?" ppinv":""), info?info.disp:w);
+  const word=el("span","sol-word"+(isPpinv(w)?" ppinv":""), info?info.disp:w);
   word.addEventListener("click",()=>{ try{ openDef(w); }catch(e){} });
   top.appendChild(word);
-  if(isPP) top.appendChild(el("span","sol-tag","p.p.inv."));
   if(!isEntry) top.appendChild(el("span","sol-tag","forme"));
   box.appendChild(top);
 
@@ -663,7 +662,7 @@ function wordChips(title, words, navFn){
   const sec=el("div","sol-extra");
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
-    const a=el("a","chip"+(ENTRIES.has(x)?"":" form"),x); a.href="#";
+    const a=el("a","chip"+(ENTRIES.has(x)?"":" form")+(isPpinv(x)?" ppinv":""),x); a.href="#";
     a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||openCard)(x); });
     sec.appendChild(a);
   });
