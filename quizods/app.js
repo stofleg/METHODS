@@ -58,8 +58,23 @@ function isRealDef(d){
   return s.length>3
     && /^[A-ZÀ-ÖØ-ÞŒŸ(]/.test(s)
     && !/^\([^)]+\)\.?\s*$/.test(s)
-    && !/^-->/.test(s)
+    && !/-->/.test(s)
     && /[A-Za-zÀ-ÿœæŒÆ]{4}/.test(s);
+}
+// Retire les renvois « (= mot, mot…) » d'une définition affichée (spoiler potentiel).
+function stripRenvoi(s){ return String(s||"").replace(/\(=\s*[^)]*\)\s*/g,"").replace(/\s+/g," ").trim(); }
+function normCanon(w){
+  return String(w||"").toUpperCase().replace(/Œ/g,"OE").replace(/Æ/g,"AE")
+    .normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
+}
+// Graphies alternatives citées en renvoi dans la définition (ex. « (= maïorat) »),
+// acceptées comme réponses valides en plus du canon principal.
+function altSpellingsOf(def){
+  const out=new Set();
+  (String(def||"").match(/\(=\s*([^)]*)\)/g)||[]).forEach(seg=>{
+    seg.replace(/\(=\s*|\)/g,"").split(/[,;]/).forEach(x=>{ const c=normCanon(x); if(c) out.add(c); });
+  });
+  return out;
 }
 
 /* ── Construction du pool de candidats (une fois au démarrage) ── */
@@ -158,9 +173,9 @@ async function resolveCustom(canon){
 }
 function fillDefLine(def, canon, line){
   const g=bestOdsGlossDef(def);
-  if(g){ line.textContent=g; return; }
-  line.textContent=def||"…"; line.classList.add("def-loading");
-  resolveCustom(canon).then(t=>{ if(t) line.textContent=t; line.classList.remove("def-loading"); });
+  if(g){ line.textContent=stripRenvoi(g); return; }
+  line.textContent=stripRenvoi(def)||"…"; line.classList.add("def-loading");
+  resolveCustom(canon).then(t=>{ if(t) line.textContent=stripRenvoi(t); line.classList.remove("def-loading"); });
 }
 // .q-def-block : une déf par entrée (mots à entrées multiples : PALPER, SON…), empilées,
 // chaque entrée précédée de sa forme affichée.
@@ -281,7 +296,9 @@ function newCard(){
       revealed[idx]=true;
     }
   }
-  cur={ canon, revealed, solved:false, buf:"", seenBefore, extraHints:0 };
+  const chosenDef=window.SEQODS_DATA.f[WORD_DEF_IDX.get(canon)]||"";
+  const accepted=new Set([canon, ...altSpellingsOf(chosenDef)]);
+  cur={ canon, revealed, solved:false, buf:"", seenBefore, extraHints:0, accepted };
   renderCard();
 }
 
@@ -306,7 +323,7 @@ function renderCard(){
 
   const i=WORD_DEF_IDX.get(cur.canon);
   const D=window.SEQODS_DATA;
-  wrap.appendChild(el("div","q-def", cleanDef(D.f[i])));
+  wrap.appendChild(el("div","q-def", stripRenvoi(cleanDef(D.f[i]))));
 
   const tiles=el("div","q-tiles");
   cur.canon.split("").forEach((ch,idx)=>{
@@ -345,7 +362,7 @@ function submitGuess(){
   if(!cur || cur.solved) return;
   const guess=cur.buf.trim();
   if(!guess) return;
-  if(guess===cur.canon){ solveCard(); }
+  if(cur.accepted.has(guess)){ solveCard(); }
   else{ setMsg("Mot incorrect","error"); }
   cur.buf=""; updateDisplay();
 }
