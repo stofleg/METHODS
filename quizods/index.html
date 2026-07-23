@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="QUIZODS">
+<title>QUIZODS</title>
+<link rel="manifest" href="./manifest.json">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;
+  -webkit-user-select:none;user-select:none;-webkit-touch-callout:none;}
+:root{
+  --bg:#0d1a0f; --surface:#0f2212; --surface2:#163019; --stroke:#1e4025;
+  --gold:#f0c040; --green:#3a9e74; --red:#d94f5e; --warn:#d98a20;
+  --tile:#e5dcc8; --tiletext:#1c1f2e; --txt:#d4d6f0; --muted:#6a8080; --accent:#2d7a58;
+}
+html,body{height:100%;height:100dvh;touch-action:manipulation;background:var(--bg);}
+html{overscroll-behavior:none;}
+body{background:radial-gradient(ellipse at 50% 25%,#1a3a20 0%,var(--bg) 65%);color:var(--txt);
+  font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;flex-direction:column;
+  overflow:hidden;padding-bottom:env(safe-area-inset-bottom);-webkit-tap-highlight-color:transparent;}
+button{-webkit-tap-highlight-color:transparent;touch-action:manipulation;}
+
+header{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-shrink:0;
+  padding:calc(env(safe-area-inset-top) + 10px) 14px 8px;
+  background:linear-gradient(180deg,#2c1f0e,#1e1508);border-bottom:2px solid #8b6914;}
+#logo{display:flex;flex-direction:column;line-height:1;}
+.logo-title{font-size:20px;font-weight:800;letter-spacing:-.5px;color:var(--gold);}
+.logo-title span{color:var(--muted);font-weight:400;}
+#version-badge{font-size:9px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+.hdr-btn{background:var(--surface2);color:var(--txt);border:1px solid var(--stroke);border-radius:8px;
+  padding:6px 11px;font-size:14px;cursor:pointer;white-space:nowrap;}
+.hdr-btn:active{opacity:.7;}
+
+/* Settings panel */
+#settings-panel{display:none;position:fixed;top:calc(env(safe-area-inset-top) + 54px);right:14px;
+  background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:14px;
+  z-index:300;width:min(280px,calc(100vw - 28px));flex-direction:column;gap:12px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);}
+#settings-panel.open{display:flex;}
+.sett-row{display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.sett-label{font-size:13px;color:var(--muted);}
+.sett-stepper{display:flex;align-items:center;gap:10px;}
+.sett-step{background:var(--surface2);color:var(--txt);border:1px solid var(--stroke);border-radius:6px;
+  width:28px;height:28px;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+.sett-val{font-size:16px;font-weight:800;color:var(--gold);min-width:20px;text-align:center;}
+.sett-apply{background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;
+  font-size:14px;font-weight:700;cursor:pointer;width:100%;}
+
+main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
+.hidden{display:none!important;}
+.subline{text-align:center;font-size:11px;color:var(--muted);margin-bottom:10px;}
+
+.q-wrap{max-width:560px;margin:0 auto;display:flex;flex-direction:column;gap:14px;}
+.q-seen{text-align:center;font-size:11px;color:var(--warn);}
+.q-def{text-align:center;font-size:16px;font-weight:700;line-height:1.5;padding:6px 4px;}
+.q-tiles{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;padding:4px 0;}
+.q-tile{width:clamp(30px,9vw,42px);height:clamp(36px,10.5vw,48px);border-radius:8px;
+  display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vw,22px);font-weight:900;}
+.q-tile.revealed{background:var(--tile);color:var(--tiletext);box-shadow:0 3px 0 rgba(0,0,0,.3);}
+.q-tile.hidden-t{background:var(--surface2);border:1px dashed var(--stroke);cursor:pointer;color:var(--muted);}
+.q-tile.hidden-t:active{opacity:.6;}
+.q-msg{text-align:center;font-size:13px;min-height:18px;font-weight:700;}
+.q-msg.error{color:var(--red);}
+.q-msg.ok{color:var(--green);}
+
+/* reveal panel */
+.q-reveal{background:var(--surface);border:1px solid var(--stroke);border-radius:12px;padding:14px;}
+.q-reveal h3{color:var(--gold);font-size:17px;margin-bottom:6px;}
+.q-reveal .q-def-line{font-size:13px;color:var(--muted);line-height:1.5;margin-bottom:3px;}
+.q-reveal .q-def-line + .q-def-line{margin-top:6px;padding-top:6px;border-top:1px dashed var(--stroke);}
+.q-reveal .q-entry{font-weight:800;color:var(--txt);font-size:13px;}
+.q-linkrow{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;}
+.mini{font-size:11px;background:var(--surface2);color:var(--txt);border:1px solid var(--stroke);
+  border-radius:7px;padding:5px 8px;cursor:pointer;text-decoration:none;white-space:nowrap;}
+.mini:active{opacity:.7;}
+.q-next-row{display:flex;gap:10px;}
+.q-next-row button{flex:1;border-radius:12px;padding:14px;font-size:15px;font-weight:800;cursor:pointer;border:1px solid var(--stroke);}
+.btn-next{background:var(--gold);color:var(--bg);border:none!important;}
+.btn-pass{background:transparent;color:var(--muted);}
+
+/* input + keyboard */
+#input-area{flex-shrink:0;background:#0a1509;border-top:1px solid var(--stroke);}
+.kb-top-row{display:flex;align-items:center;justify-content:center;padding:8px 14px;min-height:36px;}
+#word-display{font-size:22px;font-weight:800;letter-spacing:4px;color:var(--txt);min-height:26px;}
+#word-display:empty:before{content:'…';color:var(--muted);font-weight:400;letter-spacing:0;}
+.keyboard{display:flex;flex-direction:column;background:#0a1509;padding:4px 4px 6px;gap:4px;}
+.kb-row{display:flex;gap:4px;justify-content:center;}
+.kk{flex:1;max-width:38px;height:44px;background:#142a17;color:var(--txt);border:none;border-radius:8px;
+  font-size:17px;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;
+  -webkit-tap-highlight-color:transparent;}
+.kk:active{opacity:.65;}
+.kk.wide{max-width:52px;font-size:13px;}
+.kk.ok{background:var(--accent);color:#fff;font-size:14px;font-weight:700;}
+.kk.clr{background:#6a2838;}
+.kk.del{background:#1e3821;}
+
+/* Def modal (réutilise blackscrab/dict.js) */
+#def-modal{display:none;position:fixed;inset:0;z-index:500;align-items:flex-end;justify-content:center;}
+#def-modal.open{display:flex;}
+#def-bd{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(4px);}
+#def-panel{position:relative;z-index:1;background:var(--surface);border:1px solid var(--stroke);
+  border-radius:16px 16px 0 0;padding:16px;width:100%;max-width:640px;max-height:80svh;overflow-y:auto;}
+#def-panel h2{font-size:18px;font-weight:900;color:var(--txt);}
+.def-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:10px;}
+#def-body{font-size:14px;line-height:1.45;color:var(--muted);}
+#def-links{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+.def-ext-btn{background:var(--surface2);color:var(--muted);border:1px solid var(--stroke);
+  border-radius:8px;padding:6px 11px;font-size:12px;text-decoration:none;}
+.modal-sec{margin-top:12px;font-size:13px;line-height:1.5;}
+a.def-link{color:var(--gold);text-decoration:none;}
+
+/* pull-to-refresh */
+#ptr{position:fixed;top:calc(env(safe-area-inset-top) + 4px);left:0;right:0;display:flex;
+  justify-content:center;z-index:600;pointer-events:none;transform:translateY(-60px);transition:transform .12s;}
+#ptr .sp{width:28px;height:28px;border-radius:50%;border:3px solid var(--stroke);
+  border-top-color:var(--gold);opacity:0;transition:opacity .15s;background:var(--surface);}
+#ptr.show .sp{opacity:1;}
+#ptr.ready .sp{border-top-color:var(--green);}
+#ptr.spinning{transform:translateY(6px);}
+#ptr.spinning .sp{opacity:1;animation:spin .7s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+</style>
+</head>
+<body>
+
+<div id="ptr"><div class="sp"></div></div>
+
+<header>
+  <div id="logo">
+    <div class="logo-title">QUIZ<span>ODS</span></div>
+    <span id="version-badge"></span>
+  </div>
+  <button id="btn-settings" class="hdr-btn" aria-label="Réglages">⚙</button>
+</header>
+
+<div id="settings-panel">
+  <div class="sett-row">
+    <span class="sett-label">Longueur min</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-min">−</button>
+      <span class="sett-val" id="val-min">2</span>
+      <button class="sett-step" id="inc-min">+</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Longueur max</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-max">−</button>
+      <span class="sett-val" id="val-max">8</span>
+      <button class="sett-step" id="inc-max">+</button>
+    </div>
+  </div>
+  <div class="sett-row">
+    <span class="sett-label">Indices au départ</span>
+    <div class="sett-stepper">
+      <button class="sett-step" id="dec-hint">−</button>
+      <span class="sett-val" id="val-hint">1</span>
+      <button class="sett-step" id="inc-hint">+</button>
+    </div>
+  </div>
+  <button class="sett-apply" id="btn-sett-apply">OK</button>
+</div>
+
+<main id="view-quiz"></main>
+
+<div id="input-area">
+  <div class="kb-top-row"><span id="word-display"></span></div>
+  <div id="qz-kb" class="keyboard">
+    <div class="kb-row">
+      <button class="kk" data-k="A">A</button><button class="kk" data-k="Z">Z</button><button class="kk" data-k="E">E</button><button class="kk" data-k="R">R</button><button class="kk" data-k="T">T</button><button class="kk" data-k="Y">Y</button><button class="kk" data-k="U">U</button><button class="kk" data-k="I">I</button><button class="kk" data-k="O">O</button><button class="kk" data-k="P">P</button>
+    </div>
+    <div class="kb-row">
+      <button class="kk" data-k="Q">Q</button><button class="kk" data-k="S">S</button><button class="kk" data-k="D">D</button><button class="kk" data-k="F">F</button><button class="kk" data-k="G">G</button><button class="kk" data-k="H">H</button><button class="kk" data-k="J">J</button><button class="kk" data-k="K">K</button><button class="kk" data-k="L">L</button><button class="kk" data-k="M">M</button>
+    </div>
+    <div class="kb-row">
+      <button class="kk wide clr" data-k="CLR">✕</button><button class="kk" data-k="W">W</button><button class="kk" data-k="X">X</button><button class="kk" data-k="C">C</button><button class="kk" data-k="V">V</button><button class="kk" data-k="B">B</button><button class="kk" data-k="N">N</button><button class="kk wide del" data-k="DEL">⌫</button><button class="kk wide ok" data-k="OK">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="def-modal">
+  <div id="def-bd"></div>
+  <div id="def-panel">
+    <div class="def-top">
+      <h2 id="def-title"></h2>
+      <button id="def-close" class="hdr-btn">Fermer</button>
+    </div>
+    <p id="def-body"></p>
+    <div id="def-links" style="display:none">
+      <a id="def-wikt" href="#" target="_blank" rel="noopener" class="def-ext-btn">📖 Wiktionnaire</a>
+      <a id="def-img"  href="#" target="_blank" rel="noopener" class="def-ext-btn">🔍 Image</a>
+    </div>
+    <div id="def-rall" class="modal-sec"></div>
+    <div id="def-flechie"></div>
+  </div>
+</div>
+
+<script src="./version.js"></script>
+<script>document.getElementById("version-badge").textContent="v"+QUIZODS_VER;</script>
+<script src="../data.js"></script>
+<script src="../shared/dict-core.js"></script>
+<script src="../blackscrab/dict.js"></script>
+<script src="./app.js"></script>
+<script>
+  const CURRENT_CACHE = QUIZODS_CACHE;
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
+    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+  }
+</script>
+</body>
+</html>
