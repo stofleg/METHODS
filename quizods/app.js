@@ -111,13 +111,15 @@ function renderCard(){
 
   const tiles=el("div","q-tiles");
   cur.canon.split("").forEach((ch,idx)=>{
-    const t=el("div", cur.revealed[idx]?"q-tile revealed":"q-tile hidden-t", cur.revealed[idx]?ch:"");
-    if(!cur.revealed[idx]){
-      t.addEventListener("click",()=>{ cur.revealed[idx]=true; t.textContent=ch; t.className="q-tile revealed"; });
-    }
-    tiles.appendChild(t);
+    tiles.appendChild(el("div", cur.revealed[idx]?"q-tile revealed":"q-tile hidden-t", cur.revealed[idx]?ch:""));
   });
   wrap.appendChild(tiles);
+
+  const hasHidden=cur.revealed.some(r=>!r);
+  const bHint=el("button","btn-hint","💡 Nouvel indice");
+  bHint.disabled=!hasHidden;
+  bHint.addEventListener("click", revealRandomHint);
+  wrap.appendChild(bHint);
 
   wrap.appendChild(el("div","q-msg"));
 
@@ -130,6 +132,15 @@ function renderCard(){
 
   m.appendChild(wrap);
   updateDisplay();
+}
+
+function revealRandomHint(){
+  if(!cur || cur.solved) return;
+  const hidden=[]; cur.revealed.forEach((r,idx)=>{ if(!r) hidden.push(idx); });
+  if(!hidden.length) return;
+  const idx=hidden[Math.floor(Math.random()*hidden.length)];
+  cur.revealed[idx]=true;
+  renderCard();
 }
 
 function submitGuess(){
@@ -196,19 +207,28 @@ function renderReveal(){
 }
 
 /* ── Clavier virtuel ── */
+function press(k){
+  if(!cur || cur.solved) return;
+  if(k==="CLR") cur.buf="";
+  else if(k==="DEL") cur.buf=cur.buf.slice(0,-1);
+  else if(k==="OK") { submitGuess(); return; }
+  else cur.buf+=k;
+  updateDisplay();
+}
 function wireKeyboard(){
   const kb=document.getElementById("qz-kb"); if(!kb) return;
-  const press=k=>{
-    if(!cur || cur.solved) return;
-    if(k==="CLR") cur.buf="";
-    else if(k==="DEL") cur.buf=cur.buf.slice(0,-1);
-    else if(k==="OK") { submitGuess(); return; }
-    else cur.buf+=k;
-    updateDisplay();
-  };
   kb.addEventListener("touchstart",e=>{ const b=e.target.closest(".kk"); if(!b) return; e.preventDefault(); press(b.dataset.k); },{passive:false});
   kb.addEventListener("mousedown",e=>{ const b=e.target.closest(".kk"); if(!b) return; press(b.dataset.k); });
   kb.addEventListener("click",e=>{ if(e.target.closest(".kk")) e.preventDefault(); });
+}
+/* Clavier physique (ordinateur) : lettres, Entrée = valider, Retour = effacer. */
+function wirePhysicalKeyboard(){
+  document.addEventListener("keydown", e=>{
+    if(document.getElementById("settings-panel")?.classList.contains("open")) return;
+    if(e.key==="Enter"){ e.preventDefault(); press("OK"); return; }
+    if(e.key==="Backspace"){ e.preventDefault(); press("DEL"); return; }
+    if(/^[a-zA-Z]$/.test(e.key)){ press(e.key.toUpperCase()); }
+  });
 }
 
 /* ── Réglages ── */
@@ -279,6 +299,7 @@ function init(){
   buildPool();
   if(typeof wireDefModal==="function") wireDefModal();
   wireKeyboard();
+  wirePhysicalKeyboard();
   wireSettings();
   initPTR();
   newCard();

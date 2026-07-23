@@ -60,8 +60,11 @@ main{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:14px;}
 .q-tile{width:clamp(30px,9vw,42px);height:clamp(36px,10.5vw,48px);border-radius:8px;
   display:flex;align-items:center;justify-content:center;font-size:clamp(16px,5vw,22px);font-weight:900;}
 .q-tile.revealed{background:var(--tile);color:var(--tiletext);box-shadow:0 3px 0 rgba(0,0,0,.3);}
-.q-tile.hidden-t{background:var(--surface2);border:1px dashed var(--stroke);cursor:pointer;color:var(--muted);}
-.q-tile.hidden-t:active{opacity:.6;}
+.q-tile.hidden-t{background:var(--surface2);border:2px solid rgba(212,214,240,.35);color:var(--muted);}
+.btn-hint{align-self:center;background:var(--surface2);color:var(--gold);border:1px solid var(--stroke);
+  border-radius:10px;padding:9px 18px;font-size:14px;font-weight:700;cursor:pointer;}
+.btn-hint:active{opacity:.7;}
+.btn-hint:disabled{opacity:.35;cursor:default;}
 .q-msg{text-align:center;font-size:13px;min-height:18px;font-weight:700;}
 .q-msg.error{color:var(--red);}
 .q-msg.ok{color:var(--green);}
