@@ -58,12 +58,18 @@ function isRealDef(d){
 /* ── Construction du pool de candidats (une fois au démarrage) ── */
 let CAND_BY_LEN = {};      // longueur -> [canon,...]
 let WORD_DEF_IDX = new Map(); // canon -> index e[]/f[] choisi (a une vraie déf)
+let CANON_IDX = new Map();    // canon -> premier index dans c[]/e[]/f[]
+let CANON_ALL = new Map();    // canon -> tous les index (entrées multiples)
+let ENTRIES;                  // Set des entrées (canoniques)
 
 function buildData(){
   const D=window.SEQODS_DATA;
+  ENTRIES=new Set(D.c);
   const byCanon=new Map();
   D.c.forEach((c,i)=>{ (byCanon.get(c)||byCanon.set(c,[]).get(c)).push(i); });
+  CANON_ALL=byCanon;
   for(const [canon, idxs] of byCanon){
+    CANON_IDX.set(canon, idxs[0]);
     let chosen=-1;
     for(const i of idxs){ if(isRealDef(D.f[i])){ chosen=i; break; } }
     if(chosen<0) continue;
@@ -81,6 +87,138 @@ function shuffle(arr){
 const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; };
 const gImgUrl = w => "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(w.toLowerCase());
 const wiktUrl = w => "https://fr.wiktionary.org/wiki/"+encodeURIComponent(w.toLowerCase());
+
+/* ── Résolution des définitions (glose ODS via renvois, sinon Wiktionnaire Firestore) ── */
+function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":(window.SEQODS_DATA.f[i]||""); }
+function isPpinv(w){ const m=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i); return !!m && !/mais/i.test(m[0]); }
+function _gloss(def){
+  let s=String(def||"");
+  s=s.replace(/\[[^\]]*\]/g," ")
+     .replace(/\(=\s*[^)]*\)/g," ")
+     .replace(/-->[^.]*\.?/g," ")
+     .replace(/-\s*Féminin accepté\.?\s*\(\d+\)/gi," ")
+     .replace(/^\s*\/\s*\S+/,"")
+     .replace(_TYPE_PFX,"")
+     .replace(/\b\d+\.?/g," ");
+  return s.replace(/\s+/g," ").trim();
+}
+const _isGloss = def => { const gg=_gloss(def); return gg.length>3 && /[A-Za-zÀ-ÿ]{4}/.test(gg); };
+function refsOf(def){
+  const out=[]; const s=String(def||"");
+  (s.match(/\(=\s*([^)]*)\)/g)||[]).forEach(seg=>{
+    seg.replace(/\(=\s*|\)/g,"").split(/[,;]/).forEach(x=>{ const c=x.trim().toUpperCase().replace(/[^A-ZÀ-Ÿ]/g,""); if(c) out.push(c); });
+  });
+  let r=/\/\s*([A-Za-zà-ÿ]+)/.exec(s); if(r){ const c=r[1].toUpperCase(); if(c) out.push(c); }
+  r=/-->\s*([A-Za-zà-ÿ]+)/.exec(s);   if(r){ const c=r[1].toUpperCase(); if(c) out.push(c); }
+  return out;
+}
+function bestOdsGlossDef(startDef){
+  if(_isGloss(startDef)) return startDef;
+  const seen=new Set(); const q=refsOf(startDef).slice(); let n=0;
+  while(q.length && n<8){ const c=q.shift(); if(seen.has(c))continue; seen.add(c); n++;
+    const d=rawDef(c); if(!d) continue;
+    if(_isGloss(d)) return d;
+    refsOf(d).forEach(x=>{ if(!seen.has(x)) q.push(x); });
+  }
+  return null;
+}
+const FB_BASE = "https://firestore.googleapis.com/v1/projects/methods-8e4b1/databases/(default)/documents";
+const _customCache=new Map();
+async function _fbGetDef(canon){
+  try{
+    const r=await fetch(FB_BASE+"/rech_custom/"+encodeURIComponent(canon));
+    if(!r.ok) return null;
+    const f=(await r.json()).fields||{};
+    return (f.defQuiz&&f.defQuiz.stringValue) || (f.def&&f.def.stringValue) || null;
+  }catch{ return null; }
+}
+async function resolveCustom(canon){
+  if(_customCache.has(canon)) return _customCache.get(canon);
+  const cands=[canon, ...refsOf(rawDef(canon))];
+  let res=null;
+  for(const c of cands){ const t=await _fbGetDef(c); if(t){ res=t; break; } }
+  _customCache.set(canon,res); return res;
+}
+function fillDefLine(def, canon, line){
+  const g=bestOdsGlossDef(def);
+  if(g){ line.textContent=g; return; }
+  line.textContent=def||"…"; line.classList.add("def-loading");
+  resolveCustom(canon).then(t=>{ if(t) line.textContent=t; line.classList.remove("def-loading"); });
+}
+// .q-def-block : une déf par entrée (mots à entrées multiples : PALPER, SON…), empilées,
+// chaque entrée précédée de sa forme affichée.
+function fillDef(canon, elDef){
+  const idxs=CANON_ALL.get(canon)||[];
+  const D=window.SEQODS_DATA;
+  if(idxs.length<=1){ fillDefLine(rawDef(canon), canon, elDef); return; }
+  elDef.textContent="";
+  idxs.forEach(i=>{
+    const line=el("div","def-line");
+    line.appendChild(el("div","def-entry", D.e[i]||canon));
+    const dd=el("div"); line.appendChild(dd);
+    fillDefLine(D.f[i]||"", canon, dd);
+    elDef.appendChild(line);
+  });
+}
+
+/* ── Lemme(s) dont le mot est une forme fléchie (verbe conjugué / autre entrée) ── */
+function flechieDe(w){
+  const out=new Set();
+  if(typeof _findConjLemma==="function"){ const v=_findConjLemma(w); if(v && v!==w) out.add(v); }
+  if(typeof findLemma==="function"){ const l=findLemma(w); if(l && l!==w && ENTRIES.has(l)) out.add(l); }
+  return [...out];
+}
+
+/* ── Relations lexicales (rallonges, cousins, aphérèse/apocope, anagrammes) ── */
+let _DICT=null;
+function dictSet(){ if(!_DICT) _DICT=new Set(window.SEQODS_DATA.d||[]); return _DICT; }
+let _SORTED=null;
+function sortedDict(){ if(!_SORTED) _SORTED=(window.SEQODS_DATA.d||[]).slice().sort(); return _SORTED; }
+const _AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+
+function rallongesOf(w){ return ((window.SEQODS_DATA.r||{})[w]||[]).filter(x=>x.endsWith(w)); }
+// Rallonges finales : mots commençant par w, entrées seulement, hors formes fléchies de w.
+function rallongesFinOf(w){
+  const arr=sortedDict(); const out=[];
+  let lo=0,hi=arr.length; while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<w) lo=m+1; else hi=m; }
+  for(let i=lo;i<arr.length && arr[i].startsWith(w) && out.length<200;i++){
+    const v=arr[i]; if(v.length<=w.length) continue;
+    if(!ENTRIES.has(v)) continue;
+    if(typeof findLemma==="function" && findLemma(v)===w) continue;
+    out.push(v);
+  }
+  return out;
+}
+function cousinsOf(w){
+  const D=dictSet(); const out=[];
+  for(let i=0;i<w.length;i++){ const a=w.slice(0,i), b=w.slice(i+1);
+    for(const c of _AZ){ if(c===w[i]) continue; const v=a+c+b; if(D.has(v)) out.push(v); } }
+  return out;
+}
+function apheresesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(1); if(D.has(v)) return [v]; } return []; }
+function apocopesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(0,-1); if(D.has(v)) return [v]; } return []; }
+function anagrammesOf(w){
+  const D=window.SEQODS_DATA;
+  const key=w.split("").sort().join("");
+  return (D.a[key]||[]).filter(x=>x!==w);
+}
+
+function wordChips(title, words){
+  if(!words || !words.length) return null;
+  const sec=el("div","sol-extra");
+  sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
+  words.slice(0,80).forEach(x=>{
+    const a=el("a","chip"+(ENTRIES.has(x)?"":" form")+(isPpinv(x)?" ppinv":""),x); a.href="#";
+    a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} });
+    sec.appendChild(a);
+  });
+  return sec;
+}
+
+/* ── Compteur global de progression ── */
+function seenCountTotal(){ return Object.keys(store.seen).length; }
+function totalCandidates(){ return WORD_DEF_IDX.size; }
+function progressLine(){ return el("div","subline", seenCountTotal()+" / "+totalCandidates()+" mots vus"); }
 
 
 /* ── Pool + file de mots ── */
@@ -126,6 +264,7 @@ function renderCard(){
   const m=document.getElementById("view-quiz"); m.innerHTML="";
   const wrap=el("div","q-wrap");
 
+  wrap.appendChild(progressLine());
   if(cur.seenBefore>0) wrap.appendChild(el("div","q-seen","Déjà vu ("+cur.seenBefore+" fois)"));
 
   const i=WORD_DEF_IDX.get(cur.canon);
@@ -147,10 +286,9 @@ function renderCard(){
   wrap.appendChild(el("div","q-msg"));
 
   const nr=el("div","q-next-row");
-  const bI=el("a","btn-img","🖼 Image"); bI.href=gImgUrl(cur.canon); bI.target="_blank"; bI.rel="noopener";
   const bP=el("button","btn-pass","Passer");
   bP.addEventListener("click", passCard);
-  nr.appendChild(bI); nr.appendChild(bP);
+  nr.appendChild(bP);
   wrap.appendChild(nr);
 
   m.appendChild(wrap);
@@ -204,46 +342,65 @@ function renderReveal(){
   const m=document.getElementById("view-quiz"); m.innerHTML="";
   const wrap=el("div","q-wrap");
 
+  wrap.appendChild(progressLine());
+
   const tiles=el("div","q-tiles");
   cur.canon.split("").forEach(ch=> tiles.appendChild(el("div","q-tile revealed",ch)) );
   wrap.appendChild(tiles);
 
-  const D=window.SEQODS_DATA;
-  const idxs=[]; D.c.forEach((c,i)=>{ if(c===cur.canon) idxs.push(i); });
+  wrap.appendChild(el("div","q-srs", srsStatusText(cur.canon)));
 
-  const rev=el("div","q-reveal");
-  const h3=el("h3",null, D.e[WORD_DEF_IDX.get(cur.canon)]||cur.canon);
-  h3.style.cursor="pointer";
-  h3.addEventListener("click",()=>{ try{ openDef(cur.canon); }catch(e){} });
-  rev.appendChild(h3);
-  rev.appendChild(el("div","q-srs", srsStatusText(cur.canon)));
-  idxs.forEach(i=>{
-    const line=el("div","q-def-line");
-    if(idxs.length>1) line.appendChild(el("div","q-entry", D.e[i]||cur.canon));
-    line.appendChild(document.createTextNode(cleanDef(D.f[i])));
-    rev.appendChild(line);
-  });
-
-  const links=el("div","q-linkrow");
-  const img=el("a","mini","🔍 Image"); img.href=gImgUrl(cur.canon); img.target="_blank"; img.rel="noopener";
-  const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(cur.canon); wk.target="_blank"; wk.rel="noopener";
-  links.appendChild(img); links.appendChild(wk);
-  rev.appendChild(links);
-
-  wrap.appendChild(rev);
-
-  const nr=el("div","q-next-row");
-  const bN=el("button","btn-next","Suivant →");
-  bN.addEventListener("click", newCard);
-  nr.appendChild(bN);
-  wrap.appendChild(nr);
+  wrap.appendChild(renderWordCard(cur.canon));
 
   m.appendChild(wrap);
 }
 
+/* Fiche complète d'un mot (définition + relations lexicales), sans les
+   boutons de tag de FLASHODS (douteux/déf-inconnue/remarquable). */
+function renderWordCard(w){
+  const D=window.SEQODS_DATA;
+  const box=el("div","q-reveal");
+
+  const h3=el("h3","q-reveal-word"+(isPpinv(w)?" ppinv":""), D.e[CANON_IDX.get(w)]||w);
+  h3.addEventListener("click",()=>{ try{ openDef(w); }catch(e){} });
+  box.appendChild(h3);
+
+  const defDiv=el("div","q-def-block");
+  fillDef(w, defDiv);
+  box.appendChild(defDiv);
+
+  const fdl=flechieDe(w);
+  if(fdl.length){
+    const fd=el("div","sol-flechie");
+    fd.appendChild(document.createTextNode("forme fléchie de "));
+    fdl.forEach(x=>{ const a=el("a","chip",x); a.href="#";
+      a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} }); fd.appendChild(a); });
+    box.appendChild(fd);
+  }
+
+  const links=el("div","q-linkrow");
+  const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
+  const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
+  links.appendChild(img); links.appendChild(wk);
+  box.appendChild(links);
+
+  const ana=wordChips("Anagrammes", anagrammesOf(w)); if(ana) box.appendChild(ana);
+  const ral=wordChips("Rallonges initiales", rallongesOf(w)); if(ral) box.appendChild(ral);
+  const ralF=wordChips("Rallonges finales", rallongesFinOf(w)); if(ralF) box.appendChild(ralF);
+  const cou=wordChips("Cousins", cousinsOf(w)); if(cou) box.appendChild(cou);
+  const aph=wordChips("Aphérèse", apheresesOf(w)); if(aph) box.appendChild(aph);
+  const apo=wordChips("Apocope", apocopesOf(w)); if(apo) box.appendChild(apo);
+
+  return box;
+}
+
 /* ── Clavier virtuel ── */
 function press(k){
-  if(!cur || cur.solved) return;
+  if(!cur) return;
+  if(cur.solved){
+    if(k==="OK") newCard();
+    return;
+  }
   if(k==="CLR") cur.buf="";
   else if(k==="DEL") cur.buf=cur.buf.slice(0,-1);
   else if(k==="OK") { submitGuess(); return; }
