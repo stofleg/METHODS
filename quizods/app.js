@@ -91,6 +91,16 @@ function shuffle(arr){
   for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
   return a;
 }
+// Choisit une position cachée à révéler, en évitant si possible d'être
+// immédiatement à côté d'une lettre déjà en place (sinon, repli sur
+// n'importe quelle position cachée).
+function pickHintIndex(revealed){
+  const hidden=[]; revealed.forEach((r,i)=>{ if(!r) hidden.push(i); });
+  if(!hidden.length) return -1;
+  const nonAdjacent=hidden.filter(i=>!revealed[i-1] && !revealed[i+1]);
+  const pool=nonAdjacent.length?nonAdjacent:hidden;
+  return pool[Math.floor(Math.random()*pool.length)];
+}
 const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls)e.className=cls; if(txt!=null)e.textContent=txt; return e; };
 const gImgUrl = w => "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(w.toLowerCase());
 const wiktUrl = w => "https://fr.wiktionary.org/wiki/"+encodeURIComponent(w.toLowerCase());
@@ -265,9 +275,10 @@ function newCard(){
   // Le 1er indice est toujours la 1re lettre ; les suivants sont aléatoires.
   if(nHint>0){
     revealed[0]=true;
-    if(nHint>1){
-      const rest=[...Array(canon.length-1).keys()].map(i=>i+1);
-      shuffle(rest).slice(0,nHint-1).forEach(i=>revealed[i]=true);
+    for(let k=1;k<nHint;k++){
+      const idx=pickHintIndex(revealed);
+      if(idx<0) break;
+      revealed[idx]=true;
     }
   }
   cur={ canon, revealed, solved:false, buf:"", seenBefore, extraHints:0 };
@@ -323,9 +334,8 @@ function renderCard(){
 
 function revealRandomHint(){
   if(!cur || cur.solved) return;
-  const hidden=[]; cur.revealed.forEach((r,idx)=>{ if(!r) hidden.push(idx); });
-  if(!hidden.length) return;
-  const idx=hidden[Math.floor(Math.random()*hidden.length)];
+  const idx=pickHintIndex(cur.revealed);
+  if(idx<0) return;
   cur.revealed[idx]=true;
   cur.extraHints++;
   renderCard();
