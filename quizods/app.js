@@ -43,10 +43,11 @@ function srsApply(canon, found, extraHints){
   const pi=pool.indexOf(canon); if(pi>=0) pool.splice(pi,1);
   for(let i=queue.length-1;i>=qpos;i--){ if(queue[i]===canon) queue.splice(i,1); }
 }
-// Trouvés : résolus au moins une fois (maîtrisés ou en attente de révision).
-function srsFoundCount(){ let n=0; for(const s of Object.values(store.srs)) if(s.found) n++; return n; }
+function inLenRange(canon){ return canon.length>=settings.minLen && canon.length<=settings.maxLen; }
+// Trouvés : résolus au moins une fois (maîtrisés ou en attente de révision), dans la plage choisie.
+function srsFoundCount(){ let n=0; for(const c in store.srs) if(inLenRange(c) && store.srs[c].found) n++; return n; }
 // À revoir : pas encore maîtrisés (reviendront un jour), qu'ils aient été trouvés ou non.
-function srsToReviewCount(){ let n=0; for(const s of Object.values(store.srs)) if(!s.retired) n++; return n; }
+function srsToReviewCount(){ let n=0; for(const c in store.srs) if(inLenRange(c) && !store.srs[c].retired) n++; return n; }
 
 /* ── Détection d'une VRAIE définition (pas juste une nature ou un renvoi) ── */
 const _TYPE_PFX = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
@@ -222,8 +223,14 @@ function wordChips(title, words, navFn){
 }
 
 /* ── Compteur global de progression ── */
-function seenCountTotal(){ return Object.keys(store.seen).length; }
-function totalCandidates(){ return WORD_DEF_IDX.size; }
+// Bornés par les réglages de longueur actifs (ex. 7 lettres → total = entrées
+// de 7 lettres avec une vraie définition, pas le total global de l'app).
+function seenCountTotal(){ let n=0; for(const c in store.seen) if(inLenRange(c)) n++; return n; }
+function totalCandidates(){
+  let n=0;
+  for(let L=settings.minLen; L<=settings.maxLen; L++) if(CAND_BY_LEN[L]) n+=CAND_BY_LEN[L].length;
+  return n;
+}
 function progressLine(){
   const wrap=el("div","subline q-stats");
   wrap.appendChild(el("span","q-stat", seenCountTotal()+" / "+totalCandidates()+" vus"));
