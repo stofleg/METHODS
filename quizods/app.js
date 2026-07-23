@@ -59,6 +59,7 @@ const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls)e.classNam
 const gImgUrl = w => "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(w.toLowerCase());
 const wiktUrl = w => "https://fr.wiktionary.org/wiki/"+encodeURIComponent(w.toLowerCase());
 
+
 /* ── Pool + file de mots ── */
 let pool=[], queue=[], qpos=0;
 function buildPool(){
@@ -121,9 +122,10 @@ function renderCard(){
   wrap.appendChild(el("div","q-msg"));
 
   const nr=el("div","q-next-row");
+  const bI=el("a","btn-img","🖼 Image"); bI.href=gImgUrl(cur.canon); bI.target="_blank"; bI.rel="noopener";
   const bP=el("button","btn-pass","Passer");
   bP.addEventListener("click", passCard);
-  nr.appendChild(bP);
+  nr.appendChild(bI); nr.appendChild(bP);
   wrap.appendChild(nr);
 
   m.appendChild(wrap);
