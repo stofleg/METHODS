@@ -6,10 +6,10 @@
 
 const LS_KEY = "flashods-v1";
 const LS_SYNC = "flashods-sync";
-let store = { rate:{}, dku:{}, douteux:{}, seen:{}, _ts:0 };   // rate:{key:1} · dku:{word:1} · douteux:{word:1} · seen:{"L:g":{key:1}}
+let store = { rate:{}, dku:{}, douteux:{}, remarq:{}, seen:{}, _ts:0 };   // rate · dku · douteux · remarq (word:1) · seen:{"L:g":{key:1}}
 let syncId = "flashods-cl";
 
-function normalizeStore(s){ s=s||{}; s.rate=s.rate||{}; s.dku=s.dku||{}; s.douteux=s.douteux||{}; s.seen=s.seen||{}; s._ts=s._ts||0; return s; }
+function normalizeStore(s){ s=s||{}; s.rate=s.rate||{}; s.dku=s.dku||{}; s.douteux=s.douteux||{}; s.remarq=s.remarq||{}; s.seen=s.seen||{}; s._ts=s._ts||0; return s; }
 function load(){
   try{ store = normalizeStore(JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
   catch{ store = normalizeStore({}); }
@@ -221,16 +221,18 @@ function showGame(){ $home().classList.add("hidden"); $game().classList.remove("
 
 /* ── Accueil ── */
 let curLen = 7;
-let homeTab = 7;   // 7 | 8 | 'd' (douteux)
+let memoList = null;   // null | 'douteux' | 'dku' | 'remarq'
 function renderHome(){
   const m=$home(); m.innerHTML="";
+  if(memoList){ renderMemoList(m, memoList); appendSync(m); return; }
 
   const seg=el("div","seg");
-  const addSeg=(val,label)=>{ const b=el("button",(homeTab===val?"active":""),label); b.addEventListener("click",()=>{ homeTab=val; if(val===7||val===8) curLen=val; renderHome(); }); seg.appendChild(b); };
-  addSeg(7,"7 lettres"); addSeg(8,"8 lettres"); addSeg('d',"Douteux");
+  [7,8].forEach(L=>{
+    const b=el("button",(L===curLen?"active":""),L+" lettres");
+    b.addEventListener("click",()=>{ curLen=L; renderHome(); });
+    seg.appendChild(b);
+  });
   m.appendChild(seg);
-
-  if(homeTab==='d'){ renderDouteux(m); appendSync(m); return; }
 
   for(const gid of [1,2,3,4]){
     const total=GROUPS[curLen][gid].length;
@@ -249,15 +251,18 @@ function renderHome(){
     m.appendChild(b);
   }
 
-  // Révision : définitions non connues
-  const dkuWords=Object.keys(store.dku).filter(w=>w.length===curLen);
-  m.appendChild(el("div","home-sep","Révisions"));
-  const rb=el("button","grp-btn"); rb.disabled=dkuWords.length===0;
-  const rl=el("div"); rl.appendChild(el("div","g-name","Définitions non connues"));
-  rl.appendChild(el("div","g-sub","mots que tu as marqués « déf. non connue »"));
-  rb.appendChild(rl); rb.appendChild(el("div","g-count",String(dkuWords.length)));
-  rb.addEventListener("click",()=>startDku(curLen));
-  m.appendChild(rb);
+  // Mémo : douteux / définitions non connues / remarquables (listes)
+  m.appendChild(el("div","home-sep","Mémo"));
+  const addMemo=(key,label,map)=>{
+    const b=el("button","grp-btn");
+    const l=el("div"); l.appendChild(el("div","g-name",label));
+    b.appendChild(l); b.appendChild(el("div","g-count",String(Object.keys(map).length)));
+    b.addEventListener("click",()=>{ memoList=key; renderHome(); });
+    m.appendChild(b);
+  };
+  addMemo("douteux","🤔 Douteux",store.douteux);
+  addMemo("dku","🧐 Définitions non connues",store.dku);
+  addMemo("remarq","😲 Remarquables",store.remarq);
 
   appendSync(m);
 }
@@ -269,19 +274,21 @@ function appendSync(m){
   sync.appendChild(st); sync.appendChild(code);
   m.appendChild(sync);
 }
-function renderDouteux(m){
-  const words=Object.keys(store.douteux).sort();
-  m.appendChild(el("div","home-sep","Mots douteux ("+words.length+")"));
-  if(!words.length){
-    m.appendChild(el("p",null,"Aucun mot douteux. Marque-en pendant le jeu avec « Douteux »."));
-    return;
-  }
+function renderMemoList(m, key){
+  const maps={douteux:store.douteux, dku:store.dku, remarq:store.remarq};
+  const labels={douteux:"🤔 Douteux", dku:"🧐 Définitions non connues", remarq:"😲 Remarquables"};
+  const map=maps[key];
+  const back=el("button","memo-back","← Mémo"); back.addEventListener("click",()=>{ memoList=null; renderHome(); });
+  m.appendChild(back);
+  const words=Object.keys(map).sort();
+  m.appendChild(el("div","home-sep", labels[key]+" ("+words.length+")"));
+  if(!words.length){ m.appendChild(el("p",null,"Liste vide.")); return; }
   words.forEach(w=>{
     const row=el("div","dou-row");
     const name=el("span","dou-word", entryInfo(w)?entryInfo(w).disp:w);
     name.addEventListener("click",()=>openCard(w));
     const rm=el("button","dou-rm","✕");
-    rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); renderHome(); });
+    rm.addEventListener("click",()=>{ delete map[w]; save(); renderHome(); });
     row.appendChild(name); row.appendChild(rm);
     m.appendChild(row);
   });
@@ -311,11 +318,6 @@ function openCard(w){
   body.appendChild(tirageEl(key, showRack));
   body.appendChild(content);
   navFn(w);   // fiche du mot cliqué
-  if(store.douteux[w]){
-    const rm=el("button","mini","✕ retirer des douteux"); rm.style.marginTop="10px";
-    rm.addEventListener("click",()=>{ delete store.douteux[w]; save(); closeCard(); renderHome(); });
-    body.appendChild(rm);
-  }
   document.getElementById("card-modal").classList.add("open");
 }
 function closeCard(){ document.getElementById("card-modal")?.classList.remove("open"); }
@@ -325,10 +327,17 @@ function seenSet(L,group){ const sk=L+":"+group; return store.seen[sk]||(store.s
 function seenCount(L,group){ return Object.keys(seenSet(L,group)).length; }
 function rateCount(L,group){ return GROUPS[L][group].filter(k=>store.rate[k]).length; }
 
-function progLabel(){
-  if(g.mode==="group") return GROUP_LABELS[g.group].name+" · "+(g.baseDone+g.pos+1)+" / "+g.total;
-  if(g.mode==="rate")  return "Ratés · "+(g.pos+1)+" / "+g.queue.length;
-  return "Définitions non connues · "+(g.pos+1)+" / "+g.queue.length;
+// Compteur in-game (grand). Le nombre est cliquable → feuilletage des fiches vues.
+function progEl(){
+  const d=el("div","prog");
+  if(g.mode==="browse"){ d.appendChild(document.createTextNode("Revue · "+(g.pos+1)+" / "+g.queue.length)); return d; }
+  if(g.mode==="rate") d.appendChild(document.createTextNode("Ratés · "));
+  const cur=(g.baseDone||0)+g.pos+1;
+  const n=el("span","prog-num", String(cur));
+  n.addEventListener("click",()=>startBrowse(g.L,g.group));
+  d.appendChild(n);
+  d.appendChild(document.createTextNode(" / "+(g.total||g.queue.length)));
+  return d;
 }
 
 /* ── Lancer une session de tirages ── */
@@ -366,13 +375,13 @@ function renderCard(){
   const nSol=words.length;
 
   const wrap=el("div","card-wrap");
-  wrap.appendChild(el("div","prog", progLabel()));
+  wrap.appendChild(progEl());
 
   const tir=el("div","tirage");
   key.split("").forEach(c=> tir.appendChild(el("div","tile",c)) );
   wrap.appendChild(tir);
 
-  wrap.appendChild(el("div","hint", nSol>1 ? (nSol+" solutions à trouver") : "1 solution"));
+  if(nSol>1) wrap.appendChild(el("div","hint", nSol+" solutions à trouver"));
   scroll.appendChild(wrap);
 
   const act=el("div","actions");
@@ -397,7 +406,7 @@ function reveal(found, review){
 
   const {scroll,foot}=gameScreen();
   const wrap=el("div","card-wrap");
-  wrap.appendChild(el("div","prog", progLabel()));
+  wrap.appendChild(progEl());
 
   // Tirage-quiz épinglé (cliquable → revenir aux solutions d'origine)
   const solWords=(RACKS[g.L].get(key)||[]).slice()
@@ -419,7 +428,8 @@ function reveal(found, review){
     bR.textContent=store.rate[key]?"✓ raté":"Raté"; bR.classList.toggle("on", !!store.rate[key]);
   });
   rv.appendChild(bR);
-  const bN=el("button","btn-next", (g.max||0)+1>=g.queue.length ? "Terminer" : "Suivant");
+  const _atEnd = g.mode==="browse" ? (g.pos+1>=g.queue.length) : ((g.max||0)+1>=g.queue.length);
+  const bN=el("button","btn-next", _atEnd ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
   foot.appendChild(rv);
@@ -452,20 +462,14 @@ function renderSolution(w, navFn){
   const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
   const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
   btns.appendChild(img); btns.appendChild(wk);
-  const dou=el("button","mini dou"+(store.douteux[w]?" on":""),"⚠︎ Douteux");
-  dou.addEventListener("click",()=>{
-    if(store.douteux[w]){ delete store.douteux[w]; dou.classList.remove("on"); }
-    else { store.douteux[w]=1; dou.classList.add("on"); }
-    save();
-  });
-  btns.appendChild(dou);
-  const dku=el("button","mini dku"+(store.dku[w]?" on":""),"❓ Déf");
-  dku.addEventListener("click",()=>{
-    if(store.dku[w]){ delete store.dku[w]; dku.classList.remove("on"); }
-    else { store.dku[w]=1; dku.classList.add("on"); }
-    save();
-  });
-  btns.appendChild(dku);
+  const tagBtn=(map,cls,emoji)=>{
+    const b=el("button","mini tag "+cls+(map[w]?" on":""),emoji);
+    b.addEventListener("click",()=>{ if(map[w]){ delete map[w]; b.classList.remove("on"); } else { map[w]=1; b.classList.add("on"); } save(); });
+    btns.appendChild(b);
+  };
+  tagBtn(store.douteux,"dou","🤔");
+  tagBtn(store.dku,"dku","🧐");
+  tagBtn(store.remarq,"rem","😲");
   box.appendChild(btns);
 
   const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
@@ -500,8 +504,17 @@ function returnForward(){
 function next(){
   if(!g) return;
   if(g.mode==="dku"){ if(g.pos<g.queue.length-1){ g.pos++; revealDku(g.queue[g.pos]); } else showHome(); return; }
+  if(g.mode==="browse"){ if(g.pos+1<g.queue.length) showCardAt(g.pos+1); else showHome(); return; }
   if((g.max||0)+1 < g.queue.length){ g.max=(g.max||0)+1; showCardAt(g.max); }
   else endScreen();
+}
+// Feuilletage : revoir toutes les fiches déjà vues du groupe (mode revue, swipe).
+function startBrowse(L,group){
+  const keys=Object.keys(seenSet(L,group)).sort();
+  if(!keys.length) return;
+  const done=new Set(); keys.forEach((_,i)=>done.add(i));
+  g={ L, group, mode:"browse", queue:keys, pos:0, max:keys.length-1, total:keys.length, baseDone:0, done };
+  showGame(); showCardAt(0);
 }
 
 function endScreen(){
