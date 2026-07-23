@@ -15,6 +15,8 @@ function load(){
   catch{ store = {seen:{},srs:{}}; }
   store.seen = store.seen || {};
   store.srs = store.srs || {};
+  // Rétro-compat : entrées créées avant l'ajout du champ `found`
+  for(const s of Object.values(store.srs)){ if(s.found===undefined) s.found=true; }
   try{ Object.assign(settings, JSON.parse(localStorage.getItem(LS_SETTINGS)||"{}")); }catch{}
 }
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch{} }
@@ -32,15 +34,19 @@ function srsIsEligible(canon){
   return Date.now()>=s.due;
 }
 function srsApply(canon, found, extraHints){
-  if(!found){ store.srs[canon]={retired:false, due:Date.now()+3*86400000}; }
-  else if(extraHints<=0){ store.srs[canon]={retired:true}; }
-  else if(extraHints===1){ store.srs[canon]={retired:false, due:Date.now()+14*86400000}; }
-  else{ store.srs[canon]={retired:false, due:Date.now()+7*86400000}; }
+  if(!found){ store.srs[canon]={retired:false, due:Date.now()+3*86400000, found:false}; }
+  else if(extraHints<=0){ store.srs[canon]={retired:true, found:true}; }
+  else if(extraHints===1){ store.srs[canon]={retired:false, due:Date.now()+14*86400000, found:true}; }
+  else{ store.srs[canon]={retired:false, due:Date.now()+7*86400000, found:true}; }
   save();
   // Retire le mot du pool/de la file en cours (n'est plus éligible avant reload/rebuild)
   const pi=pool.indexOf(canon); if(pi>=0) pool.splice(pi,1);
   for(let i=queue.length-1;i>=qpos;i--){ if(queue[i]===canon) queue.splice(i,1); }
 }
+// Trouvés : résolus au moins une fois (maîtrisés ou en attente de révision).
+function srsFoundCount(){ let n=0; for(const s of Object.values(store.srs)) if(s.found) n++; return n; }
+// À revoir : pas encore maîtrisés (reviendront un jour), qu'ils aient été trouvés ou non.
+function srsToReviewCount(){ let n=0; for(const s of Object.values(store.srs)) if(!s.retired) n++; return n; }
 
 /* ── Détection d'une VRAIE définition (pas juste une nature ou un renvoi) ── */
 const _TYPE_PFX = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
@@ -218,7 +224,13 @@ function wordChips(title, words){
 /* ── Compteur global de progression ── */
 function seenCountTotal(){ return Object.keys(store.seen).length; }
 function totalCandidates(){ return WORD_DEF_IDX.size; }
-function progressLine(){ return el("div","subline", seenCountTotal()+" / "+totalCandidates()+" mots vus"); }
+function progressLine(){
+  const wrap=el("div","subline q-stats");
+  wrap.appendChild(el("span","q-stat", seenCountTotal()+" / "+totalCandidates()+" vus"));
+  wrap.appendChild(el("span","q-stat q-stat-found", "✓ "+srsFoundCount()+" trouvés"));
+  wrap.appendChild(el("span","q-stat q-stat-review", "↻ "+srsToReviewCount()+" à revoir"));
+  return wrap;
+}
 
 
 /* ── Pool + file de mots ── */
