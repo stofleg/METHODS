@@ -62,7 +62,12 @@ function isRealDef(d){
     && /[A-Za-zÀ-ÿœæŒÆ]{4}/.test(s);
 }
 // Retire les renvois « (= mot, mot…) » d'une définition affichée (spoiler potentiel).
-function stripRenvoi(s){ return String(s||"").replace(/\(=\s*[^)]*\)\s*/g,"").replace(/\s+/g," ").trim(); }
+function stripRenvoi(s){
+  return String(s||"")
+    .replace(/\[[^\]]*\]\s*/g,"")       // prononciation entre crochets (indice trop fort)
+    .replace(/\(=\s*[^)]*\)\s*/g,"")    // renvoi « (= mot) »
+    .replace(/\s+/g," ").trim();
+}
 function normCanon(w){
   return String(w||"").toUpperCase().replace(/Œ/g,"OE").replace(/Æ/g,"AE")
     .normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
@@ -93,7 +98,7 @@ function buildData(){
   for(const [canon, idxs] of byCanon){
     CANON_IDX.set(canon, idxs[0]);
     let chosen=-1;
-    for(const i of idxs){ if(isRealDef(D.f[i])){ chosen=i; break; } }
+    for(const i of idxs){ if(isRealDef(stripRenvoi(D.f[i]))){ chosen=i; break; } }
     if(chosen<0) continue;
     WORD_DEF_IDX.set(canon, chosen);
     const L=canon.length;
