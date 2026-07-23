@@ -1,7 +1,7 @@
 'use strict';
 
 /* ══ Service Worker QUIZODS — network-first (mise à jour fiable du PWA) ══ */
-const CACHE_NAME = "quizods-v3";
+const CACHE_NAME = "quizods-v4";
 
 self.addEventListener('install', e => { e.waitUntil(self.skipWaiting()); });
 

@@ -7,17 +7,40 @@
 
 const LS_KEY = "quizods-v1";
 const LS_SETTINGS = "quizods-settings";
-let store = { seen:{} };            // seen[canon] = nb de fois affiché
+let store = { seen:{}, srs:{} };     // seen[canon]=nb affiché · srs[canon]={retired}|{due}
 let settings = { minLen:2, maxLen:8, hints:1 };
 
 function load(){
-  try{ store = Object.assign({seen:{}}, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
-  catch{ store = {seen:{}}; }
+  try{ store = Object.assign({seen:{},srs:{}}, JSON.parse(localStorage.getItem(LS_KEY)||"{}")); }
+  catch{ store = {seen:{},srs:{}}; }
   store.seen = store.seen || {};
+  store.srs = store.srs || {};
   try{ Object.assign(settings, JSON.parse(localStorage.getItem(LS_SETTINGS)||"{}")); }catch{}
 }
 function save(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(store)); }catch{} }
 function saveSettings(){ try{ localStorage.setItem(LS_SETTINGS, JSON.stringify(settings)); }catch{} }
+
+/* ── Répétition espacée ──
+   0 indice supplémentaire  → retiré (plus jamais revu)
+   1 indice supplémentaire  → revu dans 14 jours
+   2 indices ou plus        → revu dans 7 jours
+   Non trouvé (Passer)      → revu dans 3 jours */
+function srsIsEligible(canon){
+  const s=store.srs[canon];
+  if(!s) return true;
+  if(s.retired) return false;
+  return Date.now()>=s.due;
+}
+function srsApply(canon, found, extraHints){
+  if(!found){ store.srs[canon]={retired:false, due:Date.now()+3*86400000}; }
+  else if(extraHints<=0){ store.srs[canon]={retired:true}; }
+  else if(extraHints===1){ store.srs[canon]={retired:false, due:Date.now()+14*86400000}; }
+  else{ store.srs[canon]={retired:false, due:Date.now()+7*86400000}; }
+  save();
+  // Retire le mot du pool/de la file en cours (n'est plus éligible avant reload/rebuild)
+  const pi=pool.indexOf(canon); if(pi>=0) pool.splice(pi,1);
+  for(let i=queue.length-1;i>=qpos;i--){ if(queue[i]===canon) queue.splice(i,1); }
+}
 
 /* ── Détection d'une VRAIE définition (pas juste une nature ou un renvoi) ── */
 const _TYPE_PFX = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
@@ -64,7 +87,7 @@ const wiktUrl = w => "https://fr.wiktionary.org/wiki/"+encodeURIComponent(w.toLo
 let pool=[], queue=[], qpos=0;
 function buildPool(){
   pool=[];
-  for(let L=settings.minLen; L<=settings.maxLen; L++) if(CAND_BY_LEN[L]) pool=pool.concat(CAND_BY_LEN[L]);
+  for(let L=settings.minLen; L<=settings.maxLen; L++) if(CAND_BY_LEN[L]) pool=pool.concat(CAND_BY_LEN[L].filter(srsIsEligible));
   queue=shuffle(pool); qpos=0;
 }
 function nextFromQueue(){
@@ -83,7 +106,7 @@ function newCard(){
   const revealed=new Array(canon.length).fill(false);
   const nHint=Math.min(settings.hints, canon.length>1?canon.length-1:0);
   shuffle([...Array(canon.length).keys()]).slice(0,nHint).forEach(i=>revealed[i]=true);
-  cur={ canon, revealed, solved:false, buf:"", seenBefore };
+  cur={ canon, revealed, solved:false, buf:"", seenBefore, extraHints:0 };
   renderCard();
 }
 
@@ -140,6 +163,7 @@ function revealRandomHint(){
   if(!hidden.length) return;
   const idx=hidden[Math.floor(Math.random()*hidden.length)];
   cur.revealed[idx]=true;
+  cur.extraHints++;
   renderCard();
 }
 
@@ -156,6 +180,7 @@ function solveCard(){
   cur.solved=true;
   setMsg("");
   cur.revealed=cur.revealed.map(()=>true);
+  srsApply(cur.canon, true, cur.extraHints);
   renderReveal();
 }
 
@@ -163,7 +188,16 @@ function passCard(){
   if(!cur || cur.solved) return;
   cur.solved=true;
   cur.revealed=cur.revealed.map(()=>true);
+  srsApply(cur.canon, false, cur.extraHints);
   renderReveal();
+}
+
+function srsStatusText(canon){
+  const s=store.srs[canon];
+  if(!s) return "";
+  if(s.retired) return "✓ Maîtrisé — ne reviendra plus";
+  const days=Math.max(1, Math.round((s.due-Date.now())/86400000));
+  return "↻ Revu dans "+days+" jour"+(days>1?"s":"");
 }
 
 function renderReveal(){
@@ -182,6 +216,7 @@ function renderReveal(){
   h3.style.cursor="pointer";
   h3.addEventListener("click",()=>{ try{ openDef(cur.canon); }catch(e){} });
   rev.appendChild(h3);
+  rev.appendChild(el("div","q-srs", srsStatusText(cur.canon)));
   idxs.forEach(i=>{
     const line=el("div","q-def-line");
     if(idxs.length>1) line.appendChild(el("div","q-entry", D.e[i]||cur.canon));
