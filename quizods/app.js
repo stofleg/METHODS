@@ -209,13 +209,13 @@ function anagrammesOf(w){
   return (D.a[key]||[]).filter(x=>x!==w);
 }
 
-function wordChips(title, words){
+function wordChips(title, words, navFn){
   if(!words || !words.length) return null;
   const sec=el("div","sol-extra");
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
     const a=el("a","chip"+(ENTRIES.has(x)?"":" form")+(isPpinv(x)?" ppinv":""),x); a.href="#";
-    a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} });
+    a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||(y=>{ try{ openDef(y); }catch(e){} }))(x); });
     sec.appendChild(a);
   });
   return sec;
@@ -356,20 +356,30 @@ function renderReveal(){
 
   wrap.appendChild(progressLine());
 
-  const tiles=el("div","q-tiles");
+  // Mot-quiz épinglé (cliquable → revenir à sa propre fiche) ; le contenu
+  // en dessous se remplace en place quand on explore une rallonge/un
+  // cousin/une anagramme, sans jamais ouvrir de modale.
+  const content=el("div");
+  let navFn;
+  const showOriginal=()=>{ content.innerHTML=""; content.appendChild(renderWordCard(cur.canon, navFn)); };
+  navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderWordCard(word, navFn)); };
+
+  const tiles=el("div","q-tiles clickable");
   cur.canon.split("").forEach(ch=> tiles.appendChild(el("div","q-tile revealed",ch)) );
+  tiles.addEventListener("click", showOriginal);
   wrap.appendChild(tiles);
 
   wrap.appendChild(el("div","q-srs", srsStatusText(cur.canon)));
 
-  wrap.appendChild(renderWordCard(cur.canon));
+  wrap.appendChild(content);
+  showOriginal();
 
   m.appendChild(wrap);
 }
 
 /* Fiche complète d'un mot (définition + relations lexicales), sans les
    boutons de tag de FLASHODS (douteux/déf-inconnue/remarquable). */
-function renderWordCard(w){
+function renderWordCard(w, navFn){
   const D=window.SEQODS_DATA;
   const box=el("div","q-reveal");
 
@@ -386,7 +396,7 @@ function renderWordCard(w){
     const fd=el("div","sol-flechie");
     fd.appendChild(document.createTextNode("forme fléchie de "));
     fdl.forEach(x=>{ const a=el("a","chip",x); a.href="#";
-      a.addEventListener("click",ev=>{ ev.preventDefault(); try{ openDef(x); }catch(e){} }); fd.appendChild(a); });
+      a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||(y=>{ try{ openDef(y); }catch(e){} }))(x); }); fd.appendChild(a); });
     box.appendChild(fd);
   }
 
@@ -396,12 +406,12 @@ function renderWordCard(w){
   links.appendChild(img); links.appendChild(wk);
   box.appendChild(links);
 
-  const ana=wordChips("Anagrammes", anagrammesOf(w)); if(ana) box.appendChild(ana);
-  const ral=wordChips("Rallonges initiales", rallongesOf(w)); if(ral) box.appendChild(ral);
-  const ralF=wordChips("Rallonges finales", rallongesFinOf(w)); if(ralF) box.appendChild(ralF);
-  const cou=wordChips("Cousins", cousinsOf(w)); if(cou) box.appendChild(cou);
-  const aph=wordChips("Aphérèse", apheresesOf(w)); if(aph) box.appendChild(aph);
-  const apo=wordChips("Apocope", apocopesOf(w)); if(apo) box.appendChild(apo);
+  const ana=wordChips("Anagrammes", anagrammesOf(w), navFn); if(ana) box.appendChild(ana);
+  const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
+  const ralF=wordChips("Rallonges finales", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
+  const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
+  const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
+  const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
 
   return box;
 }
