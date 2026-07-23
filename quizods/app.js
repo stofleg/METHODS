@@ -262,7 +262,14 @@ function newCard(){
   store.seen[canon]=seenBefore+1; save();
   const revealed=new Array(canon.length).fill(false);
   const nHint=Math.min(settings.hints, canon.length>1?canon.length-1:0);
-  shuffle([...Array(canon.length).keys()]).slice(0,nHint).forEach(i=>revealed[i]=true);
+  // Le 1er indice est toujours la 1re lettre ; les suivants sont aléatoires.
+  if(nHint>0){
+    revealed[0]=true;
+    if(nHint>1){
+      const rest=[...Array(canon.length-1).keys()].map(i=>i+1);
+      shuffle(rest).slice(0,nHint-1).forEach(i=>revealed[i]=true);
+    }
+  }
   cur={ canon, revealed, solved:false, buf:"", seenBefore, extraHints:0 };
   renderCard();
 }
