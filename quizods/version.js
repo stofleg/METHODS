@@ -1,2 +1,2 @@
-const QUIZODS_VER = "0.12";
-const QUIZODS_CACHE = "quizods-v12";
+const QUIZODS_VER = "0.13";
+const QUIZODS_CACHE = "quizods-v13";

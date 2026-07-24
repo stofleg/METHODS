@@ -180,7 +180,13 @@ function fillDefLine(def, canon, line){
   const g=bestOdsGlossDef(def);
   if(g){ line.textContent=stripRenvoi(g); return; }
   line.textContent=stripRenvoi(def)||"…"; line.classList.add("def-loading");
-  resolveCustom(canon).then(t=>{ if(t) line.textContent=stripRenvoi(t); line.classList.remove("def-loading"); });
+  resolveCustom(canon).then(t=>{
+    if(t){
+      const m=String(def||"").match(_TYPE_PFX);
+      line.textContent = (m ? m[0].trim()+" " : "")+stripRenvoi(t);
+    }
+    line.classList.remove("def-loading");
+  });
 }
 // .q-def-block : une déf par entrée (mots à entrées multiples : PALPER, SON…), empilées,
 // chaque entrée précédée de sa forme affichée.

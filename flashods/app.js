@@ -181,7 +181,13 @@ function fillDefLine(def, canon, line){
   const g=bestOdsGlossDef(def);
   if(g){ line.textContent=g; return; }
   line.textContent=def||"…"; line.classList.add("def-loading");
-  resolveCustom(canon).then(t=>{ if(t) line.textContent=t; line.classList.remove("def-loading"); });
+  resolveCustom(canon).then(t=>{
+    if(t){
+      const m=String(def||"").match(_TYPE_PFX);
+      line.textContent = m ? (m[0].trim()+" "+t) : t;
+    }
+    line.classList.remove("def-loading");
+  });
 }
 // .sol-def : une déf par entrée (mots à entrées multiples : AMPOULE/AMPOULÉ…),
 // chaque entrée précédée de sa forme affichée.
