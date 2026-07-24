@@ -639,6 +639,13 @@ function wireSearch(){
     kb.addEventListener("mousedown",press);
     kb.addEventListener("click",e=>{ if(e.target.closest(".skk")) e.preventDefault(); });
   }
+  // Clavier physique (ordinateur) : lettres, Retour = effacer.
+  document.addEventListener("keydown",e=>{
+    if(!document.getElementById("search-ov")?.classList.contains("open")) return;
+    if(e.key==="Backspace"){ e.preventDefault(); searchKey("DEL"); return; }
+    if(e.key==="Escape"){ e.preventDefault(); closeSearch(); return; }
+    if(/^[a-zA-Z]$/.test(e.key)){ searchKey(e.key.toUpperCase()); }
+  });
 }
 
 /* ── Rallonges (avant) & cousins (1 lettre de différence) ── */
