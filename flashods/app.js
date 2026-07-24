@@ -110,9 +110,8 @@ function entryInfo(canon){
 
 /* ── Résolution des définitions ──
    Objectif : montrer une VRAIE définition, pas juste « (= rappeur) ».
-   1) déf ODS avec glose (en suivant les renvois « (= …) ») ;
-   2) sinon déf personnalisée (Wiktionnaire) depuis Firestore rech_custom
-      — même source que METHODS. */
+   Uniquement la glose ODS, en suivant ses renvois « (= …) » — plus de
+   repli sur les définitions personnalisées Wiktionnaire (rech_custom). */
 const FB_BASE = "https://firestore.googleapis.com/v1/projects/methods-8e4b1/databases/(default)/documents";
 const _fnorm = w => (w||"").toUpperCase().replace(/Œ/g,"OE").replace(/Æ/g,"AE").normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^A-Z]/g,"");
 const _POS_PFX = /^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
@@ -149,22 +148,6 @@ function bestOdsGloss(canon){
   }
   return null;
 }
-const _customCache=new Map();
-async function _fbGetDef(canon){
-  try{
-    const r=await fetch(FB_BASE+"/rech_custom/"+encodeURIComponent(canon));
-    if(!r.ok) return null;
-    const f=(await r.json()).fields||{};
-    return (f.defQuiz&&f.defQuiz.stringValue) || (f.def&&f.def.stringValue) || null;
-  }catch{ return null; }
-}
-async function resolveCustom(canon){
-  if(_customCache.has(canon)) return _customCache.get(canon);
-  const cands=[canon, ...refsOf(rawDef(canon))];
-  let res=null;
-  for(const c of cands){ const t=await _fbGetDef(c); if(t){ res=t; break; } }
-  _customCache.set(canon,res); return res;
-}
 // Glose en partant d'une déf précise (suit ses renvois). null si aucune.
 function bestOdsGlossDef(startDef){
   if(_isGloss(startDef)) return startDef;
@@ -176,18 +159,11 @@ function bestOdsGlossDef(startDef){
   }
   return null;
 }
-// Remplit une ligne à partir d'une déf : glose ODS sinon custom Firestore.
+// Remplit une ligne à partir d'une déf : glose ODS uniquement (plus de repli
+// Wiktionnaire Firestore — FLASHODS ne consulte plus rech_custom).
 function fillDefLine(def, canon, line){
   const g=bestOdsGlossDef(def);
-  if(g){ line.textContent=g; return; }
-  line.textContent=def||"…"; line.classList.add("def-loading");
-  resolveCustom(canon).then(t=>{
-    if(t){
-      const m=String(def||"").match(_TYPE_PFX);
-      line.textContent = m ? (m[0].trim()+" "+t) : t;
-    }
-    line.classList.remove("def-loading");
-  });
+  line.textContent = g || def || "…";
 }
 // .sol-def : une déf par entrée (mots à entrées multiples : AMPOULE/AMPOULÉ…),
 // chaque entrée précédée de sa forme affichée.
