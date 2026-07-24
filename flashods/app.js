@@ -327,14 +327,13 @@ function seenSet(L,group){ const sk=L+":"+group; return store.seen[sk]||(store.s
 function seenCount(L,group){ return Object.keys(seenSet(L,group)).length; }
 function rateCount(L,group){ return GROUPS[L][group].filter(k=>store.rate[k]).length; }
 
-// Compteur in-game (grand). Le nombre est cliquable → feuilletage des fiches vues.
+// Compteur in-game (grand). Le nombre est cliquable → liste des mots déjà vus.
 function progEl(){
   const d=el("div","prog");
-  if(g.mode==="browse"){ d.appendChild(document.createTextNode("Revue · "+(g.pos+1)+" / "+g.queue.length)); return d; }
   if(g.mode==="rate") d.appendChild(document.createTextNode("Ratés · "));
   const cur=(g.baseDone||0)+g.pos+1;
   const n=el("span","prog-num", String(cur));
-  n.addEventListener("click",()=>startBrowse(g.L,g.group));
+  n.addEventListener("click",showSeenList);
   d.appendChild(n);
   d.appendChild(document.createTextNode(" / "+(g.total||g.queue.length)));
   return d;
@@ -428,7 +427,7 @@ function reveal(found, review){
     bR.textContent=store.rate[key]?"✓ raté":"Raté"; bR.classList.toggle("on", !!store.rate[key]);
   });
   rv.appendChild(bR);
-  const _atEnd = g.mode==="browse" ? (g.pos+1>=g.queue.length) : ((g.max||0)+1>=g.queue.length);
+  const _atEnd = (g.max||0)+1>=g.queue.length;
   const bN=el("button","btn-next", _atEnd ? "Terminer" : "Suivant");
   bN.addEventListener("click",next);
   rv.appendChild(bN);
@@ -504,17 +503,33 @@ function returnForward(){
 function next(){
   if(!g) return;
   if(g.mode==="dku"){ if(g.pos<g.queue.length-1){ g.pos++; revealDku(g.queue[g.pos]); } else showHome(); return; }
-  if(g.mode==="browse"){ if(g.pos+1<g.queue.length) showCardAt(g.pos+1); else showHome(); return; }
   if((g.max||0)+1 < g.queue.length){ g.max=(g.max||0)+1; showCardAt(g.max); }
   else endScreen();
 }
-// Feuilletage : revoir toutes les fiches déjà vues du groupe (mode revue, swipe).
-function startBrowse(L,group){
-  const keys=Object.keys(seenSet(L,group)).sort();
-  if(!keys.length) return;
-  const done=new Set(); keys.forEach((_,i)=>done.add(i));
-  g={ L, group, mode:"browse", queue:keys, pos:0, max:keys.length-1, total:keys.length, baseDone:0, done };
-  showGame(); showCardAt(0);
+// Liste alphabétique des entrées déjà vues dans le groupe en cours (ne modifie
+// pas g : « ← Reprendre » revient exactement où la partie en était).
+function showSeenList(){
+  const L=g.L, group=g.group;
+  const keys=Object.keys(seenSet(L,group));
+  const wordsSet=new Set();
+  keys.forEach(k=>{ (RACKS[L].get(k)||[]).forEach(w=>{ if(ENTRIES.has(w)) wordsSet.add(w); }); });
+  const words=[...wordsSet].sort((a,b)=>a.localeCompare(b,"fr"));
+
+  const {scroll,foot}=gameScreen();
+  const wrap=el("div","card-wrap");
+  wrap.appendChild(el("div","prog","Mots vus ("+words.length+")"));
+  words.forEach(w=>{
+    const row=el("div","dou-row");
+    const name=el("span","dou-word", entryInfo(w)?entryInfo(w).disp:w);
+    name.addEventListener("click",()=>openCard(w));
+    row.appendChild(name);
+    wrap.appendChild(row);
+  });
+  scroll.appendChild(wrap);
+
+  const back=el("button","btn-next","← Reprendre");
+  back.addEventListener("click",()=>{ if(g.done && g.done.has(g.pos)) reveal(true,true); else renderCard(); });
+  foot.appendChild(back);
 }
 
 function endScreen(){
