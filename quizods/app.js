@@ -219,6 +219,74 @@ let _SORTED=null;
 function sortedDict(){ if(!_SORTED) _SORTED=(window.SEQODS_DATA.d||[]).slice().sort(); return _SORTED; }
 const _AZ="ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+/* ── Recherche dictionnaire (clavier custom, façon FLASHODS) ── */
+function candidates(prefix, limit){
+  if(!prefix) return [];
+  const arr=sortedDict();
+  let lo=0, hi=arr.length;
+  while(lo<hi){ const m=(lo+hi)>>1; if(arr[m]<prefix) lo=m+1; else hi=m; }
+  const out=[];
+  for(let i=lo;i<arr.length && out.length<limit;i++){
+    if(arr[i].startsWith(prefix)) out.push(arr[i]); else break;
+  }
+  return out;
+}
+let searchBuf="";
+function updateSearchDisp(){ const d=document.getElementById("search-disp"); if(d) d.textContent=searchBuf; }
+function openSearch(){
+  const ov=document.getElementById("search-ov"); if(!ov) return;
+  searchBuf=""; updateSearchDisp();
+  document.getElementById("search-res").innerHTML="";
+  ov.classList.add("open");
+}
+function closeSearch(){ document.getElementById("search-ov")?.classList.remove("open"); }
+function doSearch(){
+  const res=document.getElementById("search-res"); if(!res) return; res.innerHTML="";
+  const w=searchBuf; if(!w) return;
+  const valid=dictSet().has(w);
+  if(valid){
+    res.appendChild(el("div","search-msg ok","✓ mot valide"));
+    res.appendChild(renderWordCard(w));
+  }
+  const cands=candidates(w,80).filter(x=>x!==w);
+  if(cands.length){
+    const sec=el("div","sol-extra");
+    sec.appendChild(el("span","sol-extra-t","Commençant par "+w+" ("+cands.length+(cands.length>=80?"+":"")+") : "));
+    cands.forEach(x=>{
+      const a=el("a","chip",x); a.href="#";
+      a.addEventListener("click",ev=>{ ev.preventDefault(); searchBuf=x; updateSearchDisp(); doSearch(); res.scrollTop=0; });
+      sec.appendChild(a);
+    });
+    res.appendChild(sec);
+  } else if(!valid){
+    res.appendChild(el("div","search-msg no","✗ aucun mot"));
+  }
+}
+function searchKey(k){
+  if(k==="CLR") searchBuf="";
+  else if(k==="DEL") searchBuf=searchBuf.slice(0,-1);
+  else if(/^[A-Z]$/.test(k)) searchBuf+=k;
+  updateSearchDisp(); doSearch();
+}
+function wireSearch(){
+  document.getElementById("btn-search")?.addEventListener("click",openSearch);
+  document.getElementById("search-close")?.addEventListener("click",closeSearch);
+  const kb=document.getElementById("search-kb");
+  if(kb){
+    const press=e=>{ const b=e.target.closest(".skk"); if(!b) return; e.preventDefault(); searchKey(b.dataset.k); };
+    kb.addEventListener("touchstart",press,{passive:false});
+    kb.addEventListener("mousedown",press);
+    kb.addEventListener("click",e=>{ if(e.target.closest(".skk")) e.preventDefault(); });
+  }
+  // Clavier physique (ordinateur) : lettres, Retour = effacer.
+  document.addEventListener("keydown",e=>{
+    if(!document.getElementById("search-ov")?.classList.contains("open")) return;
+    if(e.key==="Backspace"){ e.preventDefault(); searchKey("DEL"); return; }
+    if(e.key==="Escape"){ e.preventDefault(); closeSearch(); return; }
+    if(/^[a-zA-Z]$/.test(e.key)){ searchKey(e.key.toUpperCase()); }
+  });
+}
+
 function rallongesOf(w){ return ((window.SEQODS_DATA.r||{})[w]||[]).filter(x=>x.endsWith(w)); }
 // Rallonges finales : mots commençant par w, entrées seulement, hors formes fléchies de w.
 function rallongesFinOf(w){
@@ -491,6 +559,7 @@ function wireKeyboard(){
 function wirePhysicalKeyboard(){
   document.addEventListener("keydown", e=>{
     if(document.getElementById("settings-panel")?.classList.contains("open")) return;
+    if(document.getElementById("search-ov")?.classList.contains("open")) return;
     if(e.key==="Enter"){ e.preventDefault(); press("OK"); return; }
     if(e.key==="Backspace"){ e.preventDefault(); press("DEL"); return; }
     if(/^[a-zA-Z]$/.test(e.key)){ press(e.key.toUpperCase()); }
@@ -567,6 +636,7 @@ function init(){
   wireKeyboard();
   wirePhysicalKeyboard();
   wireSettings();
+  wireSearch();
   initPTR();
   newCard();
 }
