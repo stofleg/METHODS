@@ -16,7 +16,7 @@
 - Auth : Firestore REST API (pas de SDK Firebase)
 
 ## Versionnage
-- Version courante : **v5.33**
+- Version courante : **v5.34**
 - Badge version : `#version-badge` dans index.html
 - CACHE_NAME suit le schéma `methods-v{majeur*100+mineur}` (ex. v4.0 → methods-v400)
 - À chaque release : bumper `CACHE_NAME` dans `sw.js` + `CURRENT_CACHE` + `#version-badge` dans `index.html`
@@ -25,7 +25,7 @@
 - PWA dans `blackscrab/` avec son propre `sw.js` et `manifest.json`
 - Dépendances partagées depuis le parent : `../data.js` (SEQODS_DATA pour les définitions), `../ods_data.js`
 - Icônes propres : `blackscrab/icon-192.png`, `blackscrab/icon-512.png` (générées depuis `icon.svg`)
-- Version courante : **v1.48**
+- Version courante : **v1.49**
 - Badge version : `#version-badge` dans `blackscrab/index.html`
 - CACHE_NAME suit le schéma `blackscrab-v{majeur*100+mineur}` (ex. v1.16 → blackscrab-v116)
 - À chaque release : bumper `CACHE_NAME` dans `blackscrab/sw.js` + `CURRENT_CACHE` + `#version-badge` dans `blackscrab/index.html`
@@ -39,3 +39,4 @@
 - Clavier mobile (`em-kb`, `tm-kb`) : visible seulement sur mobile (`max-width:640px`), géré par `wireKeyboard()` dans `common.js`
 - Illustrations GM : bouton « 🖼 Illustrer » sous les propositions → recherche d'images en cascade : Google Custom Search (si moteur legacy configuré) → Openverse (`loadOpenverseImgStrip`, sans clé) → Wikimedia (`loadImgStrip`). L'URL choisie est stockée dans `rech_custom/{canon}.img`. NB : Google a supprimé l'option « rechercher sur tout le web » des nouveaux moteurs Custom Search → Openverse est désormais la source principale. Config Google legacy (clé + cx) dans Firestore `config/gcse`, éditable dans Paramètres — jamais dans le dépôt public.
 - Coller une image : dans la fiche de définition, bouton « 📋 Coller une image » → révèle `#def-paste-zone` (contenteditable). L'événement `paste` (fiable sur WebKit/iOS, contrairement à `clipboard.read()`) fournit le blob → redimensionné (`_resizeToJpeg`) → `fbStorageUpload("rech_img/{canon}.jpg")` → `_saveCustomImg`. Permet d'utiliser une image copiée depuis Google Images.
+- `shared/dict-core.js` est chargé par **4 apps** (METHODS, BlackScrab, FLASHODS, QUIZODS) — toute modification nécessite de bumper le cache des 4 (sw.js + version.js/CURRENT_CACHE de chacune), pas seulement METHODS. `_findConjLemma(w)` détecte si `w` est une forme conjuguée d'un verbe : vérifie que le lemme candidat a bien une entrée `v.` (via `_getVerbCanons()`) pour éviter les faux positifs entre mots de même terminaison mais nature différente (ex. GONAKIE/GONAKIER, tous deux des noms).

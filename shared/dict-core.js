@@ -940,6 +940,20 @@ function findLemma(w){
   return null;
 }
 
+// Ensemble lazy des canons ayant AU MOINS une entrée de nature verbe (v.),
+// tous entrées confondues (les mots à double nature comptent).
+let _verbCanons=null;
+function _getVerbCanons(){
+  if(!_verbCanons){
+    _verbCanons=new Set();
+    const c=window.SEQODS_DATA?.c, f=window.SEQODS_DATA?.f;
+    if(c&&f) for(let i=0;i<c.length;i++){
+      const def=String(f[i]||"").replace(/^\[[^\]]*\]\s*/,"");
+      if(/^v\.(?:\s|$)/.test(def)) _verbCanons.add(c[i]);
+    }
+  }
+  return _verbCanons;
+}
 // Map lazy : mot canonique → index dans c[] (pour retrouver def/display)
 let _cMap=null;
 function _getCMap(){
@@ -994,16 +1008,18 @@ function _findAllIdxs(canon){
 
 // If w is also a conjugated form of a *different* verb in c[], return that verb.
 // Handles cases like BRASQUE (noun) also being je/il brasque → BRASQUER.
+// Le candidat doit être une VRAIE entrée verbe (v.) — sinon simple coïncidence
+// orthographique (ex. GONAKIE/GONAKIER, tous deux des noms, pas une conjugaison).
 function _findConjLemma(w){
-  const cm=_getCMap();
+  const cm=_getCMap(), verbs=_getVerbCanons();
   if(w.endsWith('E')&&w.length>3){
     const st=w.slice(0,-1);
-    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
-    if(cm.has(st+'RE')&&st+'RE'!==w) return st+'RE';
+    if(cm.has(st+'ER')&&st+'ER'!==w&&verbs.has(st+'ER')) return st+'ER';
+    if(cm.has(st+'RE')&&st+'RE'!==w&&verbs.has(st+'RE')) return st+'RE';
   }
   if(w.endsWith('ES')&&w.length>4){
     const st=w.slice(0,-2);
-    if(cm.has(st+'ER')&&st+'ER'!==w) return st+'ER';
+    if(cm.has(st+'ER')&&st+'ER'!==w&&verbs.has(st+'ER')) return st+'ER';
   }
   return null;
 }
