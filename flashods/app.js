@@ -453,6 +453,7 @@ function renderSolution(w, navFn){
   tagBtn(store.remarq,"rem","😲");
   box.appendChild(btns);
 
+  const ana=wordChips("Anagrammes", anagrammesOf(w), navFn); if(ana) box.appendChild(ana);
   const app=wordChips("Appuis", appuisOf(w), navFn); if(app) box.appendChild(app);
   const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
   const ralF=wordChips("Rallonges finales", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
@@ -692,6 +693,12 @@ function racksAllForLen(L){
     _RACKS_BY_LEN_ALL[L]=M;
   }
   return _RACKS_BY_LEN_ALL[L];
+}
+// Anagrammes : mêmes lettres, ordre différent (entrées + formes fléchies).
+function anagrammesOf(w){
+  const M=racksAllForLen(w.length);
+  const key=w.split("").sort().join("");
+  return (M.get(key)||[]).filter(x=>x!==w);
 }
 // Appuis : mots obtenus en ajoutant UNE lettre n'importe où (réarrangement
 // complet autorisé, comme un anagramme + 1 lettre).
