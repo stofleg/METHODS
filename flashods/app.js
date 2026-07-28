@@ -453,6 +453,7 @@ function renderSolution(w, navFn){
   tagBtn(store.remarq,"rem","😲");
   box.appendChild(btns);
 
+  const app=wordChips("Appuis", appuisOf(w), navFn); if(app) box.appendChild(app);
   const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
   const ralF=wordChips("Rallonges finales", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
   const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
@@ -674,6 +675,36 @@ function cousinsOf(w){
 function apheresesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(1); if(D.has(v)) return [v]; } return []; }
 // Apocope : mot obtenu en retirant la dernière lettre
 function apocopesOf(w){ const D=dictSet(); if(w.length>=3){ const v=w.slice(0,-1); if(D.has(v)) return [v]; } return []; }
+
+// Index sorted-letters -> [mots] pour une longueur donnée, construit à partir
+// de TOUT window.SEQODS_DATA.d (entrées + formes fléchies), une fois par
+// longueur puis mis en cache.
+const _RACKS_BY_LEN_ALL={};
+function racksAllForLen(L){
+  if(!_RACKS_BY_LEN_ALL[L]){
+    const M=new Map();
+    for(const w of window.SEQODS_DATA.d){
+      if(w.length!==L) continue;
+      const key=w.split("").sort().join("");
+      let arr=M.get(key); if(!arr){ arr=[]; M.set(key,arr); }
+      arr.push(w);
+    }
+    _RACKS_BY_LEN_ALL[L]=M;
+  }
+  return _RACKS_BY_LEN_ALL[L];
+}
+// Appuis : mots obtenus en ajoutant UNE lettre n'importe où (réarrangement
+// complet autorisé, comme un anagramme + 1 lettre).
+function appuisOf(w){
+  const M=racksAllForLen(w.length+1);
+  const base=w.split("").sort();
+  const out=new Set();
+  for(const c of _AZ){
+    const key=[...base,c].sort().join("");
+    (M.get(key)||[]).forEach(x=>{ if(x!==w) out.add(x); });
+  }
+  return [...out];
+}
 // Lemme(s) dont le mot est une forme fléchie (verbe conjugué / autre entrée)
 function flechieDe(w){
   const out=new Set();
