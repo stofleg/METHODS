@@ -127,7 +127,36 @@ function _gloss(def){
   return s.replace(/\s+/g," ").trim();
 }
 const _isGloss = def => { const gg=_gloss(def); return gg.length>3 && /[A-Za-zÀ-ÿ]{4}/.test(gg); };
-function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":(window.SEQODS_DATA.f[i]||""); }
+
+/* ── Correction des renvois ODS asymétriques (ex. CRITHME manquait le
+   renvoi vers CRITHMUM alors que CRITHMUM renvoie vers CRITHME) ──
+   Chargée une fois depuis Firestore config/renvoi_corrections — SEUL
+   accès Firestore de FLASHODS pour les définitions (le repli
+   Wiktionnaire général a été retiré, cf. version précédente) ;
+   pas de modification de data.js (cf. CLAUDE.md). */
+let _renvoiCorrections=null;
+async function loadRenvoiCorrections(){
+  try{
+    const r=await fetch(FB_BASE+"/config/renvoi_corrections");
+    if(!r.ok){ _renvoiCorrections={}; return; }
+    const f=(await r.json()).fields||{};
+    _renvoiCorrections = f.data ? JSON.parse(f.data.stringValue) : {};
+  }catch{ _renvoiCorrections={}; }
+}
+function injectRenvoi(text, canon){
+  const add=_renvoiCorrections && _renvoiCorrections[canon];
+  if(!add || !add.length) return text;
+  const s=String(text||"");
+  const m=s.match(_POS_PFX);
+  const renvoiTxt="(= "+add.map(w=>w.toLowerCase()).join(", ")+")";
+  if(m){
+    const pfx=m[0].replace(/\s+$/,"");
+    const rest=s.slice(m[0].length).trim();
+    return pfx+" "+renvoiTxt+(rest?" "+rest:"");
+  }
+  return renvoiTxt+" "+s;
+}
+function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":injectRenvoi(window.SEQODS_DATA.f[i]||"", canon); }
 // Verbe à participe passé invariable (hors « (p.p.inv. mais …) »)
 function isPpinv(w){ const m=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i); return !!m && !/mais/i.test(m[0]); }
 function refsOf(def){
@@ -767,9 +796,10 @@ function initPTR(){
 }
 
 /* ── Init ── */
-function init(){
+async function init(){
   if(!window.SEQODS_DATA){ $home().innerHTML="<p style='color:var(--red);padding:20px'>Données ODS introuvables.</p>"; return; }
   load();
+  await loadRenvoiCorrections();
   buildData();
   if(typeof wireDefModal==="function") wireDefModal();
   document.getElementById("btn-home").addEventListener("click",showHome);
