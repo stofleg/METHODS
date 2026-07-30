@@ -125,8 +125,35 @@ const el=(tag,cls,txt)=>{ const e=document.createElement(tag); if(cls)e.classNam
 const gImgUrl = w => "https://www.google.com/search?tbm=isch&q="+encodeURIComponent(w.toLowerCase());
 const wiktUrl = w => "https://fr.wiktionary.org/wiki/"+encodeURIComponent(w.toLowerCase());
 
+/* ── Correction des renvois ODS asymétriques (ex. CRITHME manquait le
+   renvoi vers CRITHMUM alors que CRITHMUM renvoie vers CRITHME) ──
+   Chargée une fois depuis Firestore config/renvoi_corrections (pas de
+   modification de data.js, cf. CLAUDE.md). */
+let _renvoiCorrections=null;
+async function loadRenvoiCorrections(){
+  try{
+    const r=await fetch(FB_BASE+"/config/renvoi_corrections");
+    if(!r.ok){ _renvoiCorrections={}; return; }
+    const f=(await r.json()).fields||{};
+    _renvoiCorrections = f.data ? JSON.parse(f.data.stringValue) : {};
+  }catch{ _renvoiCorrections={}; }
+}
+function injectRenvoi(text, canon){
+  const add=_renvoiCorrections && _renvoiCorrections[canon];
+  if(!add || !add.length) return text;
+  const s=String(text||"");
+  const m=s.match(_TYPE_PFX);
+  const renvoiTxt="(= "+add.map(w=>w.toLowerCase()).join(", ")+")";
+  if(m){
+    const pfx=m[0].replace(/\s+$/,"");
+    const rest=s.slice(m[0].length).trim();
+    return pfx+" "+renvoiTxt+(rest?" "+rest:"");
+  }
+  return renvoiTxt+" "+s;
+}
+
 /* ── Résolution des définitions (glose ODS via renvois, sinon Wiktionnaire Firestore) ── */
-function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":(window.SEQODS_DATA.f[i]||""); }
+function rawDef(canon){ const i=CANON_IDX.get(canon); return i===undefined?"":injectRenvoi(window.SEQODS_DATA.f[i]||"", canon); }
 function isPpinv(w){ const m=(rawDef(w)||"").match(/\(p\.p\.inv\.?[^)]*\)/i); return !!m && !/mais/i.test(m[0]); }
 function _gloss(def){
   let s=String(def||"");
@@ -659,9 +686,10 @@ function initPTR(){
 }
 
 /* ── Init ── */
-function init(){
+async function init(){
   if(!window.SEQODS_DATA){ document.getElementById("view-quiz").innerHTML="<p style='color:var(--red);padding:20px'>Données ODS introuvables.</p>"; return; }
   load();
+  await loadRenvoiCorrections();
   buildData();
   buildPool();
   if(typeof wireDefModal==="function") wireDefModal();

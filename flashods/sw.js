@@ -1,7 +1,7 @@
 'use strict';
 
 /* ══ Service Worker FLASHODS — network-first (mise à jour fiable du PWA) ══ */
-const CACHE_NAME = "flashods-v137";
+const CACHE_NAME = "flashods-v138";
 
 self.addEventListener('install', e => { e.waitUntil(self.skipWaiting()); });
 
