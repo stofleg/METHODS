@@ -108,6 +108,21 @@ function entryInfo(canon){
   return { disp:D.e[i]||canon, def:D.f[i]||"" };
 }
 
+/* Forme accentuée d'un mot pour les liens externes (Wiktionnaire, Image) —
+   ex. MAZEAGE → mazéage, sans quoi Wiktionnaire ne trouve pas la page.
+   Pour une forme fléchie (pas une entrée), on tente de reconstituer
+   l'accent depuis l'entrée dont elle dérive par simple suffixe. */
+function accentedForm(w){
+  const info=entryInfo(w);
+  if(info) return info.disp.split(",")[0].trim().replace(/\*/g,"");
+  for(const lemma of flechieDe(w)){
+    if(!w.startsWith(lemma)) continue;
+    const li=entryInfo(lemma); if(!li) continue;
+    return li.disp.split(",")[0].trim().replace(/\*/g,"") + w.slice(lemma.length);
+  }
+  return w;
+}
+
 /* ── Résolution des définitions ──
    Objectif : montrer une VRAIE définition, pas juste « (= rappeur) ».
    Uniquement la glose ODS, en suivant ses renvois « (= …) » — plus de
@@ -469,8 +484,9 @@ function renderSolution(w, navFn){
   }
 
   const btns=el("div","sol-btns");
-  const img=el("a","mini","🔍 Image"); img.href=gImgUrl(w); img.target="_blank"; img.rel="noopener";
-  const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(w); wk.target="_blank"; wk.rel="noopener";
+  const disp=accentedForm(w);
+  const img=el("a","mini","🔍 Image"); img.href=gImgUrl(disp); img.target="_blank"; img.rel="noopener";
+  const wk=el("a","mini","📖 Wikt"); wk.href=wiktUrl(disp); wk.target="_blank"; wk.rel="noopener";
   btns.appendChild(img); btns.appendChild(wk);
   const tagBtn=(map,cls,emoji)=>{
     const b=el("button","mini tag "+cls+(map[w]?" on":""),emoji);
