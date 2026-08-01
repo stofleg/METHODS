@@ -19,6 +19,25 @@
   }
 })();
 
+/* ── Correctif format ODS : renvoi de type « = mot. » sans parenthèses
+   (ex. GAYOLLE : « = gayole. » au lieu de « (= gayole). ») — mise en forme
+   uniquement, la convention ODS9 pour un simple renvoi orthographique est
+   toujours parenthésée ; corrigé en mémoire, jamais dans data.js. ── */
+(function fixBareRenvoi(){
+  const D = window.SEQODS_DATA; if(!D) return;
+  const F = D.f; if(!F) return;
+  const RE = /(^|\s)=\s*([a-zà-ÿ][a-zà-ÿ\s'-]*?)\.(\s|$)/g;
+  for(let i=0;i<F.length;i++){
+    const f = F[i]; if(!f || f.indexOf('=')<0) continue;
+    const fixed = f.replace(RE, (m,pre,word,post,offset,full)=>{
+      const before = full.slice(0, offset+pre.length);
+      if(before.endsWith('(')) return m; // déjà correctement parenthésé
+      return pre+'(= '+word+').'+post;
+    });
+    if(fixed!==f) F[i]=fixed;
+  }
+})();
+
 /* ── Dictionnaire complet (toutes formes fléchies) ── */
 function getDictArr(){ return window.SEQODS_DATA?.d || window.SEQODS_DATA?.c || []; }
 
