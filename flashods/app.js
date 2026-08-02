@@ -193,12 +193,13 @@ function bestOdsGloss(canon){
   return null;
 }
 // Glose en partant d'une déf précise (suit ses renvois). null si aucune.
+// {from} = canon dont le texte a été emprunté (null si c'est startDef lui-même).
 function bestOdsGlossDef(startDef){
-  if(_isGloss(startDef)) return startDef;
+  if(_isGloss(startDef)) return {text:startDef, from:null};
   const seen=new Set(); const q=refsOf(startDef).slice(); let n=0;
   while(q.length && n<8){ const c=q.shift(); if(seen.has(c))continue; seen.add(c); n++;
     const d=rawDef(c); if(!d) continue;
-    if(_isGloss(d)) return d;
+    if(_isGloss(d)) return {text:d, from:c};
     refsOf(d).forEach(x=>{ if(!seen.has(x)) q.push(x); });
   }
   return null;
@@ -207,7 +208,9 @@ function bestOdsGlossDef(startDef){
 // Wiktionnaire Firestore — FLASHODS ne consulte plus rech_custom).
 function fillDefLine(def, canon, line){
   const g=bestOdsGlossDef(def);
-  line.textContent = g || def || "…";
+  let text = g ? g.text : (def || "…");
+  if(g && g.from) text=_fixSelfRenvoi(text, canon, g.from, entryInfo(g.from)?.disp);
+  line.textContent = text;
 }
 // .sol-def : une déf par entrée (mots à entrées multiples : AMPOULE/AMPOULÉ…),
 // chaque entrée précédée de sa forme affichée.

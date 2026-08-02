@@ -291,7 +291,19 @@ function openDef(canon, displayWord, defText, flechie){
   const _cf = t => t.replace(/ - Féminin accepté\. \(\d+\)/g,'');
   const defs = defText !== undefined
     ? [{label:null, entryLabel:null, text:_cf(defText)}]
-    : allIdxs.map(i=>{ const f=_cf(_getIdxDef()[i]||getNormToF()[C?.[i]]||''); const m=f.match(_CP); if(m){ return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')}; } const _mr=/-->\s+([a-zàâäéèêëîïôùûüœæç][a-zàâäéèêëîïôùûüœæç\s-]*)\./.exec(f); if(_mr&&!/[A-ZÀ-ÖØ-ÞŒŸ]/.test(f.slice(0,_mr.index).replace(/\[[^\]]*\]/g,''))){const td=_cf(getNormToF()[norm(_mr[1].trim())]||'');if(td&&!/-->/.test(td)) return{label:null,entryLabel:null,text:td};} const el=getNormToE()[C?.[i]]; return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f}; });
+    : allIdxs.map(i=>{
+        const f=_cf(_getIdxDef()[i]||getNormToF()[C?.[i]]||'');
+        const m=f.match(_CP);
+        if(m) return {label:m[1], entryLabel:null, text:_cf(getNormToF()[m[1]]||'')};
+        const _mr=/-->\s+([a-zàâäéèêëîïôùûüœæç][a-zàâäéèêëîïôùûüœæç\s-]*)\./.exec(f);
+        if(_mr&&!/[A-ZÀ-ÖØ-ÞŒŸ]/.test(f.slice(0,_mr.index).replace(/\[[^\]]*\]/g,''))){
+          const tgt=norm(_mr[1].trim());
+          let td=_cf(getNormToF()[tgt]||'');
+          if(td&&!/-->/.test(td)){ td=_fixSelfRenvoi(td, canon, tgt, getNormToE()[tgt]); return {label:null,entryLabel:null,text:td}; }
+        }
+        const el=getNormToE()[C?.[i]];
+        return {label:null, entryLabel:(el?.includes(',') ? el.replace(/\*/g,'') : null), text:f};
+      });
   // Utiliser la définition personnalisée admin si disponible en cache
   if(defs.length>0 && defText===undefined){
     const cd = window._rechCache?.[canon]?.loaded ? window._rechCache[canon].custom?.def : undefined;

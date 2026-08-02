@@ -1016,6 +1016,27 @@ function _getWantsSlashSet(){
 // Conservé pour openDef / dictSelectWord (appels unitaires)
 function _wantsSlash(canon){ return _getWantsSlashSet().has(canon); }
 
+// Corrige un texte de définition emprunté à une AUTRE entrée suite à un
+// renvoi pur (--> ou =) : quand l'entrée de départ (ex. ARRISER, qui ne
+// fait que pointer vers ARISER) n'a pas de contenu propre, on affiche le
+// texte d'ARISER tel quel — qui contient légitimement « (= arriser) » vu
+// depuis ARISER, mais devient circulaire une fois recopié sur la fiche
+// d'ARRISER. On remplace alors ce mot par celui dont le texte a été
+// emprunté (sourceDisplay), en conservant les autres graphies listées.
+function _fixSelfRenvoi(text, startCanon, sourceCanon, sourceDisplay){
+  if(!text || !sourceCanon || startCanon===sourceCanon) return text;
+  const repl=(sourceDisplay||sourceCanon).split(",")[0].trim().toLowerCase().replace(/\*/g,"");
+  return text.replace(/\(=\s*([^)]*)\)/g, (m, inner) => {
+    let changed=false;
+    const words=inner.split(/[,;]/).map(w=>{
+      const t=w.trim();
+      if(norm(t)===startCanon){ changed=true; return repl; }
+      return t;
+    });
+    return changed ? "(= "+words.join(", ")+")" : m;
+  });
+}
+
 
 // Returns every index in c[] where c[i] === canon (handles homographs like CHOPPER x2).
 function _findAllIdxs(canon){
