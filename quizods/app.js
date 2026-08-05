@@ -589,7 +589,7 @@ function renderWordCard(w, navFn){
   if(fdl.length){
     const fd=el("div","sol-flechie");
     fd.appendChild(document.createTextNode("forme fléchie de "));
-    fdl.forEach(x=>{ const a=el("a","chip",x); a.href="#";
+    fdl.forEach(x=>{ const a=el("a","chip"+(isPpinv(x)?" ppinv":""),x); a.href="#";
       a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||(y=>{ try{ openDef(y); }catch(e){} }))(x); }); fd.appendChild(a); });
     box.appendChild(fd);
   }
