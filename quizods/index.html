@@ -277,10 +277,31 @@ a.def-link{color:var(--gold);text-decoration:none;}
 <script src="../blackscrab/dict.js"></script>
 <script src="./app.js"></script>
 <script>
-  const CURRENT_CACHE = QUIZODS_CACHE;
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' });
-    navigator.serviceWorker.addEventListener('controllerchange', () => location.reload());
+  if("serviceWorker" in navigator){
+    const CURRENT_CACHE = QUIZODS_CACHE;
+    function doRegister(){
+      navigator.serviceWorker.register("./sw.js",{updateViaCache:"none"})
+        .then(reg=>reg.update()).catch(()=>{});
+      if(!sessionStorage.getItem("sw_reloaded_quizods")){
+        navigator.serviceWorker.addEventListener("controllerchange",()=>{
+          sessionStorage.setItem("sw_reloaded_quizods","1");
+          location.reload();
+        },{once:true});
+      }
+      sessionStorage.removeItem("sw_reloaded_quizods");
+    }
+    if("caches" in window){
+      caches.keys().then(keys=>{
+        const stale=keys.filter(k=>k.startsWith("quizods-")&&k!==CURRENT_CACHE);
+        if(stale.length){
+          sessionStorage.setItem("sw_reloaded_quizods","1");
+          Promise.all([
+            navigator.serviceWorker.getRegistrations().then(rs=>Promise.all(rs.map(r=>r.unregister()))),
+            Promise.all(keys.map(k=>caches.delete(k)))
+          ]).then(()=>location.reload());
+        } else { doRegister(); }
+      }).catch(doRegister);
+    } else { doRegister(); }
   }
 </script>
 </body>
