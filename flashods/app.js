@@ -402,8 +402,9 @@ function gameScreen(){
   return {scroll,foot};
 }
 
-// Indicateur « 2 / 3 » + flèches, quand un tirage a plusieurs solutions.
-// Les flèches doublent le swipe (indispensable sur ordinateur).
+// Compteur « 2 / 3 » ajouté en bas de la carte solution quand le tirage en a
+// plusieurs : signale qu'il y en a d'autres à faire défiler. Les flèches
+// doublent le swipe (indispensable sur ordinateur, où il n'y a pas de geste).
 function solPagerEl(idx, total, onPrev, onNext){
   const p=el("div","sol-pager");
   const bP=el("button","sol-pager-b","‹"); bP.disabled=idx<=0;
@@ -467,9 +468,12 @@ function reveal(found, review){
   let navFn, nav, solList=solWords, solIdx=0;
   const renderSol=()=>{
     content.innerHTML="";
+    const card=renderSolution(solList[solIdx], navFn);
+    // Compteur dans la carte : il fait ainsi partie de la zone dont le swipe
+    // navigue entre solutions, et non entre tirages.
     if(solList.length>1)
-      content.appendChild(solPagerEl(solIdx, solList.length, ()=>nav.prev(), ()=>nav.next()));
-    content.appendChild(renderSolution(solList[solIdx], navFn));
+      card.appendChild(solPagerEl(solIdx, solList.length, ()=>nav.prev(), ()=>nav.next()));
+    content.appendChild(card);
     scroll.scrollTop=0;
   };
   const showOriginal=()=>{ solList=solWords; solIdx=0; renderSol(); };
