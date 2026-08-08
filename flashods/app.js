@@ -388,12 +388,32 @@ function startPlay(L,group,mode){
 function resetGroup(L,group){ delete store.seen[L+":"+group]; save(); }
 
 /* Construit la vue jeu : zone défilante + pied fixe. Renvoie {scroll,foot}. */
+// Navigation entre les solutions d'un même tirage (swipe sur la carte solution).
+// Renseignée par reveal() ; remise à null par gameScreen() à chaque changement
+// d'écran, pour que le swipe retombe sur la navigation entre tirages.
+let solNav = null;
+
 function gameScreen(){
   const m=$game(); m.innerHTML="";
+  solNav=null;
   const scroll=el("div","g-scroll");
   const foot=el("div","g-foot");
   m.appendChild(scroll); m.appendChild(foot);
   return {scroll,foot};
+}
+
+// Indicateur « 2 / 3 » + flèches, quand un tirage a plusieurs solutions.
+// Les flèches doublent le swipe (indispensable sur ordinateur).
+function solPagerEl(idx, total, onPrev, onNext){
+  const p=el("div","sol-pager");
+  const bP=el("button","sol-pager-b","‹"); bP.disabled=idx<=0;
+  bP.addEventListener("click",onPrev);
+  const bN=el("button","sol-pager-b","›"); bN.disabled=idx>=total-1;
+  bN.addEventListener("click",onNext);
+  p.appendChild(bP);
+  p.appendChild(el("span","sol-pager-n",(idx+1)+" / "+total));
+  p.appendChild(bN);
+  return p;
 }
 
 function renderCard(){
@@ -439,10 +459,26 @@ function reveal(found, review){
   // Tirage-quiz épinglé (cliquable → revenir aux solutions d'origine)
   const solWords=(RACKS[g.L].get(key)||[]).slice()
     .sort((a,b)=> (ENTRIES.has(b)?1:0)-(ENTRIES.has(a)?1:0) || (a<b?-1:1));
+  // Une seule solution affichée à la fois : on navigue par swipe sur la carte
+  // (ou via les flèches du pager) au lieu de faire défiler une longue liste.
+  // solList = solutions du tirage ; en détour (clic sur un mot lié) elle se
+  // réduit au mot visité, le clic sur le tirage ramenant aux solutions.
   const content=el("div");
-  let navFn;
-  const showOriginal=()=>{ content.innerHTML=""; solWords.forEach(x=> content.appendChild(renderSolution(x, navFn))); scroll.scrollTop=0; };
-  navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); scroll.scrollTop=0; };
+  let navFn, nav, solList=solWords, solIdx=0;
+  const renderSol=()=>{
+    content.innerHTML="";
+    if(solList.length>1)
+      content.appendChild(solPagerEl(solIdx, solList.length, ()=>nav.prev(), ()=>nav.next()));
+    content.appendChild(renderSolution(solList[solIdx], navFn));
+    scroll.scrollTop=0;
+  };
+  const showOriginal=()=>{ solList=solWords; solIdx=0; renderSol(); };
+  navFn=(word)=>{ solList=[word]; solIdx=0; renderSol(); };
+  nav={
+    prev(){ if(solIdx>0){ solIdx--; renderSol(); } },
+    next(){ if(solIdx<solList.length-1){ solIdx++; renderSol(); } }
+  };
+  solNav=nav;
   wrap.appendChild(tirageEl(key, showOriginal));
   wrap.appendChild(content);
   scroll.appendChild(wrap);
@@ -826,9 +862,10 @@ async function init(){
   document.getElementById("card-bd")?.addEventListener("click",closeCard);
   wireSearch();
   initPTR();
-  // Swipe vers la droite → fiche précédente (actif dès que le jeu est visible,
-  // que la solution soit affichée ou non ; ignoré si recherche/modale ouverte)
-  let sx=0,sy=0,st=false;
+  // Swipe : sur une carte solution → solution précédente/suivante du tirage ;
+  // partout ailleurs (tirage, progression…) → fiche précédente/suivante.
+  // Ignoré si la recherche ou une modale est ouverte.
+  let sx=0,sy=0,st=false,sInSol=false;
   const gameActive=()=>{
     const gv=document.getElementById("view-game");
     if(!gv || gv.classList.contains("hidden")) return false;
@@ -839,13 +876,20 @@ async function init(){
   document.addEventListener("touchstart",e=>{
     if(e.touches.length!==1 || !gameActive()){ st=false; return; }
     sx=e.touches[0].clientX; sy=e.touches[0].clientY; st=true;
+    // Mémorisé au départ du geste : le contenu est re-rendu à chaque navigation.
+    sInSol = !!(e.target.closest && e.target.closest(".sol"));
   },{passive:true});
   document.addEventListener("touchend",e=>{
     if(!st) return; st=false; if(!gameActive()) return;
     const dx=e.changedTouches[0].clientX-sx, dy=e.changedTouches[0].clientY-sy;
     if(Math.abs(dx)<45 || Math.abs(dx)<=Math.abs(dy)*1.2) return;
-    if(dx>0) goBack();        // swipe droite → fiche précédente
-    else returnForward();     // swipe gauche → retour à la fiche en cours
+    if(sInSol && solNav){
+      if(dx>0) solNav.prev();  // swipe droite → solution précédente
+      else solNav.next();      // swipe gauche → solution suivante
+      return;
+    }
+    if(dx>0) goBack();         // swipe droite → fiche précédente
+    else returnForward();      // swipe gauche → retour à la fiche en cours
   },{passive:true});
   showHome();
   syncPull();
