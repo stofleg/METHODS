@@ -38,6 +38,42 @@
   }
 })();
 
+/* ── Correctif ODS : mention éditoriale répétée après un renvoi ──
+   Certaines entrées fusionnent l'entrée et sa variante, ce qui répète la
+   mention grammaticale ou commerciale déjà donnée avant le renvoi :
+   BURQINI « n.m. (Nom déposé) (= Burkini) (Nom déposé) Tenue… ».
+   On retire l'occurrence située après le renvoi quand elle répète une
+   mention déjà présente avant lui. Le numéro de conjugaison qui suit est
+   conservé : il peut différer de celui de l'entrée (CAPEYER 25 / capéer 16).
+   Les parenthèses internes aux prononciations ([k(w)-an-]) sont ignorées, et
+   « CONTREFICHE (SE) ou CONTREFICHER (SE) » est intact faute de renvoi.
+   Corrigé en mémoire, jamais dans data.js. ── */
+(function fixDupMention(){
+  const D = window.SEQODS_DATA; if(!D) return;
+  const F = D.f; if(!F) return;
+  for(let i=0;i<F.length;i++){
+    const f = F[i]; if(!f || f.indexOf('(=')<0) continue;
+    // Masque de même longueur : les index restent valables sur la chaîne d'origine
+    const masked = f.replace(/\[[^\]]*\]/g, m=>' '.repeat(m.length));
+    const renvoi = masked.indexOf('(=');
+    if(renvoi<0) continue;
+    const seen=new Set(), drop=[];
+    const re=/\([^)=][^)]*\)/g; let m;
+    while((m=re.exec(masked))){
+      if(m.index<renvoi) seen.add(m[0]);
+      else if(seen.has(m[0])) drop.push([m.index, m[0].length]);
+    }
+    if(!drop.length) continue;
+    let out=f;
+    for(let k=drop.length-1;k>=0;k--){
+      let [pos,len]=drop[k], end=pos+len;
+      if(out[end]===' ') end++;
+      out=out.slice(0,pos)+out.slice(end);
+    }
+    F[i]=out.replace(/\s{2,}/g,' ').trim();
+  }
+})();
+
 /* ── Dictionnaire complet (toutes formes fléchies) ── */
 function getDictArr(){ return window.SEQODS_DATA?.d || window.SEQODS_DATA?.c || []; }
 
