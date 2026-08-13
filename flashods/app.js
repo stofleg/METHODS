@@ -342,7 +342,11 @@ function openCard(w){
   const t=document.getElementById("card-title"); if(t) t.textContent=(entryInfo(w)?entryInfo(w).disp:w);
   const content=el("div");
   let navFn;
-  const showRack=()=>{ content.innerHTML=""; rackWords(key).forEach(x=> content.appendChild(renderSolution(x, navFn))); };
+  const showRack=()=>{
+    content.innerHTML="";
+    const rw=rackWords(key);
+    rw.forEach(x=> content.appendChild(renderSolution(x, navFn, rw.length>1?rw:null)));
+  };
   navFn=(word)=>{ content.innerHTML=""; content.appendChild(renderSolution(word, navFn)); const p=document.getElementById("card-panel"); if(p) p.scrollTop=0; };
   body.appendChild(tirageEl(key, showRack));
   body.appendChild(content);
@@ -468,7 +472,10 @@ function reveal(found, review){
   let navFn, nav, solList=solWords, solIdx=0;
   const renderSol=()=>{
     content.innerHTML="";
-    const card=renderSolution(solList[solIdx], navFn);
+    // Gras « propre à cette solution » seulement sur les solutions du tirage :
+    // pendant un détour (mot lié), la comparaison n'aurait pas de sens.
+    const sibs=(solList===solWords && solWords.length>1) ? solWords : null;
+    const card=renderSolution(solList[solIdx], navFn, sibs);
     // Compteur dans la carte : il fait ainsi partie de la zone dont le swipe
     // navigue entre solutions, et non entre tirages.
     if(solList.length>1)
@@ -503,7 +510,30 @@ function reveal(found, review){
   foot.appendChild(rv);
 }
 
-function renderSolution(w, navFn){
+// Sections de relations lexicales listées sous chaque solution.
+const CHIP_SECTIONS=[
+  ["Anagrammes",          w=>anagrammesOf(w)],
+  ["Appuis",              w=>appuisOf(w)],
+  ["Rallonges initiales", w=>rallongesOf(w)],
+  ["Rallonges finales",   w=>rallongesFinOf(w)],
+  ["Cousins",             w=>cousinsOf(w)],
+  ["Aphérèse",            w=>apheresesOf(w)],
+  ["Apocope",             w=>apocopesOf(w)],
+];
+// Mémo : chaque section ne dépend que du mot (dictionnaire figé). Évite de
+// tout recalculer à chaque swipe, d'autant qu'on calcule aussi les sections
+// des solutions voisines pour savoir ce qui est propre à celle affichée.
+const _chipMemo=new Map();
+function chipsFor(i, w){
+  const k=i+"|"+w;
+  let v=_chipMemo.get(k);
+  if(v===undefined){ v=CHIP_SECTIONS[i][1](w)||[]; _chipMemo.set(k,v); }
+  return v;
+}
+
+// siblings : autres solutions du tirage, pour mettre en gras ce qui est
+// spécifique à w. Omis (fiche isolée) → aucun gras.
+function renderSolution(w, navFn, siblings){
   const isEntry=ENTRIES.has(w);
   const box=el("div","sol"+(isEntry?"":" form"));
   const top=el("div","sol-top");
@@ -541,13 +571,22 @@ function renderSolution(w, navFn){
   tagBtn(store.remarq,"rem","😲");
   box.appendChild(btns);
 
-  const ana=wordChips("Anagrammes", anagrammesOf(w), navFn); if(ana) box.appendChild(ana);
-  const app=wordChips("Appuis", appuisOf(w), navFn); if(app) box.appendChild(app);
-  const ral=wordChips("Rallonges initiales", rallongesOf(w), navFn); if(ral) box.appendChild(ral);
-  const ralF=wordChips("Rallonges finales", rallongesFinOf(w), navFn); if(ralF) box.appendChild(ralF);
-  const cou=wordChips("Cousins", cousinsOf(w), navFn); if(cou) box.appendChild(cou);
-  const aph=wordChips("Aphérèse", apheresesOf(w), navFn); if(aph) box.appendChild(aph);
-  const apo=wordChips("Apocope", apocopesOf(w), navFn); if(apo) box.appendChild(apo);
+  // Les solutions d'un même tirage étant des anagrammes, beaucoup de sections
+  // se répètent d'une solution à l'autre (les Appuis sont toujours identiques).
+  // On met donc en gras ce qui est propre à la solution affichée, c.-à-d.
+  // absent de la même section chez les autres solutions du tirage.
+  const sibs=(siblings||[]).filter(x=>x!==w);
+  CHIP_SECTIONS.forEach((sec,i)=>{
+    const words=chipsFor(i,w);
+    if(!words.length) return;
+    let common=null;
+    if(sibs.length){
+      common=new Set();
+      sibs.forEach(s=>chipsFor(i,s).forEach(x=>common.add(x)));
+    }
+    const sub=wordChips(sec[0], words, navFn, common);
+    if(sub) box.appendChild(sub);
+  });
   return box;
 }
 
@@ -807,12 +846,16 @@ function flechieDe(w){
   if(typeof findLemma==="function"){ const l=findLemma(w); if(l && l!==w && ENTRIES.has(l)) out.add(l); }
   return [...out];
 }
-function wordChips(title, words, navFn){
+// common : mots présents dans la même section chez les autres solutions du
+// tirage. Ceux qui n'y sont pas sont propres à cette solution → en gras.
+function wordChips(title, words, navFn, common){
   if(!words || !words.length) return null;
   const sec=el("div","sol-extra");
   sec.appendChild(el("span","sol-extra-t", title+" ("+words.length+") : "));
   words.slice(0,80).forEach(x=>{
-    const a=el("a","chip"+(ENTRIES.has(x)?"":" form")+(isPpinv(x)?" ppinv":""),x); a.href="#";
+    const spec=common && !common.has(x);
+    const a=el("a","chip"+(ENTRIES.has(x)?"":" form")+(isPpinv(x)?" ppinv":"")+(spec?" spec":""),x);
+    a.href="#";
     a.addEventListener("click",ev=>{ ev.preventDefault(); (navFn||openCard)(x); });
     sec.appendChild(a);
   });
