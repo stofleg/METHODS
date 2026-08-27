@@ -83,19 +83,95 @@ function classifyRack(words){
   return 3;
 }
 
-// Certaines entrées ODS9 ne sont qu'une forme fléchie renvoyant à leur base,
-// sans contenu propre : TRAYAIS « --> traire 121. », BUTORDE « --> butor 2. ».
-// Comme solution de quiz elles n'apprennent rien — la carte n'afficherait que
-// le renvoi — donc on ne les compte pas comme entrées : elles redeviennent de
-// simples formes jouables, exactement comme TRAYAIT qui n'est pas dans c[].
-// Un tirage dont c'était la seule entrée quitte ainsi les quiz (classifyRack
-// renvoie 0). Les homographes qui ont par ailleurs une vraie définition sont
-// conservés (ex. FEUTRANT : adjectif + renvoi participe).
-const _PURE_REDIRECT=/^-->\s*[a-zà-ÿ][a-zà-ÿ'-]*(\s+\d+[a-z]?(\s+(?:ou|et)\s+\d+[a-z]?)*)?\.?$/i;
-function isPureRedirectEntry(canon){
-  const F=window.SEQODS_DATA.f;
+/* ── Entrées qui ne sont qu'une flexion renvoyant à leur base ──
+   L'ODS donne une vedette à certaines formes fléchies, sans définition
+   propre : juste un renvoi vers la base. Deux notations :
+     TRAYAIS  « --> traire 121. »   (conjugaison)
+     FLASHES  « (= flash). »        (pluriel)
+     AMATRICE « (= amateur). »      (féminin)
+   En solution de quiz elles n'apprennent rien — la carte n'afficherait que
+   le renvoi — donc on ne les compte pas comme entrées : elles redeviennent
+   de simples formes jouables, comme TRAYAIT qui n'est pas dans c[]. Un
+   tirage dont c'était la seule entrée quitte les quiz (classifyRack → 0).
+
+   On exige que ce soit une FLEXION de la cible, sinon on emporterait les
+   variantes d'orthographe, qui sont de vraies entrées à connaître
+   (BIFTECK « n.m. (= beefsteak). », ABATTURE, BALLOTER…). Les homographes
+   ayant par ailleurs une vraie définition sont conservés (FEUTRANT :
+   adjectif + renvoi participe). ── */
+const _POS_ONLY=/^(?:(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.(?:\s+et\s+(?:n|v|adj|adv|prép|prep|conj|interj|art|pron|dét|det|loc|part|préf|suff|aff|sym|m|f|pl)\.)*\s*)+/i;
+const _INFL_MARK=/\((?:pl|f|fpl|mpl)\.\s*([^)]*)\)/gi;
+const _ARROW_CONJ=/-->\s*[a-zà-ÿ'-]+\s+\d+/i;
+
+// Ce qui reste d'une définition une fois retirés renvois, nature et marqueurs.
+function _ownGloss(f){
+  let s=String(f||"")
+    .replace(/\[[^\]]*\]/g," ")                       // prononciation
+    .replace(/\(=\s*[^)]*\)/g," ")                    // renvoi (= mot)
+    .replace(/-->[^.]*\.?/g," ")                      // renvoi --> mot
+    .replace(_INFL_MARK," ")                          // (pl. …) (f. …)
+    .replace(/\(p\.p\.inv\.[^)]*\)|\(inv\.[^)]*\)/gi," ")
+    .replace(/\(Nom déposé\)/gi," ")
+    .replace(/-\s*(?:Féminins?|Singulier|Pluriel)[^.]*\.\s*\(\d+\)/gi," ")
+    .replace(/-\s*Devient variable[^.]*\.?\s*\(?\d*\)?/gi," ")
+    .replace(/\bdéf\.\b/gi," ")
+    .replace(/,?\s*n\.m\.pl\.|,?\s*n\.f\.|,?\s*n\.m\.|\bet adv\.\b/gi," ")
+    .replace(/\s+/g," ").trim();
+  return s.replace(_POS_ONLY,"").replace(/\b\d+[a-z]?\b/g," ").replace(/[.,\s]+/g," ").trim();
+}
+// canon → bases qui le déclarent comme pluriel/féminin (une base peut se
+// déclarer elle-même : LUNCHES porte « (pl. LUNCHES ou LUNCHS) »).
+let _declaredBy=null;
+function _getDeclaredBy(){
+  if(_declaredBy) return _declaredBy;
+  _declaredBy=new Map();
+  const D=window.SEQODS_DATA;
+  for(const [base,idxs] of CANON_ALL){
+    for(const i of idxs){
+      const f=D.f[i]||""; if(f.indexOf('(')<0) continue;
+      _INFL_MARK.lastIndex=0; let m;
+      while((m=_INFL_MARK.exec(f))){
+        m[1].split(/\s+ou\s+|[,;]/).forEach(x=>{
+          const n=_fnorm(x.replace(/\[[^\]]*\]/g,""));
+          if(!n) return;
+          (_declaredBy.get(n)||_declaredBy.set(n,new Set()).get(n)).add(base);
+        });
+      }
+    }
+  }
+  return _declaredBy;
+}
+function isMereInflectionEntry(canon){
+  const D=window.SEQODS_DATA;
   const idxs=CANON_ALL.get(canon)||[];
-  return idxs.length>0 && idxs.every(i=>_PURE_REDIRECT.test((F[i]||"").trim()));
+  if(!idxs.length) return false;
+  // une seule définition avec du contenu propre suffit à garder l'entrée
+  if(idxs.some(i=>/[A-Za-zÀ-ÿ]{4}/.test(_ownGloss(D.f[i])))) return false;
+  // cibles de renvoi
+  const tgts=new Set();
+  let arrowConj=false;
+  for(const i of idxs){
+    const f=D.f[i]||"";
+    if(_ARROW_CONJ.test(f)) arrowConj=true;
+    (f.match(/\(=\s*([^)]*)\)/g)||[]).forEach(seg=>
+      seg.replace(/\(=\s*|\)/g,"").split(/[,;]/).forEach(x=>{ const n=_fnorm(x); if(n) tgts.add(n); }));
+    (f.match(/-->\s*([a-zà-ÿ][a-zà-ÿ'-]*)/gi)||[]).forEach(seg=>{
+      const m=/-->\s*([a-zà-ÿ][a-zà-ÿ'-]*)/i.exec(seg); if(m){ const n=_fnorm(m[1]); if(n) tgts.add(n); }});
+  }
+  tgts.delete(canon);
+  if(!tgts.size) return false;
+  if(arrowConj) return true;                      // « --> infinitif NN. » = conjugaison
+  const decl=_getDeclaredBy().get(canon);
+  if(decl && decl.has(canon)) return true;        // se déclare lui-même pluriel/féminin
+  const im=typeof _getInflMap==="function"?_getInflMap():null;
+  const irr=typeof _getIrregMap==="function"?_getIrregMap():null;
+  for(const t of tgts){
+    if(!CANON_ALL.has(t)) continue;
+    if(decl && decl.has(t)) return true;          // la base le déclare (pl./f.)
+    if(im && im.get(canon)===t) return true;      // e[] « BLANC, BLANCHE »
+    if(irr && irr.get(canon)===t) return true;    // table des irréguliers
+  }
+  return false;
 }
 
 function buildData(){
@@ -103,7 +179,7 @@ function buildData(){
   CANON_IDX=new Map(); CANON_ALL=new Map();
   D.c.forEach((c,i)=>{ if(!CANON_IDX.has(c)) CANON_IDX.set(c,i); (CANON_ALL.get(c)||CANON_ALL.set(c,[]).get(c)).push(i); });
   ENTRIES=new Set();
-  for(const c of CANON_ALL.keys()) if(!isPureRedirectEntry(c)) ENTRIES.add(c);
+  for(const c of CANON_ALL.keys()) if(!isMereInflectionEntry(c)) ENTRIES.add(c);
   for(const w of D.d){
     const L=w.length; if(L!==7 && L!==8) continue;
     const k=w.split("").sort().join("");
