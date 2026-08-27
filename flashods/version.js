@@ -1,2 +1,2 @@
-const FLASHODS_VER = "1.49";
-const FLASHODS_CACHE = "flashods-v149";
+const FLASHODS_VER = "1.50";
+const FLASHODS_CACHE = "flashods-v150";
