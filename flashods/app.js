@@ -45,6 +45,7 @@ async function syncPull(){
   const remote=await fbLoadStore();
   if(remote && remote.store && (remote.ts||0) > (store._ts||0)){
     store=remote.store; saveLocal();
+    reconcileSeen();                 // le store distant peut venir d'une version antérieure
     if(!g) renderHome();
   }
   setSyncStatus("✓ synchro");
@@ -65,6 +66,7 @@ let CANON_IDX;               // canon -> premier index dans e/f
 let CANON_ALL;               // canon -> tous les index (entrées multiples)
 let GROUPS = {7:{1:[],2:[],3:[],4:[]}, 8:{1:[],2:[],3:[],4:[]}};
 let RACKS  = {7:new Map(),   8:new Map()};   // clé triée -> [mots]
+let GROUP_OF = {7:new Map(), 8:new Map()};   // clé triée -> groupe courant
 
 const GROUP_LABELS = {
   1:{name:"Sans anagramme",              sub:"une entrée, aucun anagramme"},
@@ -188,9 +190,35 @@ function buildData(){
   }
   for(const L of [7,8]){
     for(const [k,words] of RACKS[L]){
-      const g=classifyRack(words); if(g) GROUPS[L][g].push(k);
+      const g=classifyRack(words); if(g){ GROUPS[L][g].push(k); GROUP_OF[L].set(k,g); }
     }
   }
+}
+
+/* ── Recalage de store.seen sur les groupes courants ──
+   Le compteur en jeu part de GROUPS (il ne compte que les tirages encore
+   dans le groupe), l'accueil comptait toutes les clés de store.seen : d'où
+   un décalage dès qu'un tirage change de groupe ou quitte les quiz, ce que
+   font les exclusions d'entrées-renvois. On remet donc chaque clé dans son
+   groupe courant — un tirage travaillé reste « vu » — et on oublie celles
+   dont le tirage n'a plus de carte. Rejoué après chaque syncPull, le store
+   pouvant provenir d'un appareil resté sur une version antérieure. ── */
+function reconcileSeen(){
+  let moved=0, dropped=0;
+  const add={};
+  for(const L of [7,8]) for(const gid of [1,2,3,4]){
+    const seen=store.seen[L+":"+gid]; if(!seen) continue;
+    for(const k of Object.keys(seen)){
+      const now=GROUP_OF[L].get(k);
+      if(now===gid) continue;
+      delete seen[k];
+      if(now===undefined){ dropped++; continue; }   // plus de carte pour ce tirage
+      (add[L+":"+now]||(add[L+":"+now]={}))[k]=1; moved++;
+    }
+  }
+  for(const sk in add) Object.assign(store.seen[sk]||(store.seen[sk]={}), add[sk]);
+  if(moved||dropped) save();
+  return {moved,dropped};
 }
 
 /* Infos d'une entrée : forme affichée COMPLÈTE (ex. "RAPPEUR, EUSE") */
@@ -449,7 +477,15 @@ function closeCard(){ document.getElementById("card-modal")?.classList.remove("o
 
 /* ── Progression par groupe ── */
 function seenSet(L,group){ const sk=L+":"+group; return store.seen[sk]||(store.seen[sk]={}); }
-function seenCount(L,group){ return Object.keys(seenSet(L,group)).length; }
+// Ne compte que les tirages encore dans le groupe, comme le fait le compteur
+// en jeu (baseDone = total - unseen, calculé depuis GROUPS). reconcileSeen()
+// devrait déjà l'avoir garanti ; ce filtre protège l'affichage si un store
+// synchronisé depuis une version antérieure ramène des clés périmées.
+function seenCount(L,group){
+  const seen=seenSet(L,group); let n=0;
+  for(const k in seen) if(GROUP_OF[L].get(k)===group) n++;
+  return n;
+}
 function rateCount(L,group){ return GROUPS[L][group].filter(k=>store.rate[k]).length; }
 
 // Compteur in-game (grand). Le nombre est cliquable → liste des mots déjà vus.
@@ -713,7 +749,7 @@ function next(){
 // pas g : « ← Reprendre » revient exactement où la partie en était).
 function showSeenList(){
   const L=g.L, group=g.group;
-  const keys=Object.keys(seenSet(L,group));
+  const keys=Object.keys(seenSet(L,group)).filter(k=>GROUP_OF[L].get(k)===group);
   const wordsSet=new Set();
   keys.forEach(k=>{ (RACKS[L].get(k)||[]).forEach(w=>{ if(ENTRIES.has(w)) wordsSet.add(w); }); });
   const words=[...wordsSet].sort((a,b)=>a.localeCompare(b,"fr"));
@@ -995,6 +1031,7 @@ async function init(){
   load();
   await loadRenvoiCorrections();
   buildData();
+  reconcileSeen();
   if(typeof wireDefModal==="function") wireDefModal();
   document.getElementById("btn-home").addEventListener("click",showHome);
   document.getElementById("card-close")?.addEventListener("click",closeCard);
