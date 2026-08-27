@@ -74,6 +74,51 @@
   }
 })();
 
+/* ── Correctif ODS : renvoi croisé sur une vedette de pluriel ──
+   Les vedettes de pluriel ont été fusionnées avec l'entrée de l'autre
+   graphie, ce qui leur fait porter un renvoi qui ne les concerne pas :
+     OSTRAKA « (= ostrakon) (= ostracon) … »
+   OSTRAKA est le pluriel d'OSTRAKON, pas d'OSTRACON (dont le pluriel est
+   OSTRACA). On ne garde donc que les renvois vers une base qui déclare
+   bien ce mot dans son marqueur (pl. …) / (f. …).
+   Deux garde-fous : on n'intervient que s'il y a plusieurs renvois, et
+   seulement si l'un d'eux pointe vers une base — sinon on retirerait le
+   renvoi légitime de mots comme OULEMA « (= uléma) », qui n'a qu'une
+   variante d'orthographe. Corrigé en mémoire, jamais dans data.js. ── */
+(function fixCrossRenvoi(){
+  const D=window.SEQODS_DATA; if(!D||!D.c||!D.f) return;
+  const C=D.c, F=D.f;
+  const MARK=/\((?:pl|f|fpl|mpl)\.\s*([^)]*)\)/gi;
+  // mot → bases qui le déclarent comme pluriel/féminin
+  const declBy=new Map();
+  for(let i=0;i<C.length;i++){
+    const f=F[i]||""; if(f.indexOf('(')<0) continue;
+    MARK.lastIndex=0; let m;
+    while((m=MARK.exec(f))){
+      m[1].split(/\s+ou\s+|[,;]/).forEach(x=>{
+        const n=norm(x.replace(/\[[^\]]*\]/g,""));
+        if(n && n!==C[i]) (declBy.get(n)||declBy.set(n,new Set()).get(n)).add(C[i]);
+      });
+    }
+  }
+  for(let i=0;i<C.length;i++){
+    const bases=declBy.get(C[i]); if(!bases||!bases.size) continue;
+    const f=F[i]||""; if(f.indexOf('(=')<0) continue;
+    const segs=f.match(/\(=\s*[^)]*\)/g)||[];
+    if(segs.length<2) continue;                       // un seul renvoi : ne pas y toucher
+    const isBase=seg=>seg.replace(/\(=\s*|\)/g,"").split(/[,;]/)
+      .some(x=>{ const n=norm(x); return n && bases.has(n); });
+    if(!segs.some(isBase)) continue;                  // aucun renvoi vers la base : laisser
+    let out=f;
+    for(const seg of segs){
+      if(isBase(seg)) continue;
+      out=out.replace(seg+" ","").replace(seg,"");
+    }
+    out=out.replace(/\s{2,}/g," ").trim();
+    if(out!==f) F[i]=out;
+  }
+})();
+
 /* ── Dictionnaire complet (toutes formes fléchies) ── */
 function getDictArr(){ return window.SEQODS_DATA?.d || window.SEQODS_DATA?.c || []; }
 
