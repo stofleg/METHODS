@@ -1,7 +1,7 @@
 'use strict';
 
 /* ══ Service Worker BlackScrab — network-first ══ */
-const CACHE_NAME = "blackscrab-v1.53";
+const CACHE_NAME = "blackscrab-v1.54";
 
 self.addEventListener('install', e => {
   e.waitUntil(self.skipWaiting());

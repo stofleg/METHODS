@@ -119,6 +119,43 @@
   }
 })();
 
+/* ── Correctif ODS : marqueur de pluriel hérité de l'autre graphie ──
+   Même fusion que ci-dessus, côté marqueur cette fois :
+     OSTRAKA « (= ostrakon) (pl. OSTRACA ou OSTRACONS) n.m. … »
+   OSTRAKA est un pluriel : il n'a pas de pluriel propre, et surtout pas
+   OSTRACA, qui est celui d'OSTRACON. On retire donc, sur une vedette de
+   flexion, un marqueur dont les formes listées ne la contiennent pas.
+   A contrario ALTI « (pl. ALTI ou ALTOS) » se contient : le marqueur
+   décrit bien la famille du lemme, on le garde. Jamais dans data.js. ── */
+(function fixInheritedPluralMark(){
+  const D=window.SEQODS_DATA; if(!D||!D.c||!D.f) return;
+  const C=D.c, F=D.f;
+  const MARK=/\((?:pl|f|fpl|mpl)\.\s*([^)]*)\)/gi;
+  const formsOf=inner=>inner.split(/\s+ou\s+|[,;]/)
+    .map(x=>norm(x.replace(/\[[^\]]*\]/g,""))).filter(Boolean);
+  // mot → bases qui le déclarent (calculé AVANT tout retrait)
+  const declBy=new Map();
+  for(let i=0;i<C.length;i++){
+    const f=F[i]||""; if(f.indexOf('(')<0) continue;
+    MARK.lastIndex=0; let m;
+    while((m=MARK.exec(f))) formsOf(m[1]).forEach(n=>{
+      if(n!==C[i]) (declBy.get(n)||declBy.set(n,new Set()).get(n)).add(C[i]);
+    });
+  }
+  for(let i=0;i<C.length;i++){
+    if(!declBy.has(C[i])) continue;              // pas une vedette de flexion
+    const f=F[i]||""; if(f.indexOf('(')<0) continue;
+    const drop=[];
+    MARK.lastIndex=0; let m;
+    while((m=MARK.exec(f))) if(!formsOf(m[1]).includes(C[i])) drop.push(m[0]);
+    if(!drop.length) continue;
+    let out=f;
+    for(const seg of drop) out=out.replace(seg+" ","").replace(seg,"");
+    out=out.replace(/\s{2,}/g," ").trim();
+    if(out!==f) F[i]=out;
+  }
+})();
+
 /* ── Dictionnaire complet (toutes formes fléchies) ── */
 function getDictArr(){ return window.SEQODS_DATA?.d || window.SEQODS_DATA?.c || []; }
 
