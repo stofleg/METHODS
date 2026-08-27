@@ -83,11 +83,27 @@ function classifyRack(words){
   return 3;
 }
 
+// Certaines entrées ODS9 ne sont qu'une forme fléchie renvoyant à leur base,
+// sans contenu propre : TRAYAIS « --> traire 121. », BUTORDE « --> butor 2. ».
+// Comme solution de quiz elles n'apprennent rien — la carte n'afficherait que
+// le renvoi — donc on ne les compte pas comme entrées : elles redeviennent de
+// simples formes jouables, exactement comme TRAYAIT qui n'est pas dans c[].
+// Un tirage dont c'était la seule entrée quitte ainsi les quiz (classifyRack
+// renvoie 0). Les homographes qui ont par ailleurs une vraie définition sont
+// conservés (ex. FEUTRANT : adjectif + renvoi participe).
+const _PURE_REDIRECT=/^-->\s*[a-zà-ÿ][a-zà-ÿ'-]*(\s+\d+[a-z]?(\s+(?:ou|et)\s+\d+[a-z]?)*)?\.?$/i;
+function isPureRedirectEntry(canon){
+  const F=window.SEQODS_DATA.f;
+  const idxs=CANON_ALL.get(canon)||[];
+  return idxs.length>0 && idxs.every(i=>_PURE_REDIRECT.test((F[i]||"").trim()));
+}
+
 function buildData(){
   const D=window.SEQODS_DATA;
-  ENTRIES=new Set(D.c);
   CANON_IDX=new Map(); CANON_ALL=new Map();
   D.c.forEach((c,i)=>{ if(!CANON_IDX.has(c)) CANON_IDX.set(c,i); (CANON_ALL.get(c)||CANON_ALL.set(c,[]).get(c)).push(i); });
+  ENTRIES=new Set();
+  for(const c of CANON_ALL.keys()) if(!isPureRedirectEntry(c)) ENTRIES.add(c);
   for(const w of D.d){
     const L=w.length; if(L!==7 && L!==8) continue;
     const k=w.split("").sort().join("");
